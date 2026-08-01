@@ -21,6 +21,13 @@ coverage/
 # Read roadmap.md:119 before trusting it: the spacing in these renders is known wrong.
 /reference/
 
+# Spike render output. The M0 gate is the hash printed by the run, not a file in git.
+/spike/out/
+
+# Geist is SIL OFL and redistributable, but which font ships by default is an M1
+# decision (design.md:239). No font binaries in a public repo before that is settled.
+/spike/fonts/
+
 # Local overrides
 .env
 .env.*
