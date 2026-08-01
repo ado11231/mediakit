@@ -1,0 +1,14 @@
+# A golden file compares bytes. Line-ending translation on a checkout would make
+# a text fixture hash differently on Windows than on the machine that recorded it,
+# which reads as a determinism failure rather than a git setting.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+
+pnpm-lock.yaml linguist-generated=true -diff

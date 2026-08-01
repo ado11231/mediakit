@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Test output
+coverage/
+
+# Rendered assets are committed on purpose: byte-identical PNGs across runs are
+# what makes an approved screenshot diffable and reviewable (CLAUDE.md invariant 7).
+# Golden files under packages/*/test are the determinism guarantee itself.
+# Neither may be added here.
+
+# Local overrides
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.DS_Store
+.idea/
+*.swp
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
