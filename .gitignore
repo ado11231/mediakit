@@ -17,6 +17,10 @@ coverage/
 # Golden files under packages/*/test are the determinism guarantee itself.
 # Neither may be added here.
 
+# Local design reference, deliberately never pushed. See reference/hvac-lead-loss/README.md.
+# Read roadmap.md:119 before trusting it: the spacing in these renders is known wrong.
+/reference/
+
 # Local overrides
 .env
 .env.*
