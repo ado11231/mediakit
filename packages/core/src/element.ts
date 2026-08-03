@@ -29,6 +29,11 @@ export interface Element {
  * satori renders plain `{type, props}` objects, so blocks need neither React nor a JSX
  * transform. That keeps React out of the dependency graph of every package that builds
  * an element, which the install-size gate depends on.
+ *
+ * A lone child is passed through as itself rather than as a one-element array. This is not
+ * cosmetic: satori does not unwrap single-element arrays, so `children: ['text']` counts as
+ * more than one child and throws "Expected <div> to have explicit display: flex" on markup
+ * that plainly has one child. Verified against satori 0.29.
  */
 export const h = (type: string, props: ElementProps | null, ...children: Child[]): Element => {
   const rendered = children.filter(
@@ -37,7 +42,11 @@ export const h = (type: string, props: ElementProps | null, ...children: Child[]
   );
 
   const base = props ?? {};
-  return rendered.length === 0
-    ? { type, props: base }
-    : { type, props: { ...base, children: rendered } };
+  if (rendered.length === 0) return { type, props: base };
+
+  const [only] = rendered;
+  return {
+    type,
+    props: { ...base, children: rendered.length === 1 && only !== undefined ? only : rendered },
+  };
 };

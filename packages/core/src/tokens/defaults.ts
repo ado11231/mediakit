@@ -40,12 +40,18 @@ export const DEFAULT_RADIUS: Record<string, number> = {
   full: 999,
 };
 
+/**
+ * Every `fontWeight` here must be a weight `DEFAULT_FONT` actually ships, since satori
+ * substitutes a missing weight silently rather than failing. The bundled family is two
+ * weights, so this scale is expressed in 400 and 700 alone. A consumer supplying a font
+ * with more weights overrides `type` wholesale.
+ */
 export const DEFAULT_TYPE: Record<string, TypeStyle> = {
   display: { fontSize: 34, fontWeight: 700, lineHeight: 1.05, letterSpacing: '-0.03em' },
   title: { fontSize: 28, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em' },
-  headline: { fontSize: 22, fontWeight: 600, lineHeight: 1.25 },
+  headline: { fontSize: 22, fontWeight: 700, lineHeight: 1.25 },
   body: { fontSize: 16, fontWeight: 400, lineHeight: 1.5 },
-  callout: { fontSize: 15, fontWeight: 500, lineHeight: 1.4 },
+  callout: { fontSize: 15, fontWeight: 700, lineHeight: 1.4 },
   caption: { fontSize: 13, fontWeight: 400, lineHeight: 1.35, letterSpacing: '0.02em' },
 };
 

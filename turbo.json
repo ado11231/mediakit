@@ -9,7 +9,10 @@
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      // Own build included, not just dependencies': the determinism test spawns a second
+      // process against dist, which is the only way to prove a render is reproducible
+      // rather than merely cached within one process.
+      "dependsOn": ["^build", "build"]
     }
   }
 }

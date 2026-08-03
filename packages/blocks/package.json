@@ -1,0 +1,41 @@
+{
+  "name": "@mediakit/blocks",
+  "version": "0.0.0",
+  "description": "Generic built-in blocks and layouts for mediakit.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    "./block/*": {
+      "types": "./dist/blocks/*.d.ts",
+      "default": "./dist/blocks/*.js"
+    },
+    "./layout/*": {
+      "types": "./dist/layouts/*.d.ts",
+      "default": "./dist/layouts/*.js"
+    },
+    "./defaults": {
+      "types": "./dist/defaults.d.ts",
+      "default": "./dist/defaults.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mediakit/core": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1"
+  }
+}

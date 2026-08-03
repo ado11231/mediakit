@@ -1,5 +1,14 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSpec, resolveTokens, type FontSource, type TokensInput } from '../src/index.js';
+import {
+  DEFAULT_FONT,
+  DEFAULT_TYPE,
+  parseSpec,
+  resolveTokens,
+  type FontSource,
+  type TokensInput,
+} from '../src/index.js';
 
 const font: FontSource = {
   family: 'Geist',
@@ -62,10 +71,39 @@ describe('token defaults', () => {
     expect(resolved.font.body).toEqual(font);
   });
 
-  it('throws with an actionable message when no font is configured', () => {
-    expect(() => resolveTokens({ color: { accent: '#2563EB' } }, 1)).toThrow(
-      /No font is configured/,
+  it('falls back to the bundled font, so color.accent really is the only requirement', () => {
+    const resolved = resolveTokens({ color: { accent: '#2563EB' } }, 1);
+
+    expect(resolved.font.body).toEqual(DEFAULT_FONT);
+    expect(resolved.font.display).toEqual(DEFAULT_FONT);
+  });
+});
+
+describe('the bundled font', () => {
+  it('ships every weight the default type scale references', () => {
+    const available = new Set(DEFAULT_FONT.files.map((file) => file.weight));
+    const referenced = Object.entries(DEFAULT_TYPE).map(
+      ([name, style]) => [name, style.fontWeight] as const,
     );
+
+    // satori substitutes a missing weight silently rather than failing, so a default type
+    // scale naming a weight that is not bundled would render a wrong-weight asset with
+    // nothing to point at. This is the cheapest possible guard against the two drifting.
+    const missing = referenced.filter(([, weight]) => !available.has(weight));
+    expect(missing).toEqual([]);
+  });
+
+  it('resolves to files that exist on disk', () => {
+    for (const file of DEFAULT_FONT.files) {
+      expect(existsSync(file.path), `${file.path} is missing`).toBe(true);
+    }
+  });
+
+  it('redistributes its licence alongside the binaries', () => {
+    const licence = join(dirname(DEFAULT_FONT.files[0]?.path ?? ''), 'OFL.txt');
+
+    expect(existsSync(licence)).toBe(true);
+    expect(readFileSync(licence, 'utf8')).toContain('SIL OPEN FONT LICENSE Version 1.1');
   });
 });
 

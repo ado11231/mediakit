@@ -1,0 +1,131 @@
+import {
+  resolveTokens,
+  type Preset,
+  type RenderContext,
+  type Element,
+  type BlockEntry,
+} from '@mediakit/core';
+import { describe, expect, it } from 'vitest';
+import { Body } from '../src/blocks/body.js';
+import { BulletList } from '../src/blocks/bullet-list.js';
+import { Eyebrow } from '../src/blocks/eyebrow.js';
+import { Headline } from '../src/blocks/headline.js';
+import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '../src/defaults.js';
+
+const preset: Preset = { width: 1080, height: 1350, renderer: 'still', scale: 2.5 };
+
+const context: RenderContext = {
+  tokens: resolveTokens({ color: { accent: '#2563EB' } }, preset.scale),
+  preset,
+  frameIndex: 0,
+  frameCount: 1,
+};
+
+const render = (block: BlockEntry, props: unknown): Element => {
+  const still = block.still;
+  if (still === undefined) throw new Error('block must declare a still renderer');
+  return still(props, context);
+};
+
+describe('blocks read tokens rather than hardcoding style', () => {
+  it('resolves colour through the token contract', () => {
+    const element = render(Headline, { text: 'Ship it' });
+
+    expect(element.props.style?.color).toBe(context.tokens.color.ink);
+  });
+
+  it('applies the scaled font size, not the raw design-system value', () => {
+    const element = render(Headline, { text: 'Ship it' });
+
+    // 34 authored at design-system scale, 2.5 from the preset.
+    expect(element.props.style?.fontSize).toBe(85);
+  });
+
+  it('lets an open string point a block at any registered type token', () => {
+    const display = render(Headline, { text: 'Ship it' });
+    const caption = render(Headline, { text: 'Ship it', size: 'caption' });
+
+    expect(caption.props.style?.fontSize).not.toBe(display.props.style?.fontSize);
+  });
+
+  it('throws and lists the alternatives for a colour key that does not exist', () => {
+    expect(() => render(Body, { text: 'x', color: 'accnet' })).toThrow(
+      /Unknown color token "accnet"[\s\S]*accent/,
+    );
+  });
+
+  it('throws for a type token that does not exist', () => {
+    expect(() => render(Body, { text: 'x', size: 'gigantic' })).toThrow(
+      /Unknown type token "gigantic"/,
+    );
+  });
+});
+
+describe('Eyebrow', () => {
+  it('uppercases by default, because that is what makes it an eyebrow', () => {
+    expect(render(Eyebrow, { text: 'assets as code' }).props.style?.textTransform).toBe(
+      'uppercase',
+    );
+  });
+
+  /**
+   * `none` is emitted rather than omitted. It has to be: the type token may itself declare
+   * `textTransform: 'uppercase'`, and only an explicit `none` overrides it. Omitting the
+   * property here would let the token win and make the prop silently inert.
+   */
+  it('can be told not to, without replacing the block', () => {
+    expect(
+      render(Eyebrow, { text: 'assets as code', transform: 'none' }).props.style?.textTransform,
+    ).toBe('none');
+  });
+});
+
+describe('BulletList', () => {
+  it('emits one row per item', () => {
+    const element = render(BulletList, { items: ['one', 'two', 'three'] });
+
+    expect(Array.isArray(element.props.children)).toBe(true);
+    expect(element.props.children).toHaveLength(3);
+  });
+
+  it('rejects an empty list rather than rendering an invisible block', () => {
+    expect(() => render(BulletList, { items: [] })).toThrow(/items/);
+  });
+});
+
+describe('the default vocabulary', () => {
+  it('registers only generic blocks, with no domain concept in a name', () => {
+    expect(Object.keys(BUILTIN_BLOCKS).sort()).toEqual([
+      'Body',
+      'BulletList',
+      'Eyebrow',
+      'Headline',
+    ]);
+  });
+
+  it('ships all four layouts, including the two the reference never rendered', () => {
+    expect(Object.keys(BUILTIN_LAYOUTS).sort()).toEqual([
+      'centered',
+      'fullBleed',
+      'split',
+      'stack',
+    ]);
+  });
+
+  it('gives split two slots and leaves the others slotless', () => {
+    expect(BUILTIN_LAYOUTS.split?.slots).toEqual(['left', 'right']);
+    expect(BUILTIN_LAYOUTS.centered?.slots).toEqual([]);
+    expect(BUILTIN_LAYOUTS.stack?.slots).toEqual([]);
+    expect(BUILTIN_LAYOUTS.fullBleed?.slots).toEqual([]);
+  });
+
+  it('distributes stack vertically, which is the reference bug it exists to avoid', () => {
+    const layout = BUILTIN_LAYOUTS.stack;
+    const still = layout?.still;
+    if (still === undefined) throw new Error('stack must declare a still renderer');
+
+    expect(still({ blocks: [], slots: {} }, context).props.style?.justifyContent).toBe(
+      'flex-end',
+    );
+  });
+});

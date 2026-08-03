@@ -1,5 +1,6 @@
 import { MediakitError } from '../errors.js';
 import type { FontTokens, ResolvedTokens, TokensInput, TypeStyle } from './contract.js';
+import { DEFAULT_FONT } from './default-font.js';
 import { DEFAULT_COLOR, DEFAULT_RADIUS, DEFAULT_SPACE, DEFAULT_TYPE } from './defaults.js';
 
 const mapValues = <A, B>(
@@ -17,21 +18,16 @@ const scaleType = (style: TypeStyle, scale: number): TypeStyle => ({
   fontSize: style.fontSize * scale,
 });
 
+/**
+ * Supplying one family fills both roles from it, so a config that only cares about body
+ * copy does not have to name the same font twice. Supplying neither falls back to the
+ * bundled default, which is what makes `color.accent` the only required token.
+ */
 const resolveFont = (input: TokensInput['font']): FontTokens => {
   const { display, body } = input ?? {};
-  const resolved = display ?? body;
+  const fallback = display ?? body ?? DEFAULT_FONT;
 
-  if (resolved === undefined) {
-    throw new MediakitError(
-      'No font is configured, and mediakit does not yet bundle a default typeface.\n' +
-        'Set `tokens.font.body` in mediakit.config.ts to a family with explicit file paths:\n' +
-        "  font: { body: { family: 'Geist', files: [{ path: './fonts/Geist-Regular.ttf', weight: 400 }] } }\n" +
-        'Paths must be explicit. mediakit never resolves fonts from node_modules and never ' +
-        'fetches them, because a render that depends on a network response is not reproducible.',
-    );
-  }
-
-  return { display: display ?? resolved, body: body ?? resolved };
+  return { display: display ?? fallback, body: body ?? fallback };
 };
 
 /**
