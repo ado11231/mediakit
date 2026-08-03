@@ -285,5 +285,21 @@ bearing for determinism.
 
 ## Current status
 
-Nothing is scaffolded yet. The blocking gate is **M0**, described in `roadmap.md`. Do not
-start M1 refactor work before M0 passes its stated criteria.
+**M0 passed on 3 August 2026.** All three criteria met by `spike/`: it renders with no satori
+throw, it matches the reference by eye with no fallback font and no collapsed layout, and two
+runs produce byte-identical PNGs (`fcb72d3e…`) across separate processes, not only within one.
+`spike/` is throwaway and is deleted once `render-still` renders the same frame.
+
+**M1 is in progress.** Landed: the pnpm plus turbo workspace, and `packages/core` with the token
+contract, the spec schema, the three registries, and the failure-table tests. Still open:
+`packages/blocks`, `packages/render-still`, `packages/cli`, and `examples/source-app`.
+
+Two known gaps, both deliberate and both loud rather than silent:
+
+- **No bundled default font.** `resolveTokens` throws naming `tokens.font.body` when none is
+  configured, so "the only required token is `color.accent`" is not yet true. Settled decision 18
+  is unmet until a typeface ships in `@mediakit/blocks`.
+- **Determinism is verified on one platform.** The M0 hash was produced on macOS arm64.
+  `@resvg/resvg-js` ships per-platform native binaries, so byte-identical output between a
+  developer's machine and Linux CI is currently an assumption. The golden-file rule below rests on
+  it, so it needs testing before `render-still` is called done.

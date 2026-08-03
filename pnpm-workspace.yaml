@@ -1,0 +1,5 @@
+# `spike/` is deliberately excluded. It is throwaway M0 scope with its own lockfile,
+# and linking it here would let M1 code import from it.
+packages:
+  - packages/*
+  - examples/*
