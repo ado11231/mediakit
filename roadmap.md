@@ -351,9 +351,37 @@ Both are genuinely good. Shipping either in v1 is what kills the project.
 
 ---
 
+## M0 result, 3 August 2026
+
+**Pass, on all three criteria. The satori bet holds.** Built from scratch in `spike/`: a
+`DeviceFrame` and a `split` layout, rendered to one 1080x1350 PNG.
+
+| criterion | result |
+|---|---|
+| 1. renders at all | pass. No satori throw. 160,940 byte SVG, 158,551 byte PNG |
+| 2. looks right by eye | pass. All four Geist weights, no fallback, tracking and uppercase correct, no collapsed layout |
+| 3. deterministic | pass. `fcb72d3eac14d2ac839d752b4585eeaa74bf42029595b5d46ff580386f290307` |
+
+Notes worth keeping:
+
+- **Determinism was re-checked across processes**, not only within one. The spike's own harness
+  renders twice inside a single `node` run, which shares satori's font cache and cannot
+  distinguish "deterministic" from "cached". A second, separate invocation produced the same
+  hash. Golden-file tests at M1 inherit this trap and must spawn.
+- **One platform only.** The hash is macOS arm64. `@resvg/resvg-js` ships per-platform native
+  binaries, so agreement with Linux CI is unverified and currently load bearing for the entire
+  "assets as code" claim.
+- **The notch defect did not reproduce.** `spike/screen.ts` insets content by the notch height,
+  confirming that `DeviceFrame` owning the safe area is the right split.
+- **No React and no build step.** satori renders plain `{type, props}` objects, so `spike/h.ts`
+  is 25 lines and `node render.ts` runs the TypeScript directly. This is why `@mediakit/core` can
+  own an `Element` type without taking a React dependency.
+- `fullBleed` and `stack` remain uncovered, as they were in the reference. They are M1's problem
+  now, as registered built-in layouts with tests.
+
 ## Immediate next action
 
-Run M0 against the pass criteria above. Build `DeviceFrame` and the `split` layout in satori
-from scratch, in a throwaway script, and render one PNG. The reference output at
-`carousels/output/hvac-lead-loss-example/` is the design target, not a diff target. A couple of
-hours, and it de-risks everything else.
+Finish M1. `packages/core` is landed (token contract, spec schema, registries, failure-table
+tests). Next is `packages/blocks` (the generic built-ins plus `centered` `stack` `split`
+`fullBleed`), then `packages/render-still`, which is where the golden-file and cross-platform
+determinism questions above get settled.

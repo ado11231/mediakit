@@ -112,13 +112,21 @@ Output nests under the preset name whenever more than one is produced.
 The differentiator. No competing package reads a design system.
 
 ```ts
-interface Tokens {
+interface TokensInput {                        // what a consumer writes
+  color:   Record<string, string> & { accent: string }
+  font?:   Partial<{ display: FontSource, body: FontSource }>
+  type?:   Record<string, TypeStyle>
+  space?:  Record<string, number>
+  radius?: Record<string, number>
+  scale?:  number                // overrides the preset's default
+}
+
+interface ResolvedTokens {                     // what a block receives
   color:  Record<string, string>
   font:   { display: FontSource, body: FontSource }
   type:   Record<string, TypeStyle>
   space:  Record<string, number>
   radius: Record<string, number>
-  scale?: number                 // default 1, overridden per preset
 }
 
 interface TypeStyle {
@@ -128,7 +136,32 @@ interface TypeStyle {
   letterSpacing?: string;
   textTransform?: 'uppercase' | 'none';
 }
+
+interface FontSource {
+  family: string;
+  files: readonly { path: string; weight: number; style?: 'normal' | 'italic' }[];
+}
 ```
+
+Three shapes here are load bearing and were not obvious from the earlier draft.
+
+**`ResolvedTokens` has no `scale`.** It has already been applied, so a block reading it would be
+reading a number that no longer means anything. Its absence is also what makes handing raw
+`TokensInput` to a block a type error rather than a silently cramped render.
+
+**`FontSource` enumerates files per weight.** satori needs a real buffer per weight and
+substitutes silently when one is missing, which the failure table calls the worst outcome. One
+path per family would make that failure unrepresentable in the config and therefore
+undetectable. Supplying only `body` fills `display` from it, so the short config stays short.
+
+**Scaling applies to `space` and `type.fontSize` only.** `lineHeight` is a unitless multiple and
+`letterSpacing` is em-relative, so both survive the jump unchanged. `color` and `radius` pass
+through per the rule above.
+
+**Defaults are authored at design-system scale, not canvas scale**, meaning the values a real
+app's tokens carry for a phone viewport. If the built-in defaults were canvas-sized while an
+imported design system was not, the two would need different `scale` values to look alike, and
+the default config would be the one thing in the system exempt from the scale contract.
 
 ### The type scale is part of the contract
 
@@ -255,17 +288,35 @@ the config,** which core registers when it loads the config:
 ```ts
 export default defineConfig({
   blocks: {
-    JobCard: {
+    JobCard: defineBlock({
       schema: z.object({ customerName: z.string(), status: z.string() }),
-      still:  JobCardStill,
+      still:  JobCardStill,    // props inferred as { customerName: string, status: string }
       video:  JobCardMotion,   // optional
-    },
+    }),
   },
 });
 ```
 
+**Why `defineBlock` wraps the object rather than the object standing alone.** A bare map is
+typed `Record<string, BlockDefinition>`, and TypeScript cannot tie one entry's schema to that
+same entry's renderer through a record constraint, so every renderer would receive `unknown`
+props and every block would open with a cast. That is the `props.text as string` problem
+reappearing at the exact point the registry exists to remove it. `defineBlock` is a generic
+over one schema, so `z.infer` flows into the renderer signature and the one crossing from
+`unknown` to typed props happens inside a Zod parse.
+
+It also does the erasure. The returned entry carries a renderer that validates its own props and
+throws a located error naming every failing field, so the render loop never holds a value whose
+schema it has not applied.
+
 `registerBlock` and `registerLayout` exist underneath as the primitives, and the config map is
-the supported surface. The reason is `sideEffects: false`. An imperative call has to live in a
+the supported surface.
+
+**Registries are instances, not module singletons.** `createRegistries()` returns
+`{ blocks, layouts, presets }` and `registry.register(name, value)` is the primitive. A singleton
+would make registration order significant across test files and let one spec's config leak into
+another's render, which is the kind of hidden state that makes a render non-reproducible. It
+would also make `applyConfig` un-runnable twice in one process, which `preview` needs. The reason is `sideEffects: false`. An imperative call has to live in a
 module, and importing that module to trigger it is exactly the import-time side effect the
 dependency rules forbid: it defeats tree-shaking and makes load order significant. Declaring
 blocks as data keeps registration explicit (the consumer wrote it) without making an import
@@ -321,14 +372,28 @@ is exactly as extensible:
 ```ts
 export default defineConfig({
   layouts: {
-    'feature-grid': {
+    'feature-grid': defineLayout({
       slots: ['col1', 'col2', 'col3'],
       still: FeatureGridStill,
       video: FeatureGridMotion,   // optional
-    },
+    }),
   },
 });
 ```
+
+A layout renderer receives already-rendered block elements, never raw spec data:
+
+```ts
+type LayoutRenderer = (content: LayoutContent, ctx: RenderContext) => Element;
+
+interface LayoutContent {
+  blocks: readonly Element[];                           // spec order, always populated
+  slots:  Readonly<Record<string, readonly Element[]>>; // empty when the layout declares none
+}
+```
+
+Both are supplied so a slotless layout reads `blocks` and a slotted one reads `slots`, with no
+reserved slot name that a consumer could collide with.
 
 `centered` `stack` `split` `fullBleed` ship as registered defaults, with no privileged status in
 core. A consumer's `feature-grid` and a built-in `split` are the same kind of thing.
@@ -337,6 +402,14 @@ core. A consumer's `feature-grid` and a built-in `split` are the same kind of th
 `left | right`, `feature-grid` declares three columns, `centered` declares none. This is
 stricter than the closed `'left' | 'right' | 'main'` union it replaces, which accepted `right`
 on a `centered` frame and silently ignored it.
+
+Validation runs in both directions, because only one of the three cases is the obvious one:
+
+| case | behavior |
+|---|---|
+| a slot the layout does not declare | throw, name the layout and list its slots |
+| no slot, on a layout that declares some | throw. Otherwise the block silently lands nowhere |
+| a slot, on a layout that declares none | throw. This is the reference's exact bug |
 
 Why this matters for scale: most new marketing surfaces need a preset and reuse everything else,
 but the ones that need more usually need an arrangement rather than a content type. A quote

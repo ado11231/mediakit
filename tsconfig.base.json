@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+
+    "strict": true,
+    // Every registry lookup returns `T | undefined`, which is what forces the
+    // "throw and list what is registered" branch in the failure table to be written
+    // rather than skipped with a non-null assertion.
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+
+    "isolatedModules": true,
+    // Keeps type-only imports from surviving into emitted JS, so a stray import
+    // cannot pull a peer dependency into core's runtime graph (invariant 1).
+    "verbatimModuleSyntax": true,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
