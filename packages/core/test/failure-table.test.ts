@@ -133,8 +133,28 @@ describe('block props failing their schema', () => {
 
     expect(still({ text: 'Ship it', weight: 700 }, {} as never)).toEqual({
       type: 'div',
-      props: { children: ['Ship it'] },
+      props: { children: 'Ship it' },
     });
+  });
+});
+
+describe('h', () => {
+  /**
+   * satori does not unwrap a single-element children array: `children: ['text']` counts as
+   * more than one child and throws "Expected <div> to have explicit display: flex" on markup
+   * that visibly has one child. Collapsing here is the fix, and it is easy to undo by
+   * accident while tidying, which is why it is asserted rather than only commented.
+   */
+  it('collapses a lone child to a scalar, because satori counts a one-element array as many', () => {
+    expect(h('div', null, 'solo').props.children).toBe('solo');
+  });
+
+  it('keeps multiple children as an array', () => {
+    expect(h('div', null, 'a', 'b').props.children).toEqual(['a', 'b']);
+  });
+
+  it('drops absent children so a conditional does not become a phantom second child', () => {
+    expect(h('div', null, 'a', false, null, undefined).props.children).toBe('a');
   });
 });
 

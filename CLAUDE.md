@@ -190,6 +190,12 @@ unhelpful errors, so treat these as lint rules applied by hand.
   plus `alignSelf: 'flex-start'`.
 - **Any element with more than one child needs an explicit `display: flex`.** satori throws
   otherwise. This is the single most common porting failure.
+
+  **A single-element children array counts as more than one child.** satori does not unwrap
+  it, so `children: ['text']` throws "Expected `<div>` to have explicit display: flex" on
+  markup that visibly has one child, and the message points at the wrong problem. `h` in
+  `@mediakit/core` collapses a lone child to a scalar for exactly this reason, and core's
+  tests assert it. Verified against satori 0.29.
 - **No CSS grid.** Flexbox only.
 - **`boxSizing` is ignored.** satori is always border-box.
 - **Gradients go in `backgroundImage`,** not the `background` shorthand.
@@ -290,16 +296,29 @@ throw, it matches the reference by eye with no fallback font and no collapsed la
 runs produce byte-identical PNGs (`fcb72d3e…`) across separate processes, not only within one.
 `spike/` is throwaway and is deleted once `render-still` renders the same frame.
 
-**M1 is in progress.** Landed: the pnpm plus turbo workspace, and `packages/core` with the token
-contract, the spec schema, the three registries, and the failure-table tests. Still open:
-`packages/blocks`, `packages/render-still`, `packages/cli`, and `examples/source-app`.
+**M1 is in progress.** A spec now renders to PNG end to end, with 51 tests passing.
 
-Two known gaps, both deliberate and both loud rather than silent:
+Landed:
 
-- **No bundled default font.** `resolveTokens` throws naming `tokens.font.body` when none is
-  configured, so "the only required token is `color.accent`" is not yet true. Settled decision 18
-  is unmet until a typeface ships in `@mediakit/blocks`.
-- **Determinism is verified on one platform.** The M0 hash was produced on macOS arm64.
-  `@resvg/resvg-js` ships per-platform native binaries, so byte-identical output between a
-  developer's machine and Linux CI is currently an assumption. The golden-file rule below rests on
-  it, so it needs testing before `render-still` is called done.
+- `packages/core`: token contract, spec schema, the three registries, failure-table errors,
+  and Geist at 400 and 700 as the bundled default font (SIL OFL, licence at `core/fonts/OFL.txt`).
+- `packages/blocks`: `Eyebrow` `Headline` `Body` `BulletList`, and all four layouts
+  (`centered` `stack` `split` `fullBleed`), including the two the reference never rendered.
+- `packages/render-still`: satori plus resvg, no browser. Determinism is asserted by spawning a
+  second process, since two renders inside one process share satori's font cache and cannot
+  tell reproducible from cached.
+
+Still open: `packages/cli`, `examples/source-app`, and the remaining built-in blocks
+(`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`).
+
+Three things a future editor should know rather than rediscover:
+
+- **Determinism is verified on macOS arm64 only.** `@resvg/resvg-js` ships per-platform native
+  binaries, so byte-identical output between a developer's machine and Linux CI is still an
+  assumption, and the golden-file rule below rests on it entirely.
+- **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the
+  default scale is expressed in 400 and 700 alone. satori substitutes a missing weight silently.
+  A test asserts the two stay consistent; do not add a 500 to one without the other.
+- **Display-size type does not fit a `split` column.** `minWidth: 0` stops a column from
+  refusing to shrink, but no layout can rescue a single word wider than half the canvas. The
+  answer is authoring: point the block at a smaller type token.

@@ -46,6 +46,8 @@ export {
   DEFAULT_SPACE,
   DEFAULT_TYPE,
 } from './tokens/defaults.js';
+export { colorToken, radiusToken, spaceToken, typeToken } from './tokens/access.js';
+export { DEFAULT_FONT } from './tokens/default-font.js';
 export { resolveTokens } from './tokens/resolve.js';
 export type {
   FontFile,

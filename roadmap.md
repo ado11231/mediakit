@@ -379,9 +379,33 @@ Notes worth keeping:
 - `fullBleed` and `stack` remain uncovered, as they were in the reference. They are M1's problem
   now, as registered built-in layouts with tests.
 
+## M1 progress, 3 August 2026
+
+**A spec renders to PNG end to end.** `core`, `blocks`, and `render-still` are landed, 51 tests
+pass, and both social presets render at their exact dimensions with no browser anywhere.
+
+The build order was changed deliberately: a thin vertical slice (renderer plus four blocks and
+four layouts) rather than the written order of all built-in blocks first. The reason is the same
+evidence that produced the golden-file rule. Ten blocks written before a renderer exists is ten
+components verified by nothing, against a CSS subset whose violations throw at render time.
+
+That paid immediately. `h` in core had dropped the M0 spike's single-child collapse, whose comment
+had framed it as a readability nicety. It is load bearing: satori does not unwrap a one-element
+children array, so `children: ['text']` throws the "explicit display: flex" error on markup with
+one child. The bug was in the most-used function in the render path, and every block and layout
+would have been written on top of it. It is now a satori constraint in `CLAUDE.md` with a test.
+
+Two further findings worth keeping:
+
+- **The single scale multiplier has a visible cost, and it is not the one predicted.** `design.md`
+  expected radius to bite first. In practice type did: at `scale: 2.5` the `display` token is 85px,
+  which reads well full width in `centered` and cannot fit a `split` column. No layout can rescue a
+  word wider than half the canvas, so this is an authoring constraint rather than a bug.
+- **Bundling two font weights constrains the default type scale.** `DEFAULT_TYPE` may only name 400
+  and 700, since satori substitutes a missing weight silently. A test holds the two together.
+
 ## Immediate next action
 
-Finish M1. `packages/core` is landed (token contract, spec schema, registries, failure-table
-tests). Next is `packages/blocks` (the generic built-ins plus `centered` `stack` `split`
-`fullBleed`), then `packages/render-still`, which is where the golden-file and cross-platform
-determinism questions above get settled.
+`packages/cli` (`init`, `render`, `check`) and `examples/source-app`, which is the M1 gate: a custom
+block, layout, and preset all registered from outside core. Before publish, prove determinism on
+Linux, since every hash so far is macOS arm64 and the golden-file rule rests on it.

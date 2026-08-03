@@ -1,7 +1,7 @@
 {
-  "name": "@mediakit/core",
+  "name": "@mediakit/render-still",
   "version": "0.0.0",
-  "description": "Spec schema, token contract, and registries for mediakit.",
+  "description": "Renders a mediakit spec to PNG with satori and resvg. No browser.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -16,8 +16,7 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist",
-    "fonts"
+    "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -25,9 +24,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "@mediakit/core": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2",
+    "satori": "^0.29.0"
   },
   "devDependencies": {
+    "@mediakit/blocks": "workspace:*",
     "@types/node": "^22.20.1"
   }
 }

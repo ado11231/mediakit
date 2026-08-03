@@ -15,6 +15,11 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
 
+    // Explicit rather than auto-discovered. pnpm's symlinked layout defeats TypeScript's
+    // implicit @types scan, and naming the one package we want also stops ambient types
+    // from an unrelated dependency leaking into the build.
+    "types": ["node"],
+
     "isolatedModules": true,
     // Keeps type-only imports from surviving into emitted JS, so a stray import
     // cannot pull a peer dependency into core's runtime graph (invariant 1).
