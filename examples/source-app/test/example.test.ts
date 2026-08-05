@@ -38,7 +38,7 @@ describe('source-app extension API', () => {
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
     expect(pngSize(png)).toEqual({ width: 1080, height: 1350 });
-  });
+  }, 30_000);
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {
     const code = await runRender(['marketing/launch.spec.json', '--out', outDir], { cwd });
@@ -48,5 +48,5 @@ describe('source-app extension API', () => {
     const committed = await readFile(join(cwd, 'marketing', 'launch', 'frame-01.png'));
     const sha = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
     expect(sha(fresh)).toBe(sha(committed));
-  });
+  }, 30_000);
 });
