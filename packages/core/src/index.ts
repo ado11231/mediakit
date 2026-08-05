@@ -23,8 +23,8 @@ export { createBlockRegistry, defineBlock } from './registry/block.js';
 export type { BlockDefinition, BlockEntry, BlockRenderer } from './registry/block.js';
 export { assertSlot, createLayoutRegistry, defineLayout } from './registry/layout.js';
 export type { LayoutContent, LayoutDefinition, LayoutRenderer } from './registry/layout.js';
-export { createPresetRegistry, SOCIAL_PRESETS } from './registry/preset.js';
-export type { Preset } from './registry/preset.js';
+export { createPresetRegistry, LISTING_PRESETS, SOCIAL_PRESETS } from './registry/preset.js';
+export type { Constraint, Preset } from './registry/preset.js';
 export { createDefaultRegistries, createRegistries } from './registry/registries.js';
 export type { Registries } from './registry/registries.js';
 

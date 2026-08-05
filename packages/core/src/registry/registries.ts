@@ -1,6 +1,11 @@
 import { createBlockRegistry, type BlockEntry } from './block.js';
 import { createLayoutRegistry, type LayoutDefinition } from './layout.js';
-import { createPresetRegistry, SOCIAL_PRESETS, type Preset } from './preset.js';
+import {
+  createPresetRegistry,
+  LISTING_PRESETS,
+  SOCIAL_PRESETS,
+  type Preset,
+} from './preset.js';
 import type { Registry } from './registry.js';
 
 export interface Registries {
@@ -23,5 +28,6 @@ export const createRegistries = (): Registries => ({
 export const createDefaultRegistries = (): Registries => {
   const registries = createRegistries();
   registries.presets.registerAll(SOCIAL_PRESETS);
+  registries.presets.registerAll(LISTING_PRESETS);
   return registries;
 };
