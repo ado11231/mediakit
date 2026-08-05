@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { runInit } from './commands/init.js';
 
 export {
   importConfig,
@@ -7,6 +8,8 @@ export {
   stripTypesAvailable,
   stripTypesUnflagged,
 } from './config.js';
+
+export { runInit };
 
 const USAGE = `mediakit <command> [args]
 
@@ -17,7 +20,7 @@ commands:
 `;
 
 export const main = (argv: readonly string[]): Promise<number> => {
-  const [command] = argv;
+  const [command, ...rest] = argv;
   switch (command) {
     case '--help':
     case '-h':
@@ -25,10 +28,9 @@ export const main = (argv: readonly string[]): Promise<number> => {
       process.stdout.write(USAGE);
       return Promise.resolve(0);
     case 'init':
+      return runInit(rest);
     case 'render':
     case 'check': {
-      // Implemented in subsequent commits; stubbed here so the scaffold is shippable on
-      // its own without a half-wired entry that fails by accident.
       process.stderr.write(`mediakit: "${command}" is not implemented yet.\n`);
       return Promise.resolve(1);
     }
