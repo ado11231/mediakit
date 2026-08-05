@@ -4,10 +4,11 @@ import {
   type RenderContext,
   type Element,
   type BlockEntry,
+  createFrameRegistry,
 } from '@mediakit/core';
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/blocks/body.js';
 import { Background } from '../src/blocks/background.js';
+import { Body } from '../src/blocks/body.js';
 import { BulletList } from '../src/blocks/bullet-list.js';
 import { Caption } from '../src/blocks/caption.js';
 import { CTA } from '../src/blocks/cta.js';
@@ -24,6 +25,7 @@ const context: RenderContext = {
   preset,
   frameIndex: 0,
   frameCount: 1,
+  frames: createFrameRegistry(),
 };
 
 const render = (block: BlockEntry, props: unknown): Element => {

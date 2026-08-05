@@ -123,6 +123,7 @@ const renderFrame = async (
     preset,
     frameIndex,
     frameCount: spec.frames.length,
+    frames: registries.frames,
   };
 
   const layout = registries.layouts.get(frame.layout, location);
