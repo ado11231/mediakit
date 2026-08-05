@@ -1,0 +1,37 @@
+{
+  "id": "launch",
+  "preset": "preview-card",
+  "frames": [
+    {
+      "layout": "pricing-split",
+      "blocks": [
+        {
+          "type": "Eyebrow",
+          "props": { "text": "Pricing", "color": "accent" },
+          "slot": "headline"
+        },
+        {
+          "type": "Headline",
+          "props": { "text": "Ship faster, with the same asset twice", "size": "title" },
+          "slot": "headline"
+        },
+        {
+          "type": "Body",
+          "props": {
+            "text": "Custom block, custom layout, custom preset, all registered from this config and rendered byte-deterministically."
+          },
+          "slot": "headline"
+        },
+        {
+          "type": "PricingCard",
+          "props": {
+            "tier": "Team",
+            "price": "$24/mo",
+            "feature": "Everything in Pro, plus shared presets"
+          },
+          "slot": "card"
+        }
+      ]
+    }
+  ]
+}
