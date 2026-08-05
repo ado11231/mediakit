@@ -7,6 +7,7 @@ import {
 } from '@mediakit/core';
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/blocks/body.js';
+import { Background } from '../src/blocks/background.js';
 import { BulletList } from '../src/blocks/bullet-list.js';
 import { Caption } from '../src/blocks/caption.js';
 import { CTA } from '../src/blocks/cta.js';
@@ -161,9 +162,47 @@ describe('Caption', () => {
   });
 });
 
+describe('Background', () => {
+  it('is absolutely positioned and fills the canvas, so it paints behind other blocks', () => {
+    const element = render(Background, { color: 'surface' });
+    expect(element.props.style?.position).toBe('absolute');
+    expect(element.props.style?.top).toBe(0);
+    expect(element.props.style?.left).toBe(0);
+    expect(element.props.style?.width).toBe('100%');
+    expect(element.props.style?.height).toBe('100%');
+  });
+
+  it('resolves a solid colour through the token contract', () => {
+    expect(render(Background, { color: 'accent' }).props.style?.backgroundColor).toBe(
+      context.tokens.color.accent,
+    );
+  });
+
+  it('puts a gradient in backgroundImage, not the background shorthand, per satori', () => {
+    const style = render(Background, { gradient: { from: 'accent', to: 'canvas' } }).props
+      .style as { backgroundImage?: string; backgroundColor?: string };
+    expect(style.backgroundImage).toMatch(/linear-gradient\(135deg,/);
+    expect(style.backgroundColor).toBeUndefined();
+  });
+
+  it('lets the spec choose the gradient angle', () => {
+    const style = render(Background, {
+      gradient: { from: 'accent', to: 'canvas', angle: 90 },
+    }).props.style as { backgroundImage?: string };
+    expect(style.backgroundImage).toMatch(/linear-gradient\(90deg,/);
+  });
+
+  it('rejects a Background that names neither color nor gradient', () => {
+    expect(() => render(Background, {})).toThrow(
+      /Background needs either `color` or `gradient`/,
+    );
+  });
+});
+
 describe('the default vocabulary', () => {
   it('registers only generic blocks, with no domain concept in a name', () => {
     expect(Object.keys(BUILTIN_BLOCKS).sort()).toEqual([
+      'Background',
       'Body',
       'BulletList',
       'CTA',

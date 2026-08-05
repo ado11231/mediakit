@@ -98,6 +98,7 @@ const canvas = (preset: Preset, background: string, content: Element): Element =
     {
       style: {
         display: 'flex',
+        position: 'relative',
         width: preset.width,
         height: preset.height,
         backgroundColor: background,

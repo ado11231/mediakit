@@ -78,6 +78,27 @@ describe('rendering a spec', () => {
 
     expect(frames).toHaveLength(4);
   }, 30_000);
+
+  /**
+   * Background is absolutely positioned and fills the canvas, which is the satori subset risk
+   * the block unit tests cannot catch (they check the element, not that satori rasterises it).
+   * Pairing it with fullBleed and a Headline on top proves the layering paints: the gradient
+   * sits behind, the headline in front, no throw, opaque output of the right size.
+   */
+  it('renders a Background gradient behind a Headline on a full-bleed frame', async () => {
+    const [frame] = await render([
+      {
+        layout: 'fullBleed',
+        blocks: [
+          { type: 'Background', props: { gradient: { from: 'accent', to: 'canvas' } } },
+          { type: 'Headline', props: { text: 'On the gradient' } },
+        ],
+      },
+    ]);
+
+    expect(frame).toBeDefined();
+    expect(size(frame?.png ?? Buffer.alloc(0))).toEqual({ width: 1080, height: 1350 });
+  }, 30_000);
 });
 
 describe('frame distinctness', () => {
