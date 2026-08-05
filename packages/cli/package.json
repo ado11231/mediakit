@@ -1,0 +1,42 @@
+{
+  "name": "@mediakit/cli",
+  "version": "0.0.0",
+  "description": "The mediakit command line: init, render, check.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "mediakit": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ./scripts/shebang.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mediakit/blocks": "workspace:*",
+    "@mediakit/core": "workspace:*",
+    "@mediakit/render-still": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1"
+  }
+}
