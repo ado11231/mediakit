@@ -296,20 +296,33 @@ throw, it matches the reference by eye with no fallback font and no collapsed la
 runs produce byte-identical PNGs (`fcb72d3e…`) across separate processes, not only within one.
 `spike/` is throwaway and is deleted once `render-still` renders the same frame.
 
-**M1 is in progress.** A spec now renders to PNG end to end, with 51 tests passing.
+**M1 passed on 5 August 2026.** The source app's carousels render from mediakit through the
+extension API: a custom block, a custom layout, and a custom preset, all registered from
+`examples/source-app`. 80 tests pass across `core`, `blocks`, `render-still`, `cli`, and the
+example. The committed example render
+(`examples/source-app/marketing/launch/frame-01.png`) is `1ea9b25b…`, and a fresh run
+reproduces those bytes, which is the example-level determinism gate.
 
-Landed:
+Landed since M0:
 
-- `packages/core`: token contract, spec schema, the three registries, failure-table errors,
-  and Geist at 400 and 700 as the bundled default font (SIL OFL, licence at `core/fonts/OFL.txt`).
-- `packages/blocks`: `Eyebrow` `Headline` `Body` `BulletList`, and all four layouts
-  (`centered` `stack` `split` `fullBleed`), including the two the reference never rendered.
-- `packages/render-still`: satori plus resvg, no browser. Determinism is asserted by spawning a
-  second process, since two renders inside one process share satori's font cache and cannot
-  tell reproducible from cached.
+- `packages/cli`: `init`, `render`, and the loader. `check` and `preview` are deferred to M2.
+  `init` scaffolds `mediakit.config.ts` and an example spec that renders on first run with no
+  API key, no network call, and no manual file copy. `render` loads the config, builds the
+  registries (built-ins first so a custom block reusing a built-in name surfaces as
+  `duplicateRegistration`), iterates the spec's `presetNames`, and writes a PNG per frame to
+  `marketing/<spec-id>/<preset>/frame-NN.png`, nesting under the preset name only when the
+  spec declares more than one. A TypeScript config loads without a transpiler dependency via
+  `--experimental-strip-types` (re-exec'd by the bin on Node 22.6 through 23.5; unflagged
+  after) so the install-size budget stays closed.
+- `examples/source-app`: registers `PricingCard`, `pricing-split`, and `preview-card` from a
+  workspace consumer config and renders `marketing/launch/frame-01.png` (1080x1350). The
+  example is a test, not a demo: if `pnpm --filter @mediakit-example/source-app test` breaks,
+  the extension API broke.
 
-Still open: `packages/cli`, `examples/source-app`, and the remaining built-in blocks
-(`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`).
+Still open at M2: `check`, `preview`, listing presets (`ios-6.9`, `ipad-13`, `play-*`,
+web presets), and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame`
+`Caption` `Background`). Also before publish: prove determinism on Linux, since every hash so
+far is macOS arm64 and the golden-file rule rests on it.
 
 Three things a future editor should know rather than rediscover:
 
