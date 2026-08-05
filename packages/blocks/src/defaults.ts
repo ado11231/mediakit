@@ -1,13 +1,16 @@
-import type { BlockEntry, LayoutDefinition } from '@mediakit/core';
+import type { BlockEntry, FrameDefinition, LayoutDefinition } from '@mediakit/core';
 import { Background } from './blocks/background.js';
 import { Body } from './blocks/body.js';
 import { BulletList } from './blocks/bullet-list.js';
 import { Caption } from './blocks/caption.js';
 import { CTA } from './blocks/cta.js';
+import { DeviceFrame } from './blocks/device-frame.js';
 import { Eyebrow } from './blocks/eyebrow.js';
 import { Headline } from './blocks/headline.js';
 import { Stat } from './blocks/stat.js';
 import { Subhead } from './blocks/subhead.js';
+import { none } from './frames/none.js';
+import { phone } from './frames/phone.js';
 import { centered } from './layouts/centered.js';
 import { fullBleed } from './layouts/full-bleed.js';
 import { split } from './layouts/split.js';
@@ -32,6 +35,7 @@ export const BUILTIN_BLOCKS: Readonly<Record<string, BlockEntry>> = {
   CTA,
   Caption,
   Background,
+  DeviceFrame,
 };
 
 export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
@@ -39,4 +43,9 @@ export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
   stack,
   split,
   fullBleed,
+};
+
+export const BUILTIN_FRAMES: Readonly<Record<string, FrameDefinition>> = {
+  none,
+  phone,
 };

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
+import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import { applyConfig, createDefaultRegistries, parseSpec, presetNames } from '@mediakit/core';
 import { describe, expect, it } from 'vitest';
 import { renderSpec } from '../src/index.js';
@@ -61,6 +61,7 @@ const registries = applyConfig(createDefaultRegistries(), {
   tokens,
   blocks: BUILTIN_BLOCKS,
   layouts: BUILTIN_LAYOUTS,
+  frames: BUILTIN_FRAMES,
 });
 
 const sha = (buffer: Buffer): string => createHash('sha256').update(buffer).digest('hex');
