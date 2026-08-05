@@ -49,6 +49,25 @@ importers:
         specifier: ^22.20.1
         version: 22.20.1
 
+  packages/cli:
+    dependencies:
+      '@mediakit/blocks':
+        specifier: workspace:*
+        version: link:../blocks
+      '@mediakit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@mediakit/render-still':
+        specifier: workspace:*
+        version: link:../render-still
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.1
+        version: 22.20.1
+
   packages/core:
     dependencies:
       zod:
