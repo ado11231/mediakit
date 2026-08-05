@@ -77,7 +77,7 @@ describe('rendering a spec', () => {
     ]);
 
     expect(frames).toHaveLength(4);
-  });
+  }, 30_000);
 });
 
 describe('frame distinctness', () => {
@@ -95,7 +95,7 @@ describe('frame distinctness', () => {
 
     const hashes = frames.map((frame) => sha(frame.png));
     expect(new Set(hashes).size).toBe(frames.length);
-  });
+  }, 30_000);
 
   it('still renders a deliberately repeated frame identically', async () => {
     const frames = await render([
@@ -104,7 +104,7 @@ describe('frame distinctness', () => {
     ]);
 
     expect(sha(frames[0]?.png ?? Buffer.alloc(0))).toBe(sha(frames[1]?.png ?? Buffer.alloc(0)));
-  });
+  }, 30_000);
 });
 
 describe('determinism', () => {

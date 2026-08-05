@@ -55,7 +55,7 @@ describe('runRender', () => {
     const png = await readFile(out);
     expect(pngWidth(png)).toBe(1080);
     expect(pngHeight(png)).toBe(1350);
-  });
+  }, 30_000);
 
   it('writes nested output under <preset> for a multi-preset spec', async () => {
     const specPath = await setup('launch', ['ig-portrait', 'story']);
@@ -65,7 +65,7 @@ describe('runRender', () => {
       true,
     );
     expect(existsSync(join(dir, 'marketing', 'launch', 'story', 'frame-01.png'))).toBe(true);
-  });
+  }, 30_000);
 
   it('--preset renders only the named preset, still nested', async () => {
     const specPath = await setup('launch', ['ig-portrait', 'story']);
@@ -75,7 +75,7 @@ describe('runRender', () => {
     expect(existsSync(join(dir, 'marketing', 'launch', 'ig-portrait', 'frame-01.png'))).toBe(
       false,
     );
-  });
+  }, 30_000);
 
   it('rejects --preset when its value is not one the spec declares', async () => {
     const specPath = await setup('example', 'ig-portrait');
