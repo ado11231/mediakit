@@ -1,8 +1,12 @@
 import type { BlockEntry, LayoutDefinition } from '@mediakit/core';
 import { Body } from './blocks/body.js';
 import { BulletList } from './blocks/bullet-list.js';
+import { Caption } from './blocks/caption.js';
+import { CTA } from './blocks/cta.js';
 import { Eyebrow } from './blocks/eyebrow.js';
 import { Headline } from './blocks/headline.js';
+import { Stat } from './blocks/stat.js';
+import { Subhead } from './blocks/subhead.js';
 import { centered } from './layouts/centered.js';
 import { fullBleed } from './layouts/full-bleed.js';
 import { split } from './layouts/split.js';
@@ -20,8 +24,12 @@ import { stack } from './layouts/stack.js';
 export const BUILTIN_BLOCKS: Readonly<Record<string, BlockEntry>> = {
   Eyebrow,
   Headline,
+  Subhead,
   Body,
   BulletList,
+  Stat,
+  CTA,
+  Caption,
 };
 
 export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {

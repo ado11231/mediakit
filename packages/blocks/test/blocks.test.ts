@@ -8,8 +8,12 @@ import {
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/blocks/body.js';
 import { BulletList } from '../src/blocks/bullet-list.js';
+import { Caption } from '../src/blocks/caption.js';
+import { CTA } from '../src/blocks/cta.js';
 import { Eyebrow } from '../src/blocks/eyebrow.js';
 import { Headline } from '../src/blocks/headline.js';
+import { Stat } from '../src/blocks/stat.js';
+import { Subhead } from '../src/blocks/subhead.js';
 import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '../src/defaults.js';
 
 const preset: Preset = { width: 1080, height: 1350, renderer: 'still', scale: 2.5 };
@@ -93,13 +97,81 @@ describe('BulletList', () => {
   });
 });
 
+describe('Subhead', () => {
+  it('defaults to the headline type token and the ink color, not a muted body look', () => {
+    const element = render(Subhead, { text: 'A secondary line' });
+    expect(element.props.style?.fontSize).toBe(context.tokens.type.headline?.fontSize);
+    expect(element.props.style?.color).toBe(context.tokens.color.ink);
+  });
+
+  it('can be pointed at a smaller token without replacing the block', () => {
+    const element = render(Subhead, { text: 'x', size: 'body' });
+    expect(element.props.style?.fontSize).toBe(context.tokens.type.body?.fontSize);
+  });
+});
+
+describe('Stat', () => {
+  it('renders the value above the label, both uppercased for the stats-slide look', () => {
+    const element = render(Stat, { value: '3.2x', label: 'faster builds' });
+    const children = element.props.children;
+    expect(Array.isArray(children)).toBe(true);
+    expect(children).toHaveLength(2);
+
+    const value = (children as readonly Element[])[0]!;
+    const label = (children as readonly Element[])[1]!;
+    expect(value.props.style?.textTransform).toBe('uppercase');
+    expect(label.props.style?.textTransform).toBe('uppercase');
+    expect(value.props.style?.color).toBe(context.tokens.color.ink);
+    expect(label.props.style?.color).toBe(context.tokens.color.inkMuted);
+  });
+
+  it('aligns the column to the start, end, or center via alignItems, not text-align', () => {
+    expect(
+      render(Stat, { value: '1', label: 'two', align: 'right' }).props.style?.alignItems,
+    ).toBe('flex-end');
+  });
+});
+
+describe('CTA', () => {
+  it('hugs its content via alignSelf so the pill does not stretch to the column width', () => {
+    expect(render(CTA, { text: 'Get started' }).props.style?.alignSelf).toBe('flex-start');
+    expect(render(CTA, { text: 'Get started', align: 'center' }).props.style?.alignSelf).toBe(
+      'center',
+    );
+  });
+
+  it('reads both its background and text color from the token contract', () => {
+    const inner = render(CTA, { text: 'Sign up' }).props.children as Element;
+    expect(inner.props.style?.backgroundColor).toBe(context.tokens.color.accent);
+    expect(inner.props.style?.color).toBe(context.tokens.color.canvas);
+  });
+
+  it('resolves the radius through the token contract, not a magic number', () => {
+    const inner = render(CTA, { text: 'Sign up' }).props.children as Element;
+    expect(inner.props.style?.borderRadius).toBe(context.tokens.radius.full);
+  });
+});
+
+describe('Caption', () => {
+  it('defaults to the caption token and inkMuted, smaller and quieter than Body', () => {
+    const element = render(Caption, { text: 'Source: internal' });
+    expect(element.props.style?.fontSize).toBe(context.tokens.type.caption?.fontSize);
+    expect(element.props.style?.color).toBe(context.tokens.color.inkMuted);
+    expect(element.props.style?.fontFamily).toBe(context.tokens.font.body.family);
+  });
+});
+
 describe('the default vocabulary', () => {
   it('registers only generic blocks, with no domain concept in a name', () => {
     expect(Object.keys(BUILTIN_BLOCKS).sort()).toEqual([
       'Body',
       'BulletList',
+      'CTA',
+      'Caption',
       'Eyebrow',
       'Headline',
+      'Stat',
+      'Subhead',
     ]);
   });
 
