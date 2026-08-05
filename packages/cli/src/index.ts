@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { runInit } from './commands/init.js';
 import { runRender } from './commands/render.js';
+import { runCheck } from './commands/check.js';
 
 export {
   importConfig,
@@ -12,6 +13,7 @@ export {
 
 export { runInit };
 export { runRender };
+export { runCheck };
 
 const USAGE = `mediakit <command> [args]
 
@@ -33,10 +35,8 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return runInit(rest);
     case 'render':
       return runRender(rest);
-    case 'check': {
-      process.stderr.write(`mediakit: "${command}" is not implemented yet.\n`);
-      return Promise.resolve(1);
-    }
+    case 'check':
+      return runCheck(rest);
     default:
       process.stderr.write(
         `mediakit: unknown command "${command}". Available: init, render, check.\n`,

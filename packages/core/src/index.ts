@@ -62,3 +62,6 @@ export type {
 
 export { applyConfig, defineConfig } from './config.js';
 export type { BrandRules, MediakitConfig } from './config.js';
+
+export { checkAsset, checkSpec, parsePng } from './check/index.js';
+export type { Violation } from './check/index.js';
