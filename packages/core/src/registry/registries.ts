@@ -1,4 +1,5 @@
 import { createBlockRegistry, type BlockEntry } from './block.js';
+import { createFrameRegistry, type FrameDefinition } from './frame.js';
 import { createLayoutRegistry, type LayoutDefinition } from './layout.js';
 import {
   createPresetRegistry,
@@ -12,18 +13,20 @@ export interface Registries {
   blocks: Registry<BlockEntry>;
   layouts: Registry<LayoutDefinition>;
   presets: Registry<Preset>;
+  frames: Registry<FrameDefinition>;
 }
 
 export const createRegistries = (): Registries => ({
   blocks: createBlockRegistry(),
   layouts: createLayoutRegistry(),
   presets: createPresetRegistry(),
+  frames: createFrameRegistry(),
 });
 
 /**
- * Built-in blocks and layouts are not seeded here. They live in `@mediakit/blocks`, which
- * depends on core, so core seeding them would invert the dependency. Presets are plain data
- * with no renderer, so they can live here without pulling anything in.
+ * Built-in blocks, layouts, and frames are not seeded here. They live in `@mediakit/blocks`,
+ * which depends on core, so core seeding them would invert the dependency. Presets are plain
+ * data with no renderer, so they can live here without pulling anything in.
  */
 export const createDefaultRegistries = (): Registries => {
   const registries = createRegistries();
