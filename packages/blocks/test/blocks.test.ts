@@ -5,6 +5,7 @@ import {
   type Element,
   type BlockEntry,
   createFrameRegistry,
+  h,
 } from '@mediakit/core';
 import { describe, expect, it } from 'vitest';
 import { Background } from '../src/blocks/background.js';
@@ -12,11 +13,12 @@ import { Body } from '../src/blocks/body.js';
 import { BulletList } from '../src/blocks/bullet-list.js';
 import { Caption } from '../src/blocks/caption.js';
 import { CTA } from '../src/blocks/cta.js';
+import { DeviceFrame } from '../src/blocks/device-frame.js';
 import { Eyebrow } from '../src/blocks/eyebrow.js';
 import { Headline } from '../src/blocks/headline.js';
 import { Stat } from '../src/blocks/stat.js';
 import { Subhead } from '../src/blocks/subhead.js';
-import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '../src/defaults.js';
+import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '../src/defaults.js';
 
 const preset: Preset = { width: 1080, height: 1350, renderer: 'still', scale: 2.5 };
 
@@ -209,6 +211,7 @@ describe('the default vocabulary', () => {
       'BulletList',
       'CTA',
       'Caption',
+      'DeviceFrame',
       'Eyebrow',
       'Headline',
       'Stat',
@@ -225,6 +228,10 @@ describe('the default vocabulary', () => {
     ]);
   });
 
+  it('ships none and phone as the default device chromes', () => {
+    expect(Object.keys(BUILTIN_FRAMES).sort()).toEqual(['none', 'phone']);
+  });
+
   it('gives split two slots and leaves the others slotless', () => {
     expect(BUILTIN_LAYOUTS.split?.slots).toEqual(['left', 'right']);
     expect(BUILTIN_LAYOUTS.centered?.slots).toEqual([]);
@@ -239,6 +246,72 @@ describe('the default vocabulary', () => {
 
     expect(still({ blocks: [], slots: {} }, context).props.style?.justifyContent).toBe(
       'flex-end',
+    );
+  });
+});
+
+describe('device frames', () => {
+  const PNG_1X1 =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+  const frames = createFrameRegistry();
+  frames.registerAll(BUILTIN_FRAMES);
+  const framedContext: RenderContext = { ...context, frames };
+
+  const renderFramed = (block: BlockEntry, props: unknown): Element => {
+    const still = block.still;
+    if (still === undefined) throw new Error('block must declare a still renderer');
+    return still(props, framedContext);
+  };
+
+  it('none passes the screen image through untouched', () => {
+    const still = BUILTIN_FRAMES.none?.still;
+    if (still === undefined) throw new Error('none must declare a still renderer');
+    const screen = h('img', { src: PNG_1X1, style: { width: 100, height: 200 } });
+    expect(still(screen, framedContext)).toBe(screen);
+  });
+
+  it('phone sizes its bezel proportionally to the screen width, not a fixed number', () => {
+    const small = renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      src: PNG_1X1,
+      width: 300,
+      height: 600,
+    });
+    const large = renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      src: PNG_1X1,
+      width: 900,
+      height: 1800,
+    });
+    const smallBezel = small.props.style?.padding as number;
+    const largeBezel = large.props.style?.padding as number;
+    expect(typeof smallBezel).toBe('number');
+    expect(largeBezel / smallBezel).toBeCloseTo(3, 0);
+  });
+
+  it('phone overlays a notch pill at the top of the screen, which the frame owns', () => {
+    const element = renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      src: PNG_1X1,
+      width: 400,
+      height: 800,
+    });
+    const children = element.props.children as readonly Element[];
+    const notch = children.find((c) => c.props.style?.position === 'absolute');
+    expect(notch).toBeDefined();
+    expect(notch?.props.style?.top).toBe(element.props.style?.padding);
+  });
+
+  it('DeviceFrame throws when the chrome is not registered', () => {
+    expect(() =>
+      renderFramed(DeviceFrame, { chrome: 'laptop', src: PNG_1X1, width: 100, height: 200 }),
+    ).toThrow(/Unknown frame "laptop"/);
+  });
+
+  it('DeviceFrame throws when dimensions are missing and the src is not a readable PNG', () => {
+    expect(() => renderFramed(DeviceFrame, { chrome: 'none', src: PNG_1X1 })).toThrow(
+      /could not determine dimensions/,
     );
   });
 });

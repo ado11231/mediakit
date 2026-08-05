@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
+import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
   applyConfig,
   createDefaultRegistries,
@@ -102,6 +102,7 @@ export const runRender = async (
     tokens: config.tokens,
     blocks: BUILTIN_BLOCKS,
     layouts: BUILTIN_LAYOUTS,
+    frames: BUILTIN_FRAMES,
   });
   applyConfig(registries, config);
 

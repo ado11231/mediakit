@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { BUILTIN_BLOCKS, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
+import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
   applyConfig,
   createDefaultRegistries,
@@ -24,6 +24,7 @@ const registries = (): Registries =>
     tokens,
     blocks: BUILTIN_BLOCKS,
     layouts: BUILTIN_LAYOUTS,
+    frames: BUILTIN_FRAMES,
   });
 
 const spec = (frames: AssetSpec['frames']): AssetSpec =>
@@ -93,6 +94,25 @@ describe('rendering a spec', () => {
           { type: 'Background', props: { gradient: { from: 'accent', to: 'canvas' } } },
           { type: 'Headline', props: { text: 'On the gradient' } },
         ],
+      },
+    ]);
+
+    expect(frame).toBeDefined();
+    expect(size(frame?.png ?? Buffer.alloc(0))).toEqual({ width: 1080, height: 1350 });
+  }, 30_000);
+
+  /**
+   * DeviceFrame reads a screenshot from disk, inlines it as a data URI, and frames it. The
+   * input PNG is a committed golden, so the render stays deterministic and the test needs no
+   * network. Asserts the frame rasterises through satori at the preset dimensions, which is
+   * the subset risk the block unit tests cannot reach (an `<img>` data URI plus absolute notch).
+   */
+  it('renders a DeviceFrame around a committed screenshot at the preset dimensions', async () => {
+    const screenshot = fileURLToPath(new URL('./golden/ig-portrait.png', import.meta.url));
+    const [frame] = await render([
+      {
+        layout: 'centered',
+        blocks: [{ type: 'DeviceFrame', props: { chrome: 'phone', src: screenshot } }],
       },
     ]);
 
