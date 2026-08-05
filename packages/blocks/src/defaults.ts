@@ -1,4 +1,5 @@
 import type { BlockEntry, LayoutDefinition } from '@mediakit/core';
+import { Background } from './blocks/background.js';
 import { Body } from './blocks/body.js';
 import { BulletList } from './blocks/bullet-list.js';
 import { Caption } from './blocks/caption.js';
@@ -30,6 +31,7 @@ export const BUILTIN_BLOCKS: Readonly<Record<string, BlockEntry>> = {
   Stat,
   CTA,
   Caption,
+  Background,
 };
 
 export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
