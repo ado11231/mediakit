@@ -2,7 +2,23 @@
   "name": "@mediakit/blocks",
   "version": "0.0.0",
   "description": "Generic built-in blocks and layouts for mediakit.",
+  "keywords": [
+    "mediakit",
+    "blocks",
+    "marketing",
+    "design-tokens",
+    "satori"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/ado11231/mediakit#readme",
+  "bugs": {
+    "url": "https://github.com/ado11231/mediakit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ado11231/mediakit.git",
+    "directory": "packages/blocks"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -37,5 +53,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

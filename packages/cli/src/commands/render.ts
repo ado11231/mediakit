@@ -3,17 +3,10 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
-import {
-  applyConfig,
-  createDefaultRegistries,
-  MediakitError,
-  parseSpec,
-  presetNames,
-  type Registries,
-} from '@mediakit/core';
+import { MediakitError, parseSpec, presetNames, type Registries } from '@mediakit/core';
 import { renderSpec } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
+import { buildRegistries, outputDir } from '../workspace.js';
 
 const USAGE = `mediakit render <spec> [--preset <name>] [--out <dir>]
 
@@ -96,25 +89,12 @@ export const runRender = async (
     return 1;
   }
 
-  // Built-ins seed first, so a custom block that reuses a built-in name surfaces as a
-  // duplicateRegistration error rather than silently shadowing it. applyConfig mutates.
-  const registries: Registries = applyConfig(createDefaultRegistries(), {
-    tokens: config.tokens,
-    blocks: BUILTIN_BLOCKS,
-    layouts: BUILTIN_LAYOUTS,
-    frames: BUILTIN_FRAMES,
-  });
-  applyConfig(registries, config);
+  const registries: Registries = buildRegistries(config);
 
   const outDir = resolve(cwd, outFlag ?? config.outDir ?? 'marketing');
   const pad = (n: number): string => String(n + 1).padStart(2, '0');
   const hash = (buffer: Buffer): string =>
     createHash('sha256').update(buffer).digest('hex').slice(0, 16);
-
-  // Flat output (no preset subdir) when the spec declares exactly one preset and the
-  // caller did not name one. Otherwise nest under the preset, the path design.md commits
-  // to ('marketing/<spec-id>/<preset>/frame-NN.png').
-  const singleOutput = allPresets.length === 1 && namedPreset === undefined;
 
   for (const preset of desired) {
     const frames = await renderSpec({
@@ -126,7 +106,7 @@ export const runRender = async (
     });
 
     for (const frame of frames) {
-      const dir = singleOutput ? join(outDir, spec.id) : join(outDir, spec.id, preset);
+      const dir = outputDir(outDir, spec, preset, allPresets);
       const file = join(dir, `frame-${pad(frame.index)}.png`);
       await mkdir(dir, { recursive: true });
       await writeFile(file, frame.png);

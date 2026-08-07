@@ -128,5 +128,20 @@ export default defineConfig({
       renderer: 'still',
       scale: 2.5,
     },
+    /**
+     * An iPhone 15 Pro screen in device pixels. The store spec frames the PNG this renders
+     * inside a DeviceFrame, so the screenshot going to App Review is itself an asset built
+     * from a spec and tokens rather than a capture someone took and forgot how to reproduce.
+     */
+    'app-screen': {
+      width: 1170,
+      height: 2532,
+      renderer: 'still',
+      scale: 2,
+    },
+  },
+  brandRules: {
+    noExclamations: true,
+    maxHeadline: 60,
   },
 });

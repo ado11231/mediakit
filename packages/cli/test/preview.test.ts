@@ -190,6 +190,55 @@ describe('runPreview', () => {
     }
   }, 30_000);
 
+  /**
+   * mediakit's errors are deliberately multi-line: an unknown preset names the offender and
+   * then lists every registered one. A raw newline inside an SSE `data:` field terminates it,
+   * so the overlay used to show the first line and drop the list, which is the half that
+   * tells you what to type instead.
+   */
+  it('frames a multi-line render error as valid SSE with every line prefixed', async () => {
+    await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    const specPath = join(dir, 'marketing', 'ex.spec.json');
+    await writeFile(specPath, spec('ex', 'ig-portrait'), 'utf8');
+
+    const handle = await start(['marketing/ex.spec.json'], dir);
+    try {
+      const res = await get(handle, '/events');
+      const body = res.body as ReadableStream<Uint8Array> | null;
+      expect(body).not.toBeNull();
+      const reader = body?.getReader();
+
+      await sleep(100);
+      await writeFile(specPath, spec('ex', 'no-such-preset'), 'utf8');
+
+      let received = '';
+      const decoder = new TextDecoder();
+      const deadline = performance.now() + 10_000;
+      while (!received.includes('render-error') && performance.now() < deadline) {
+        const chunk = await reader?.read();
+        if (chunk?.value !== undefined) received += decoder.decode(chunk.value);
+      }
+      await reader?.cancel();
+
+      const event = received.slice(received.indexOf('event: render-error'));
+      const lines = event.split('\n\n')[0]?.split('\n') ?? [];
+
+      expect(lines[0]).toBe('event: render-error');
+      expect(lines.length).toBeGreaterThan(2);
+      for (const line of lines.slice(1)) expect(line.startsWith('data: ')).toBe(true);
+
+      const payload = lines
+        .slice(1)
+        .map((l) => l.replace(/^data: /, ''))
+        .join('\n');
+      expect(payload).toContain('no-such-preset');
+      expect(payload).toContain('ig-portrait');
+    } finally {
+      stop(handle);
+    }
+  }, 30_000);
+
   it('prints --help and exits 0', async () => {
     const code = await runPreview(['--help'], { cwd: dir });
     expect(code).toBe(0);

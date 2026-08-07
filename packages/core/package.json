@@ -2,7 +2,25 @@
   "name": "@mediakit/core",
   "version": "0.0.0",
   "description": "Spec schema, token contract, and registries for mediakit.",
+  "keywords": [
+    "mediakit",
+    "marketing",
+    "design-tokens",
+    "app-store",
+    "screenshots",
+    "satori",
+    "deterministic"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/ado11231/mediakit#readme",
+  "bugs": {
+    "url": "https://github.com/ado11231/mediakit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ado11231/mediakit.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -29,5 +47,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

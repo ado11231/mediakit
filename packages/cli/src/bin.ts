@@ -19,8 +19,15 @@ if (needsStripTypesFlag(process.versions.node, process.execArgv)) {
   process.exit(result.status ?? 1);
 }
 
-main(process.argv.slice(2)).catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`mediakit: ${message}\n`);
-  process.exit(1);
-});
+// Every command resolves to its exit code rather than calling process.exit itself, so the
+// bin is the one place that turns it into one. Dropping it here would make `check` report
+// violations and still exit 0, which is the failure the command exists to prevent.
+main(process.argv.slice(2))
+  .then((code) => {
+    process.exitCode = code;
+  })
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`mediakit: ${message}\n`);
+    process.exitCode = 1;
+  });

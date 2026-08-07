@@ -17,6 +17,7 @@ import {
 } from '@mediakit/core';
 import { h } from '@mediakit/core';
 import { loadFonts, type LoadedFont } from './fonts.js';
+import { encodeRgbPng } from './png.js';
 
 export interface RenderSpecOptions {
   spec: AssetSpec;
@@ -143,15 +144,18 @@ const renderFrame = async (
     { width: preset.width, height: preset.height, fonts: [...fonts] },
   );
 
-  const png = new Resvg(svg, {
+  // Compositing on the frame's own background makes every pixel opaque without changing how
+  // the output looks. It does not remove the alpha channel: resvg always encodes colour type
+  // 6. Presets whose channel rejects the channel itself get re-encoded below.
+  const rendered = new Resvg(svg, {
     fitTo: { mode: 'width', value: preset.width },
-    // Apple rejects screenshots carrying an alpha channel, and a transparent PNG is
-    // indistinguishable from an opaque one until upload. Compositing on the frame's own
-    // background makes the output opaque without changing how it looks.
     background,
-  })
-    .render()
-    .asPng();
+  }).render();
+
+  const noAlpha = preset.constraints?.some((c) => c.kind === 'noAlpha') ?? false;
+  const png = noAlpha
+    ? encodeRgbPng(Buffer.from(rendered.pixels), rendered.width, rendered.height)
+    : rendered.asPng();
 
   return { index: frameIndex, png, svg };
 };

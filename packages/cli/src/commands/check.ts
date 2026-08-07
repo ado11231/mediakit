@@ -2,19 +2,17 @@ import process from 'node:process';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
-  applyConfig,
   checkAsset,
   checkSpec,
-  createDefaultRegistries,
   MediakitError,
   parseSpec,
   presetNames,
-  type Registries,
+  type MediakitConfig,
   type Violation,
 } from '@mediakit/core';
 import { importConfig, resolveConfigPath } from '../config.js';
+import { buildRegistries, outputDir } from '../workspace.js';
 
 const USAGE = `mediakit check <spec>                   validate a spec's brand rules and per-preset frame counts
 mediakit check <file|dir> --preset <name>  validate rendered PNGs against a preset's rules
@@ -83,16 +81,6 @@ export const runCheck = async (
   return runSpecCheck(resolve(cwd, target), findValue(argv, '--out'), cwd);
 };
 
-const buildRegistries = (cwd: string, tokens: unknown): Registries => {
-  const registries = applyConfig(createDefaultRegistries(), {
-    tokens: tokens as never,
-    blocks: BUILTIN_BLOCKS,
-    layouts: BUILTIN_LAYOUTS,
-    frames: BUILTIN_FRAMES,
-  });
-  return registries;
-};
-
 const runAssetCheck = async (
   path: string,
   presetName: string,
@@ -103,7 +91,7 @@ const runAssetCheck = async (
     return 1;
   }
 
-  let config;
+  let config: MediakitConfig;
   try {
     config = await importConfig(resolveConfigPath(cwd));
   } catch {
@@ -111,7 +99,7 @@ const runAssetCheck = async (
     // surface as unknownRegistryKey below, which lists the built-ins the user can name instead.
     config = { tokens: { color: { accent: '#000000' } } };
   }
-  const registries = buildRegistries(cwd, config.tokens);
+  const registries = buildRegistries(config);
 
   const preset = registries.presets.get(presetName, { file: relative(cwd, path) });
   const files = await listPngs(path);
@@ -147,7 +135,7 @@ const runSpecCheck = async (
 
   const configPath = resolveConfigPath(cwd);
   const config = await importConfig(configPath);
-  const registries = buildRegistries(cwd, config.tokens);
+  const registries = buildRegistries(config);
 
   const specRel = relative(cwd, specPath);
   const raw = await readFile(specPath, 'utf8');
@@ -165,20 +153,15 @@ const runSpecCheck = async (
   // Pixel checks against rendered output, if it exists. Skipped silently when nothing has been
   // rendered yet, so check-before-render still validates the spec.
   const outDir = resolve(cwd, outFlag ?? config.outDir ?? 'marketing');
-  const singleOutput = presetNames(spec).length === 1;
+  const allPresets = presetNames(spec);
 
-  for (const presetName of presetNames(spec)) {
-    if (!registries.presets.has(presetName)) {
-      violations.push({
-        preset: presetName,
-        message: `unknown preset: "${presetName}" is not registered.`,
-      });
-      continue;
-    }
+  for (const presetName of allPresets) {
+    // checkSpec already reported this one; skip the pixel pass rather than throw.
+    if (!registries.presets.has(presetName)) continue;
     const preset = registries.presets.get(presetName, { file: specRel });
     if (preset.constraints === undefined) continue;
 
-    const dir = singleOutput ? join(outDir, spec.id) : join(outDir, spec.id, presetName);
+    const dir = outputDir(outDir, spec, presetName, allPresets);
     if (!existsSync(dir)) continue;
 
     const files = (await listPngs(dir)).sort();

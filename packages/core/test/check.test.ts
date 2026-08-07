@@ -151,6 +151,17 @@ describe('checkSpec frame counts', () => {
     expect(violations.some((v) => /frameCount/.test(v.message))).toBe(true);
   });
 
+  it('reports an unregistered preset rather than skipping it', () => {
+    const s = parseSpec(
+      { id: 'store', preset: 'ios-6.8', frames: [{ layout: 'centered', blocks: [] }] },
+      file,
+    );
+    const violations = checkSpec(s, createDefaultRegistries(), undefined, file);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.message).toContain('unknown preset');
+    expect(violations[0]?.message).toContain('ios-6.9');
+  });
+
   it('accepts a spec within the Apple 1 to 10 range', () => {
     const s = parseSpec(
       { id: 'store', preset: 'ios-6.9', frames: [{ layout: 'centered', blocks: [] }] },
@@ -212,6 +223,38 @@ describe('parsePng and checkAsset', () => {
       'fake.png',
     );
     expect(violations.some((v) => /noAlpha/.test(v.message))).toBe(true);
+  });
+
+  it('accepts a Play screenshot at a size the store takes but the preset does not render', () => {
+    // Play accepts 320-3840 per side at up to 2:1. 1440x2560 is a real device capture and a
+    // valid upload, so rejecting it for not being the preset's 1080x1920 would be a false
+    // positive in the exact mode meant for hand-made screenshots.
+    const entry = createDefaultRegistries().presets.get('play-phone');
+    expect(checkAsset(entry, 'play-phone', fakePng(1440, 2560, 2), 'shot.png')).toEqual([]);
+  });
+
+  it('flags a Play screenshot outside the 320 to 3840 per-side range', () => {
+    const entry = createDefaultRegistries().presets.get('play-phone');
+    const violations = checkAsset(entry, 'play-phone', fakePng(200, 300, 2), 'tiny.png');
+    expect(violations.some((v) => /dimensions/.test(v.message))).toBe(true);
+  });
+
+  it('accepts the smaller Chrome Web Store screenshot size the docs also allow', () => {
+    const entry = createDefaultRegistries().presets.get('cws-screenshot');
+    expect(checkAsset(entry, 'cws-screenshot', fakePng(640, 400, 2), 'shot.png')).toEqual([]);
+  });
+
+  it('still flags a Chrome Web Store screenshot at neither documented size', () => {
+    const entry = createDefaultRegistries().presets.get('cws-screenshot');
+    const violations = checkAsset(entry, 'cws-screenshot', fakePng(800, 600, 2), 'shot.png');
+    expect(violations.some((v) => /dimensions/.test(v.message))).toBe(true);
+    expect(violations[0]?.message).toContain('1280x800, or 640x400');
+  });
+
+  it('holds Apple to the exact size, since it declares no size leeway', () => {
+    const entry = createDefaultRegistries().presets.get('ios-6.9');
+    const violations = checkAsset(entry, 'ios-6.9', fakePng(1290, 2796, 2), 'shot.png');
+    expect(violations.some((v) => /dimensions/.test(v.message))).toBe(true);
   });
 
   it('flags a Play screenshot taller than the 2x aspect ceiling', () => {
