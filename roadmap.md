@@ -410,9 +410,9 @@ M2. The M1 gate is met: `examples/source-app` registers a custom block, a custom
 custom preset from outside `@mediakit/core` and renders `marketing/launch/frame-01.png`
 byte-deterministically, SHA `1ea9b25b…`, reproduced by a fresh run.
 
-`preview`, the listing presets (`ios-6.9`, `ios-6.5`, `ipad-13`, `play-phone`,
-`play-feature`, `play-icon`, plus the verified-against-docs web presets), and the six remaining
-built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`) are the M2
-surface. `preview` and the listing presets are landed; `check` is landed. Before publish,
-prove determinism on Linux, since every hash so far is macOS arm64 and the golden-file
-rule rests on it.
+The M2 surface is landed: `preview`, `check`, the listing presets (`ios-6.9`, `ios-6.5`,
+`ipad-13`, `play-phone`, `play-feature`), the web presets (`github-social`,
+`producthunt-gallery`, `cws-screenshot`, `cws-marquee`, verified against docs in August 2026),
+and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption`
+`Background`). Before publish, prove determinism on Linux, since every hash so far is macOS
+arm64 and the golden-file rule rests on it.

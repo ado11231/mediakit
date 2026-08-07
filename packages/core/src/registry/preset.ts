@@ -50,9 +50,7 @@ export const SOCIAL_PRESETS: Readonly<Record<string, Preset>> = {
 
 /**
  * App store and Play store listing presets, dimensions verified against Apple and Google
- * developer docs in July 2026 (see design.md). Web channels (GitHub social preview, Product
- * Hunt gallery, Chrome Web Store) are deferred until their dimensions are re-verified against
- * each channel's current docs, the same standard the Apple/Google numbers here meet.
+ * developer docs in July 2026 (see design.md).
  *
  * `scale` stays 2.5 across listing sizes rather than tracking canvas width, because a listing
  * frame is mostly a device-framed screenshot and the type scale only touches its caption. A
@@ -103,5 +101,45 @@ export const LISTING_PRESETS: Readonly<Record<string, Preset>> = {
     renderer: 'still',
     scale: 2.5,
     constraints: [{ kind: 'noAlpha' }],
+  },
+};
+
+/**
+ * Web channel presets, dimensions verified against each channel's official docs in August 2026
+ * (see design.md). GitHub supports alpha; Product Hunt requires a 2-image gallery minimum;
+ * Chrome Web Store screenshots accept 1280x800 or 640x400 (the larger is preferred); the CWS
+ * marquee promo is a single 1400x560 tile.
+ *
+ * `scale` stays 2.5 for consistency with the listing presets: a wider canvas does not by
+ * itself justify larger type, and a consumer overrides per preset if it reads too small.
+ */
+export const WEB_PRESETS: Readonly<Record<string, Preset>> = {
+  'github-social': {
+    width: 1280,
+    height: 640,
+    renderer: 'still',
+    scale: 2.5,
+    constraints: [{ kind: 'frameCount', min: 1, max: 1 }],
+  },
+  'producthunt-gallery': {
+    width: 1270,
+    height: 760,
+    renderer: 'still',
+    scale: 2.5,
+    constraints: [{ kind: 'frameCount', min: 2, max: 8 }],
+  },
+  'cws-screenshot': {
+    width: 1280,
+    height: 800,
+    renderer: 'still',
+    scale: 2.5,
+    constraints: [{ kind: 'frameCount', min: 1, max: 5 }],
+  },
+  'cws-marquee': {
+    width: 1400,
+    height: 560,
+    renderer: 'still',
+    scale: 2.5,
+    constraints: [{ kind: 'frameCount', min: 1, max: 1 }],
   },
 };
