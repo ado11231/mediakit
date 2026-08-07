@@ -3,6 +3,7 @@ import {
   createDefaultRegistries,
   LISTING_PRESETS,
   SOCIAL_PRESETS,
+  WEB_PRESETS,
   type Constraint,
 } from '../src/index.js';
 
@@ -75,11 +76,47 @@ describe('listing presets', () => {
   });
 });
 
-describe('the default registries seed both families', () => {
-  it('exposes social and listing presets without any consumer config', () => {
+describe('web presets', () => {
+  it('ships the four web channels verified against docs in August 2026', () => {
+    expect(Object.keys(WEB_PRESETS).sort()).toEqual([
+      'cws-marquee',
+      'cws-screenshot',
+      'github-social',
+      'producthunt-gallery',
+    ]);
+  });
+
+  it('matches GitHub social preview dimensions from GitHub docs', () => {
+    expect(WEB_PRESETS['github-social']).toMatchObject({ width: 1280, height: 640 });
+    expect(frameCount(WEB_PRESETS['github-social']?.constraints)).toEqual({ min: 1, max: 1 });
+  });
+
+  it('matches Product Hunt gallery dimensions and requires a 2-image minimum', () => {
+    expect(WEB_PRESETS['producthunt-gallery']).toMatchObject({ width: 1270, height: 760 });
+    expect(frameCount(WEB_PRESETS['producthunt-gallery']?.constraints)).toEqual({
+      min: 2,
+      max: 8,
+    });
+  });
+
+  it('matches Chrome Web Store screenshot dimensions (1280x800, the preferred size)', () => {
+    expect(WEB_PRESETS['cws-screenshot']).toMatchObject({ width: 1280, height: 800 });
+    expect(frameCount(WEB_PRESETS['cws-screenshot']?.constraints)).toEqual({ min: 1, max: 5 });
+  });
+
+  it('matches Chrome Web Store marquee promo dimensions', () => {
+    expect(WEB_PRESETS['cws-marquee']).toMatchObject({ width: 1400, height: 560 });
+    expect(frameCount(WEB_PRESETS['cws-marquee']?.constraints)).toEqual({ min: 1, max: 1 });
+  });
+});
+
+describe('the default registries seed all three families', () => {
+  it('exposes social, listing, and web presets without any consumer config', () => {
     const names = createDefaultRegistries().presets.names();
     expect(names).toContain('ig-portrait');
     expect(names).toContain('ios-6.9');
     expect(names).toContain('play-phone');
+    expect(names).toContain('github-social');
+    expect(names).toContain('cws-screenshot');
   });
 });

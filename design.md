@@ -24,34 +24,34 @@ The single most important change from the existing `carousels/src/spec/schema.ts
 
 ```ts
 // current: dimensions baked into the schema as literals
-format: z.object({ width: z.literal(1080), height: z.literal(1350) })
+format: z.object({ width: z.literal(1080), height: z.literal(1350) });
 
 // mediakit: resolved against the preset registry at render time
-preset: z.string()
+preset: z.string();
 ```
 
-Today the spec *is* a 1080x1350 artifact. Once `preset` is a lookup, the same spec renders to
+Today the spec _is_ a 1080x1350 artifact. Once `preset` is a lookup, the same spec renders to
 an Instagram post, a 6.9" screenshot, and a Reel, and adding a platform becomes a registry
 entry rather than a schema migration.
 
 ```ts
 interface AssetSpec {
-  id: string;                    // lowercase slug, /^[a-z0-9-]+$/
-  preset: string | string[];     // one or more keys in the preset registry
-  frames: Frame[];               // slides · screenshots · scenes
+  id: string; // lowercase slug, /^[a-z0-9-]+$/
+  preset: string | string[]; // one or more keys in the preset registry
+  frames: Frame[]; // slides · screenshots · scenes
   meta?: { caption?: string; locale?: string };
 }
 
 interface Frame {
-  layout: string;                // a key in the layout registry
-  background?: string;           // a key in tokens.color
+  layout: string; // a key in the layout registry
+  background?: string; // a key in tokens.color
   blocks: Block[];
 }
 
 interface Block {
-  type: string;                  // a key in the block registry
-  props: unknown;                // validated against the block's registered schema
-  slot?: string;                 // validated against the layout's declared slots
+  type: string; // a key in the block registry
+  props: unknown; // validated against the block's registered schema
+  slot?: string; // validated against the layout's declared slots
 }
 ```
 
@@ -77,9 +77,9 @@ The preset registry entry carries all of it:
 interface Preset {
   width: number;
   height: number;
-  renderer: 'still' | 'video';   // internal to core, never in a spec
-  scale?: number;                // see the token contract below
-  constraints?: Constraint[];    // alpha rules, count limits, aspect ratios
+  renderer: 'still' | 'video'; // internal to core, never in a spec
+  scale?: number; // see the token contract below
+  constraints?: Constraint[]; // alpha rules, count limits, aspect ratios
 }
 ```
 
@@ -112,21 +112,23 @@ Output nests under the preset name whenever more than one is produced.
 The differentiator. No competing package reads a design system.
 
 ```ts
-interface TokensInput {                        // what a consumer writes
-  color:   Record<string, string> & { accent: string }
-  font?:   Partial<{ display: FontSource, body: FontSource }>
-  type?:   Record<string, TypeStyle>
-  space?:  Record<string, number>
-  radius?: Record<string, number>
-  scale?:  number                // overrides the preset's default
+interface TokensInput {
+  // what a consumer writes
+  color: Record<string, string> & { accent: string };
+  font?: Partial<{ display: FontSource; body: FontSource }>;
+  type?: Record<string, TypeStyle>;
+  space?: Record<string, number>;
+  radius?: Record<string, number>;
+  scale?: number; // overrides the preset's default
 }
 
-interface ResolvedTokens {                     // what a block receives
-  color:  Record<string, string>
-  font:   { display: FontSource, body: FontSource }
-  type:   Record<string, TypeStyle>
-  space:  Record<string, number>
-  radius: Record<string, number>
+interface ResolvedTokens {
+  // what a block receives
+  color: Record<string, string>;
+  font: { display: FontSource; body: FontSource };
+  type: Record<string, TypeStyle>;
+  space: Record<string, number>;
+  radius: Record<string, number>;
 }
 
 interface TypeStyle {
@@ -290,8 +292,8 @@ export default defineConfig({
   blocks: {
     JobCard: defineBlock({
       schema: z.object({ customerName: z.string(), status: z.string() }),
-      still:  JobCardStill,    // props inferred as { customerName: string, status: string }
-      video:  JobCardMotion,   // optional
+      still: JobCardStill, // props inferred as { customerName: string, status: string }
+      video: JobCardMotion, // optional
     }),
   },
 });
@@ -338,7 +340,7 @@ A renderer receives validated props and a context:
 type BlockRenderer<P> = (props: P, ctx: RenderContext) => Element;
 
 interface RenderContext {
-  tokens: ResolvedTokens;   // scale already applied
+  tokens: ResolvedTokens; // scale already applied
   preset: Preset;
   frameIndex: number;
   frameCount: number;
@@ -375,7 +377,7 @@ export default defineConfig({
     'feature-grid': defineLayout({
       slots: ['col1', 'col2', 'col3'],
       still: FeatureGridStill,
-      video: FeatureGridMotion,   // optional
+      video: FeatureGridMotion, // optional
     }),
   },
 });
@@ -387,8 +389,8 @@ A layout renderer receives already-rendered block elements, never raw spec data:
 type LayoutRenderer = (content: LayoutContent, ctx: RenderContext) => Element;
 
 interface LayoutContent {
-  blocks: readonly Element[];                           // spec order, always populated
-  slots:  Readonly<Record<string, readonly Element[]>>; // empty when the layout declares none
+  blocks: readonly Element[]; // spec order, always populated
+  slots: Readonly<Record<string, readonly Element[]>>; // empty when the layout declares none
 }
 ```
 
@@ -405,11 +407,11 @@ on a `centered` frame and silently ignored it.
 
 Validation runs in both directions, because only one of the three cases is the obvious one:
 
-| case | behavior |
-|---|---|
-| a slot the layout does not declare | throw, name the layout and list its slots |
+| case                                    | behavior                                          |
+| --------------------------------------- | ------------------------------------------------- |
+| a slot the layout does not declare      | throw, name the layout and list its slots         |
 | no slot, on a layout that declares some | throw. Otherwise the block silently lands nowhere |
-| a slot, on a layout that declares none | throw. This is the reference's exact bug |
+| a slot, on a layout that declares none  | throw. This is the reference's exact bug          |
 
 Why this matters for scale: most new marketing surfaces need a preset and reuse everything else,
 but the ones that need more usually need an arrangement rather than a content type. A quote
@@ -443,11 +445,11 @@ Voice and tone enforced by a validator rather than a style guide PDF nobody read
 
 ## Surface 1: social stills
 
-| preset | px |
-|---|---|
+| preset        | px          |
+| ------------- | ----------- |
 | `ig-portrait` | 1080 x 1350 |
-| `ig-square` | 1080 x 1080 |
-| `story` | 1080 x 1920 |
+| `ig-square`   | 1080 x 1080 |
+| `story`       | 1080 x 1920 |
 | `li-portrait` | 1080 x 1350 |
 
 **Blocks:** `Eyebrow` `Headline` `Subhead` `Body` `BulletList` `Stat` `CTA` `DeviceFrame`
@@ -455,7 +457,7 @@ Voice and tone enforced by a validator rather than a style guide PDF nobody read
 **Source:** roughly 80% lifts directly from `carousels/src/`. The work is the Remotion to
 satori port plus token injection.
 
-**Discovery note:** you cannot be *found* on npm here, because `embla-carousel` and
+**Discovery note:** you cannot be _found_ on npm here, because `embla-carousel` and
 `react-slick` own the search term. This surface earns discovery through **artifacts, not
 search**: it is the only surface whose output gets posted publicly, at volume, to an audience.
 
@@ -475,30 +477,30 @@ result against the channel's rules before you upload.
 
 Verified against Apple and Google developer docs, July 2026.
 
-| preset | px | status |
-|---|---|---|
-| `ios-6.9` | 1320 x 2868 | **required** if app runs on iPhone |
-| `ios-6.5` | 1284 x 2778 | required *only* if 6.9" not provided |
-| `ipad-13` | 2064 x 2752 | **required** if app runs on iPad |
-| `play-phone` | 1080 x 1920 | 2 minimum, 4 recommended |
-| `play-feature` | 1024 x 500 | **required**, no alpha |
-| `play-icon` | 512 x 512 | **required**, 32-bit PNG with alpha |
+| preset         | px          | status                               |
+| -------------- | ----------- | ------------------------------------ |
+| `ios-6.9`      | 1320 x 2868 | **required** if app runs on iPhone   |
+| `ios-6.5`      | 1284 x 2778 | required _only_ if 6.9" not provided |
+| `ipad-13`      | 2064 x 2752 | **required** if app runs on iPad     |
+| `play-phone`   | 1080 x 1920 | 2 minimum, 4 recommended             |
+| `play-feature` | 1024 x 500  | **required**, no alpha               |
+| `play-icon`    | 512 x 512   | **required**, 32-bit PNG with alpha  |
 
 ### Web presets
 
-**Dimensions below are from memory and must be verified against each channel's current docs
-before M2**, to the same standard as the Apple and Google numbers above. The point here is the
-shape of the registry, not these specific values.
+Dimensions verified against each channel's official docs in August 2026, to the same
+standard as the Apple and Google numbers above.
 
-| preset | px (verify) | channel |
-|---|---|---|
-| `github-social` | 1280 x 640 | GitHub repository social preview |
-| `producthunt-gallery` | 1270 x 760 | Product Hunt listing gallery |
-| `cws-screenshot` | 1280 x 800 | Chrome Web Store, extensions |
-| `cws-marquee` | 1400 x 560 | Chrome Web Store promo tile |
+| preset                | px         | channel                          | source                                                            |
+| --------------------- | ---------- | -------------------------------- | ----------------------------------------------------------------- |
+| `github-social`       | 1280 x 640 | GitHub repository social preview | GitHub Docs: "1280 by 640 pixels for best display"                |
+| `producthunt-gallery` | 1270 x 760 | Product Hunt listing gallery     | PH Help: "recommended size for images in the gallery is 1270x760" |
+| `cws-screenshot`      | 1280 x 800 | Chrome Web Store screenshots     | CWS Docs: "1280x800 or 640x400 pixels" (1280x800 preferred)       |
+| `cws-marquee`         | 1400 x 560 | Chrome Web Store marquee promo   | CWS Docs: "Marquee: 1400x560 pixels"                              |
 
-Each carries its own constraints (count limits, alpha rules, aspect ratios) exactly as the
-mobile presets do. That is the whole reason `check` generalizes to web for free.
+Constraints: GitHub social is a single image (1-1). Product Hunt gallery requires 2+ images
+to be viewable (2-8). CWS screenshots allow 1-5. CWS marquee is a single tile (1-1). GitHub
+supports alpha; the others do not explicitly forbid it but do not require it either.
 
 ### Frames
 
@@ -608,11 +610,11 @@ which is usually a sign the boundary is in the right place.
 
 ## Surface 3: video (opt-in, M4)
 
-| preset | px | notes |
-|---|---|---|
-| `reel` | 1080 x 1920 | IG Reels, TikTok, Shorts |
-| `appreview-iphone` | 886 x 1920 | covers 6.9", 6.5", 6.3", 6.1". **One render, four device classes** |
-| `appreview-ipad` | 1200 x 1600 | 13", 11", 10.5" |
+| preset             | px          | notes                                                              |
+| ------------------ | ----------- | ------------------------------------------------------------------ |
+| `reel`             | 1080 x 1920 | IG Reels, TikTok, Shorts                                           |
+| `appreview-iphone` | 886 x 1920  | covers 6.9", 6.5", 6.3", 6.1". **One render, four device classes** |
+| `appreview-ipad`   | 1200 x 1600 | 13", 11", 10.5"                                                    |
 
 ### App Preview hard constraints (Apple, verified July 2026)
 
@@ -625,7 +627,7 @@ which is usually a sign the boundary is in the right place.
 - Up to **3 previews per resolution**
 - Default poster frame at 5 seconds
 
-All mechanically checkable. Failing *before* you waste an App Store Connect upload is genuinely
+All mechanically checkable. Failing _before_ you waste an App Store Connect upload is genuinely
 useful and nobody offers it.
 
 ### Source, and why it is more than a port
@@ -648,19 +650,19 @@ which is also what keeps it viable in CI.
 
 ## Renderer split
 
-| | still | video |
-|---|---|---|
-| engine | satori + resvg | remotion |
-| browser needed | no | yes |
-| license | MIT | free at 3 employees or fewer, else paid |
-| determinism | byte-identical across runs | frame-stable |
-| CI-friendly | yes | heavy |
+|                | still                      | video                                   |
+| -------------- | -------------------------- | --------------------------------------- |
+| engine         | satori + resvg             | remotion                                |
+| browser needed | no                         | yes                                     |
+| license        | MIT                        | free at 3 employees or fewer, else paid |
+| determinism    | byte-identical across runs | frame-stable                            |
+| CI-friendly    | yes                        | heavy                                   |
 
 Same spec plus same tokens plus same fonts produces a byte-identical PNG **across runs of
 mediakit**. That determinism is what makes assets diffable in git and regenerable in CI, which
 is the "assets as code" positioning that made `@vercel/og` spread.
 
-Note the scope of the claim: satori and resvg output is byte-identical to *itself*, not to
+Note the scope of the claim: satori and resvg output is byte-identical to _itself_, not to
 Chrome. Different text shapers and rasterizers cannot agree at the pixel level.
 
 ---
@@ -719,10 +721,10 @@ discipline about the required set, and it is what makes the README's first examp
 
 **Tier 2, `init` reads what is already there.** Two cases with different correct answers:
 
-| tokens live in | generated config | why |
-|---|---|---|
-| a TS or JS module (`@source-app/ui/tokens`) | `import` them | stays in sync, no parsing, trivially correct |
-| Tailwind config or CSS custom properties | extract and inline the values | parsing is fragile, a frozen snapshot is honest |
+| tokens live in                              | generated config              | why                                             |
+| ------------------------------------------- | ----------------------------- | ----------------------------------------------- |
+| a TS or JS module (`@source-app/ui/tokens`) | `import` them                 | stays in sync, no parsing, trivially correct    |
+| Tailwind config or CSS custom properties    | extract and inline the values | parsing is fragile, a frozen snapshot is honest |
 
 The import case is strictly better where available. This is M3's "token extraction", recast: as
 `init`-time codegen it is simpler to build than a runtime adapter and sidesteps the determinism

@@ -39,6 +39,10 @@ const spec = parseSpec(
       'ipad-13',
       'play-phone',
       'play-feature',
+      'github-social',
+      'producthunt-gallery',
+      'cws-screenshot',
+      'cws-marquee',
     ],
     frames: [
       {

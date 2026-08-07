@@ -25,7 +25,12 @@ export { assertSlot, createLayoutRegistry, defineLayout } from './registry/layou
 export type { LayoutContent, LayoutDefinition, LayoutRenderer } from './registry/layout.js';
 export { createFrameRegistry, defineFrame } from './registry/frame.js';
 export type { FrameDefinition, FrameRenderer } from './registry/frame.js';
-export { createPresetRegistry, LISTING_PRESETS, SOCIAL_PRESETS } from './registry/preset.js';
+export {
+  createPresetRegistry,
+  LISTING_PRESETS,
+  SOCIAL_PRESETS,
+  WEB_PRESETS,
+} from './registry/preset.js';
 export type { Constraint, Preset } from './registry/preset.js';
 export { createDefaultRegistries, createRegistries } from './registry/registries.js';
 export type { Registries } from './registry/registries.js';

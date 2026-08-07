@@ -5,6 +5,7 @@ import {
   createPresetRegistry,
   LISTING_PRESETS,
   SOCIAL_PRESETS,
+  WEB_PRESETS,
   type Preset,
 } from './preset.js';
 import type { Registry } from './registry.js';
@@ -32,5 +33,6 @@ export const createDefaultRegistries = (): Registries => {
   const registries = createRegistries();
   registries.presets.registerAll(SOCIAL_PRESETS);
   registries.presets.registerAll(LISTING_PRESETS);
+  registries.presets.registerAll(WEB_PRESETS);
   return registries;
 };

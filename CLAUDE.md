@@ -320,11 +320,11 @@ Landed since M0:
   example is a test, not a demo: if `pnpm --filter @mediakit-example/source-app test` breaks,
   the extension API broke.
 
-Still open at M2: web presets (verified against docs), listing presets are landed
-(`ios-6.9`, `ipad-13`, `play-*`), as are `check` and `preview` and the six remaining
-built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`). Also
-before publish: prove determinism on Linux, since every hash so far is macOS arm64 and
-the golden-file rule rests on it.
+Still open at M2: listing presets are landed (`ios-6.9`, `ipad-13`, `play-*`), as are
+`check`, `preview`, web presets (`github-social`, `producthunt-gallery`, `cws-screenshot`,
+`cws-marquee`), and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame`
+`Caption` `Background`). Also before publish: prove determinism on Linux, since every hash so
+far is macOS arm64 and the golden-file rule rests on it.
 
 Three things a future editor should know rather than rediscover:
 
