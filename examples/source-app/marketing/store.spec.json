@@ -1,0 +1,47 @@
+{
+  "id": "store",
+  "preset": ["ios-6.9", "play-phone"],
+  "frames": [
+    {
+      "layout": "centered",
+      "blocks": [
+        {
+          "type": "Background",
+          "props": { "gradient": { "from": "canvas", "to": "surface", "angle": 160 } }
+        },
+        { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
+        {
+          "type": "Headline",
+          "props": { "text": "Your whole day, one screen", "size": "title", "align": "center" }
+        },
+        {
+          "type": "DeviceFrame",
+          "props": {
+            "chrome": "phone",
+            "src": "marketing/app-screen/frame-01.png",
+            "width": 560,
+            "height": 1212
+          }
+        }
+      ]
+    },
+    {
+      "layout": "centered",
+      "blocks": [
+        {
+          "type": "Background",
+          "props": { "gradient": { "from": "surface", "to": "canvas", "angle": 160 } }
+        },
+        { "type": "Eyebrow", "props": { "text": "Invoicing", "align": "center" } },
+        {
+          "type": "Headline",
+          "props": { "text": "Get paid before you leave", "size": "title", "align": "center" }
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "Invented sample data, no real customers.", "align": "center" }
+        }
+      ]
+    }
+  ]
+}

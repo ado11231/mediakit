@@ -9,19 +9,16 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { resolve, relative } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
-  applyConfig,
-  createDefaultRegistries,
   MediakitError,
   parseSpec,
   presetNames,
   type AssetSpec,
   type MediakitConfig,
-  type Registries,
 } from '@mediakit/core';
 import { renderSpec, type RenderedFrame } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
+import { buildRegistries } from '../workspace.js';
 
 const USAGE = `mediakit preview <spec> [--port <n>] [--preset <name>]
 
@@ -56,17 +53,6 @@ interface PreviewState {
   error: string | undefined;
 }
 
-const buildRegistries = (config: MediakitConfig): Registries => {
-  const registries = applyConfig(createDefaultRegistries(), {
-    tokens: config.tokens,
-    blocks: BUILTIN_BLOCKS,
-    layouts: BUILTIN_LAYOUTS,
-    frames: BUILTIN_FRAMES,
-  });
-  applyConfig(registries, config);
-  return registries;
-};
-
 const renderToMemory = async (
   spec: AssetSpec,
   config: MediakitConfig,
@@ -97,7 +83,10 @@ const frameByPath = (
   return list?.find((f) => f.index === index);
 };
 
-const escapeHtml = (s: string): string => s.replace(/</g, '&lt;');
+// Spec ids and preset names are open strings from a file on disk, so they reach the page as
+// untrusted text even though the server is local-only.
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const htmlPage = (state: PreviewState): string => {
   const { spec, frames } = state;
@@ -106,10 +95,10 @@ const htmlPage = (state: PreviewState): string => {
       const images = frameList
         .map(
           (f) =>
-            `      <img src="/${preset}/frame-${pad(f.index)}.png" alt="frame ${f.index + 1}" style="max-width:100%;border:1px solid #1f2937;border-radius:8px" />`,
+            `      <img src="/${encodeURIComponent(preset)}/frame-${pad(f.index)}.png" alt="frame ${f.index + 1}" style="max-width:100%;border:1px solid #1f2937;border-radius:8px" />`,
         )
         .join('\n');
-      return `    <section>\n      <h2>${preset}</h2>\n${images}\n    </section>`;
+      return `    <section>\n      <h2>${escapeHtml(preset)}</h2>\n${images}\n    </section>`;
     })
     .join('\n');
 
@@ -122,7 +111,7 @@ const htmlPage = (state: PreviewState): string => {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>mediakit preview: ${spec.id}</title>
+  <title>mediakit preview: ${escapeHtml(spec.id)}</title>
   <style>
     body { margin:0; background:#0B0E14; color:#F5F7FA; font-family:system-ui,sans-serif }
     main { max-width:1080px; margin:0 auto; padding:24px }
@@ -133,14 +122,16 @@ const htmlPage = (state: PreviewState): string => {
 </head>
 <body>
   <main>
-    <h1>${spec.id}</h1>
+    <h1>${escapeHtml(spec.id)}</h1>
 ${sections}
   </main>
 ${errorOverlay}  <script>
     const sse = new EventSource('/events');
     const errEl = document.getElementById('error');
     sse.addEventListener('reload', () => location.reload());
-    sse.addEventListener('error', (e) => { errEl.textContent = e.data; });
+    // Not 'error': EventSource fires a native error event with no .data on any dropped
+    // connection, so sharing the name paints "undefined" over the overlay on Ctrl-C.
+    sse.addEventListener('render-error', (e) => { errEl.textContent = e.data; });
     sse.addEventListener('ok', () => { errEl.textContent = ''; });
   </script>
 </body>
@@ -234,10 +225,18 @@ export const runPreview = async (
   };
 
   const sseClients = new Set<ServerResponse>();
+
+  // Every line of the payload needs its own `data:` prefix. A raw newline terminates the
+  // field, and mediakit's errors are deliberately multi-line ("Unknown preset ...\nRegistered
+  // presets:\n  ..."), so the most common preview failure is exactly the one that would
+  // arrive truncated.
   const notify = (event: string, data: string): void => {
+    const body = data
+      .split('\n')
+      .map((line) => `data: ${line}\n`)
+      .join('');
     for (const res of sseClients) {
-      res.write(`event: ${event}\n`);
-      res.write(`data: ${data}\n\n`);
+      res.write(`event: ${event}\n${body}\n`);
     }
   };
 
@@ -326,7 +325,7 @@ export const runPreview = async (
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       state = { ...state, error: message };
-      notify('error', message);
+      notify('render-error', message);
       process.stderr.write(`mediakit: ${message}\n`);
     }
     updateWatchers();

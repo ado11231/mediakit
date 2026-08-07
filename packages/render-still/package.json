@@ -2,7 +2,24 @@
   "name": "@mediakit/render-still",
   "version": "0.0.0",
   "description": "Renders a mediakit spec to PNG with satori and resvg. No browser.",
+  "keywords": [
+    "mediakit",
+    "satori",
+    "resvg",
+    "png",
+    "screenshots",
+    "render"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/ado11231/mediakit#readme",
+  "bugs": {
+    "url": "https://github.com/ado11231/mediakit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ado11231/mediakit.git",
+    "directory": "packages/render-still"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -31,5 +48,8 @@
   "devDependencies": {
     "@mediakit/blocks": "workspace:*",
     "@types/node": "^22.20.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

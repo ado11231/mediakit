@@ -2,7 +2,26 @@
   "name": "@mediakit/cli",
   "version": "0.0.0",
   "description": "The mediakit command line: init, preview, render, check.",
+  "keywords": [
+    "mediakit",
+    "cli",
+    "app-store",
+    "screenshots",
+    "marketing",
+    "design-tokens",
+    "play-store",
+    "deterministic"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/ado11231/mediakit#readme",
+  "bugs": {
+    "url": "https://github.com/ado11231/mediakit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ado11231/mediakit.git",
+    "directory": "packages/cli"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -38,5 +57,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

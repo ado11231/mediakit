@@ -1,0 +1,8 @@
+# Lockfiles are generated and owned by the package manager. Prettier reflows the flow-style
+# mappings pnpm writes, which is pure churn and fights `--frozen-lockfile` in CI.
+pnpm-lock.yaml
+
+# Golden files and rendered output are compared byte for byte.
+**/test/golden/**
+**/marketing/**
+dist

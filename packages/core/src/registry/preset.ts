@@ -15,7 +15,19 @@ import { Registry } from './registry.js';
 export type Constraint =
   | { readonly kind: 'noAlpha' }
   | { readonly kind: 'frameCount'; readonly min: number; readonly max: number }
-  | { readonly kind: 'aspectRatio'; readonly maxRatio: number };
+  | { readonly kind: 'aspectRatio'; readonly maxRatio: number }
+  /**
+   * Sizes the channel accepts besides the preset's own. Chrome Web Store takes 1280x800 or
+   * 640x400; without this, `check` rejects a screenshot the store would have taken.
+   */
+  | { readonly kind: 'altSizes'; readonly sizes: readonly (readonly [number, number])[] }
+  /**
+   * The channel accepts any size with both sides inside these bounds, usually paired with an
+   * `aspectRatio` ceiling that does the real work. Google Play is the case: 320 to 3840 per
+   * side at up to 2:1, so a 1440x2560 screenshot is valid even though the preset renders
+   * 1080x1920.
+   */
+  | { readonly kind: 'sizeRange'; readonly min: number; readonly max: number };
 
 export interface Preset {
   width: number;
@@ -90,8 +102,12 @@ export const LISTING_PRESETS: Readonly<Record<string, Preset>> = {
     height: 1920,
     renderer: 'still',
     scale: 2.5,
+    // Play docs: "each side between 320 px and 3,840 px", max dimension at most twice the
+    // min. The preset renders one valid size inside that envelope; asset mode has to accept
+    // the whole envelope, since a hand-made 1440x2560 screenshot is one Play takes.
     constraints: [
       { kind: 'frameCount', min: 2, max: 8 },
+      { kind: 'sizeRange', min: 320, max: 3840 },
       { kind: 'aspectRatio', maxRatio: 2 },
     ],
   },
@@ -133,7 +149,12 @@ export const WEB_PRESETS: Readonly<Record<string, Preset>> = {
     height: 800,
     renderer: 'still',
     scale: 2.5,
-    constraints: [{ kind: 'frameCount', min: 1, max: 5 }],
+    // CWS docs: "1280x800 or 640x400 pixels", the larger preferred, so the preset renders
+    // 1280x800 and asset mode accepts either.
+    constraints: [
+      { kind: 'frameCount', min: 1, max: 5 },
+      { kind: 'altSizes', sizes: [[640, 400]] },
+    ],
   },
   'cws-marquee': {
     width: 1400,

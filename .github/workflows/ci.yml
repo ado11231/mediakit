@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, m2-check]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -19,5 +19,23 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
+
+  budget:
+    # Install weight is a positioning claim, not a nice-to-have: README competes with framedeck
+    # on exactly this. Gated in CI so a dependency cannot arrive without someone seeing the cost.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm budget

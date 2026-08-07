@@ -484,7 +484,18 @@ Verified against Apple and Google developer docs, July 2026.
 | `ipad-13`      | 2064 x 2752 | **required** if app runs on iPad     |
 | `play-phone`   | 1080 x 1920 | 2 minimum, 4 recommended             |
 | `play-feature` | 1024 x 500  | **required**, no alpha               |
-| `play-icon`    | 512 x 512   | **required**, 32-bit PNG with alpha  |
+
+`play-icon` (512 x 512, 32-bit PNG **with** alpha) is deliberately not a preset. It is an icon
+rather than a screenshot, and the render path composites on an opaque background, so a preset
+demanding alpha would promise something the renderer cannot deliver.
+
+Two presets accept more than the size they render, and `check` accepts the whole envelope in
+asset mode: `play-phone` takes any size from 320 to 3840 per side at up to 2:1, and
+`cws-screenshot` takes 640 x 400 as well as 1280 x 800. Apple's sizes are exact.
+
+Presets carrying the `noAlpha` constraint are re-encoded as 24-bit PNGs. resvg emits colour
+type 6 regardless of whether any pixel is transparent, and both stores reject on the channel
+being present rather than on the pixels using it.
 
 ### Web presets
 
@@ -511,8 +522,9 @@ supports alpha; the others do not explicitly forbid it but do not require it eit
 ```
 
 `chrome` is an open string resolved against a small frame registry, for the same reason
-everything else is. `phone` `browser` `tablet` `none` ship as defaults; a watch, a laptop, or a
-bezel-less variant is a registration rather than a core change.
+everything else is. `phone` and `none` ship as defaults today; a browser, a tablet, a watch, or
+a bezel-less variant is a registration rather than a core change, which is the point of the
+registry and the reason shipping two rather than five costs a consumer nothing.
 
 Both variants exist in the source app as visual references, not as code to lift:
 `carousels/src/remotion/registry/PhoneMockup.tsx` and `motion/src/components/BrowserMockup.tsx`

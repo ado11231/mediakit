@@ -77,6 +77,21 @@ describe('runRender', () => {
     );
   }, 30_000);
 
+  /**
+   * The path is a property of the spec, never of the flags on this invocation. render used to
+   * nest whenever --preset was passed, so a partial re-render of a single-preset spec landed
+   * somewhere the full render never wrote and check never looked.
+   */
+  it('--preset on a single-preset spec writes where a full render would', async () => {
+    const specPath = await setup('launch', 'ig-portrait');
+    const code = await runRender([specPath, '--preset', 'ig-portrait'], { cwd: dir });
+    expect(code).toBe(0);
+    expect(existsSync(join(dir, 'marketing', 'launch', 'frame-01.png'))).toBe(true);
+    expect(existsSync(join(dir, 'marketing', 'launch', 'ig-portrait', 'frame-01.png'))).toBe(
+      false,
+    );
+  }, 30_000);
+
   it('rejects --preset when its value is not one the spec declares', async () => {
     const specPath = await setup('example', 'ig-portrait');
     const code = await runRender([specPath, '--preset', 'story'], { cwd: dir });

@@ -1,0 +1,28 @@
+{
+  "id": "app-screen",
+  "preset": "app-screen",
+  "frames": [
+    {
+      "layout": "centered",
+      "blocks": [
+        { "type": "Background", "props": { "color": "surface" } },
+        { "type": "Eyebrow", "props": { "text": "Today", "color": "accent" } },
+        { "type": "Headline", "props": { "text": "3 jobs scheduled", "size": "title" } },
+        {
+          "type": "Stat",
+          "props": { "value": "$1,840", "label": "Invoiced this week" }
+        },
+        {
+          "type": "BulletList",
+          "props": {
+            "items": [
+              "08:00  Oak Street Properties",
+              "11:30  2847 Cedar Ln",
+              "15:00  Birchwood Apartments"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -87,4 +87,19 @@ describe('golden files', () => {
       expect(sha(frame?.png ?? Buffer.alloc(0))).toBe(sha(expected));
     }, 30_000);
   }
+
+  /**
+   * resvg always encodes colour type 6, so the render path re-encodes without the channel for
+   * presets whose channel rejects one. Asserted against real output rather than a synthetic
+   * header, because the synthetic fixtures in core's check suite passed the whole time the
+   * renderer was producing PNGs Apple would have refused.
+   */
+  it('emits colour type 2 for exactly the presets declaring noAlpha', async () => {
+    for (const preset of presetNames(spec)) {
+      const entry = registries.presets.get(preset);
+      const wantsOpaque = entry.constraints?.some((c) => c.kind === 'noAlpha') ?? false;
+      const golden = await readFile(join(goldenDir, `${preset}.png`));
+      expect(golden.readUInt8(25), preset).toBe(wantsOpaque ? 2 : 6);
+    }
+  });
 });

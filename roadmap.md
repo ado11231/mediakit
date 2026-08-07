@@ -417,5 +417,29 @@ arm64 and Linux x64 (via Docker, node:22) and confirming every SHA-256 matches. 
 golden-file test now compares on every platform rather than gating to darwin/arm64. CI runs
 on Linux via `.github/workflows/ci.yml`.
 
-**Next: publish.** The M2 gate is met, with both differentiators (store constraint checking
-and cross-platform determinism) shipped and mechanically enforced.
+**The M2 gate is met on both halves as of 7 August 2026.** `examples/source-app` renders store
+assets end to end (`marketing/store.spec.json` at `ios-6.9` and `play-phone`, composing a
+rendered app screen inside a `DeviceFrame`) and `check` passes against them, alongside the four
+web presets that prove the surface is not mobile-only. 196 tests pass.
+
+Building that gate is what caught the bug the milestone existed to catch: **the renderer emitted
+RGBA for every preset**, because resvg always encodes colour type 6 and no golden had ever run a
+real render against a preset carrying `noAlpha`. `check`'s synthetic fixtures passed the whole
+time. Every listing asset mediakit produced before 7 August would have been rejected at upload.
+Presets declaring `noAlpha` are now re-encoded as 24-bit PNGs, asserted against real output.
+
+The general lesson, worth keeping: a constraint verified only against a fixture the test author
+wrote is a test of the fixture. The gate has to run the real pipeline.
+
+**Next: publish.** Remaining, and all judgment calls rather than engineering:
+
+1. **Claim the `@mediakit` org on npm**, still manual (settled decision 1).
+2. **Decide the headline package.** Decision 1 names `mediakit` as the package a consumer
+   installs, with `@mediakit/*` for libraries. Today only `@mediakit/cli` exists and provides the
+   `mediakit` bin, so `npm i -D mediakit` 404s. Either publish a thin `mediakit` that re-exports
+   the CLI, or amend decision 1 and point the README at `@mediakit/cli`.
+3. **Set versions.** Everything is `0.0.0`. Pre-1.0 with breaking changes as minor bumps implies
+   starting at `0.1.0`.
+4. **Render the README's own images in CI** from committed specs (discovery strategy 1). The
+   store assets in `examples/source-app/marketing/store/` are the obvious candidates and already
+   regenerate deterministically.

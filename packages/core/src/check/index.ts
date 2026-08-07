@@ -102,10 +102,18 @@ const checkFrameCount = (
   const count = spec.frames.length;
 
   for (const preset of presetNames(spec)) {
-    const entry = registries.presets.has(preset)
-      ? registries.presets.get(preset, location(file))
-      : undefined;
-    const cap = entry?.constraints?.find(
+    // Reported rather than skipped: a typo'd preset name passing check silently is the
+    // failure the registry error message exists to prevent, and `check` is the one command
+    // that collects violations instead of throwing on the first.
+    if (!registries.presets.has(preset)) {
+      violations.push({
+        preset,
+        message: `unknown preset: "${preset}" is not registered. Registered presets: ${registries.presets.names().join(', ')}`,
+      });
+      continue;
+    }
+    const entry = registries.presets.get(preset, location(file));
+    const cap = entry.constraints?.find(
       (c): c is { kind: 'frameCount'; min: number; max: number } => c.kind === 'frameCount',
     );
     if (cap !== undefined && (count < cap.min || count > cap.max)) {
@@ -174,21 +182,60 @@ export const parsePng = (png: Buffer, file: string): PngInfo => {
   return { width, height, colorType, hasTrns };
 };
 
+/**
+ * What the channel accepts, which is not always what the preset renders. A preset's own size
+ * is always accepted; `altSizes` and `sizeRange` widen that to the channel's real rule.
+ *
+ * Getting this wrong in the permissive direction lets a bad asset upload. Getting it wrong in
+ * the strict direction is worse for adoption than it looks: asset mode is the on-ramp for
+ * someone with hand-made screenshots and no renderer adopted, and rejecting a file the store
+ * would have taken teaches them the tool is wrong.
+ */
+const checkDimensions = (
+  preset: Preset,
+  name: string,
+  info: PngInfo,
+  file: string,
+): Violation[] => {
+  const constraints = preset.constraints ?? [];
+  const alt = constraints.flatMap((c) => (c.kind === 'altSizes' ? c.sizes : []));
+  const range = constraints.find(
+    (c): c is { kind: 'sizeRange'; min: number; max: number } => c.kind === 'sizeRange',
+  );
+
+  const matchesPreset = info.width === preset.width && info.height === preset.height;
+  const matchesAlt = alt.some(([w, h]) => info.width === w && info.height === h);
+  const inRange =
+    range !== undefined &&
+    info.width >= range.min &&
+    info.width <= range.max &&
+    info.height >= range.min &&
+    info.height <= range.max;
+
+  if (matchesPreset || matchesAlt || inRange) return [];
+
+  const accepted = [
+    `${preset.width}x${preset.height}`,
+    ...alt.map(([w, h]) => `${w}x${h}`),
+    ...(range === undefined ? [] : [`any size from ${range.min} to ${range.max} per side`]),
+  ].join(', or ');
+
+  return [
+    {
+      preset: name,
+      file,
+      message: `dimensions: ${file} is ${info.width}x${info.height}, preset "${name}" accepts ${accepted}`,
+    },
+  ];
+};
+
 const checkConstraint = (
   preset: Preset,
   name: string,
   info: PngInfo,
   file: string,
 ): Violation[] => {
-  const violations: Violation[] = [];
-
-  if (info.width !== preset.width || info.height !== preset.height) {
-    violations.push({
-      preset: name,
-      file,
-      message: `dimensions: ${file} is ${info.width}x${info.height}, preset "${name}" requires ${preset.width}x${preset.height}`,
-    });
-  }
+  const violations: Violation[] = [...checkDimensions(preset, name, info, file)];
 
   for (const constraint of preset.constraints ?? []) {
     if (constraint.kind === 'noAlpha') {

@@ -117,6 +117,43 @@ describe('runCheck spec mode', () => {
     expect(code).toBe(0);
   }, 60_000);
 
+  it('finds the output a --preset render just wrote, rather than reporting it missing', async () => {
+    await writeFile(
+      join(dir, 'mediakit.config.js'),
+      `export default { tokens: { color: { accent: '#2563EB' } } };`,
+      'utf8',
+    );
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    await writeFile(
+      join(dir, 'marketing', 'ex.spec.json'),
+      spec('ex', 'ios-6.9', [{ layout: 'centered', blocks: [headline('ok')] }]),
+      'utf8',
+    );
+
+    expect(
+      await runRender(['marketing/ex.spec.json', '--preset', 'ios-6.9'], { cwd: dir }),
+    ).toBe(0);
+    expect(await runCheck(['marketing/ex.spec.json'], { cwd: dir })).toBe(0);
+  }, 120_000);
+
+  it('honours a custom preset registered by the consumer config', async () => {
+    await writeFile(
+      join(dir, 'mediakit.config.js'),
+      `export default {
+         tokens: { color: { accent: '#2563EB' } },
+         presets: { 'preview-card': { width: 800, height: 600, renderer: 'still', scale: 2 } },
+       };`,
+      'utf8',
+    );
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    await writeFile(
+      join(dir, 'marketing', 'ex.spec.json'),
+      spec('ex', 'preview-card', [{ layout: 'centered', blocks: [headline('ok')] }]),
+      'utf8',
+    );
+    expect(await runCheck(['marketing/ex.spec.json'], { cwd: dir })).toBe(0);
+  });
+
   it('prints --help and exits 0', async () => {
     expect(await runCheck(['--help'], { cwd: dir })).toBe(0);
   });

@@ -23,20 +23,85 @@ It also sends nothing. No telemetry, no network requests at any point, including
 is an architecture invariant rather than a policy, because a render that depends on a network
 response is not reproducible.
 
+## Install
+
+```sh
+pnpm add -D @mediakit/cli
+npx mediakit init
+npx mediakit render marketing/example.spec.json
+```
+
+`init` scaffolds `mediakit.config.ts` and an example spec that renders on first run: no API key,
+no network call, no manual file copy. The only required token is `color.accent`, and a font is
+bundled.
+
+Node 22 or later. ESM only.
+
+## Commands
+
+| command   | what it does                                                              |
+| --------- | ------------------------------------------------------------------------- |
+| `init`    | scaffold `mediakit.config.ts` and an example spec                         |
+| `render`  | render a spec to PNG, fanning out across every preset the spec declares   |
+| `preview` | serve rendered PNGs over HTTP with live reload on spec, config, font edit |
+| `check`   | validate specs and rendered assets against store rules, non-zero on fail  |
+
+`check` also runs against hand-made screenshots with no renderer adopted:
+
+```sh
+npx mediakit check ./screenshots --preset ios-6.9
+```
+
+## Presets
+
+Social: `ig-portrait` `ig-square` `story` `li-portrait`.
+Mobile listings: `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`.
+Web: `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee`.
+
+Dimensions are verified against each channel's official docs, and every one carries the
+constraints `check` enforces: exact or documented-alternate sizes, frame-count caps, the Play
+aspect ceiling, and 24-bit output where a store rejects an alpha channel. Presets are a
+registry, so a size mediakit does not ship is a registration rather than a fork.
+
+## Determinism
+
+The same spec, tokens, and fonts produce a byte-identical PNG on every run and every platform.
+All 13 presets are golden-file tested, and cross-platform byte identity was verified on macOS
+arm64 and Linux x64. That is what makes assets diffable in git, and it is enforced mechanically
+rather than asserted here.
+
+## Extending
+
+Blocks, layouts, frames, and presets are all registries, and registration is config rather than
+an import side effect:
+
+```ts
+export default defineConfig({
+  tokens: { color: { accent: '#7C3AED' } },
+  blocks: { PricingCard },
+  layouts: { 'pricing-split': pricingSplit },
+  presets: { 'preview-card': { width: 1080, height: 1350, renderer: 'still', scale: 2.5 } },
+});
+```
+
+`examples/source-app` exercises exactly this from outside core, and it is a test rather than a
+demo: if it stops building, the extension API broke.
+
 ## Status
 
-**Not scaffolded yet.** The gate is **M0**: prove satori can render the existing blocks without
-a browser. See `roadmap.md`.
+**M2 complete.** Stills render end to end across social, mobile listing, and web presets, with
+`check`, `preview`, and the extension API landed. `render-video` is M4 and not yet started.
 
-Standalone and open source. The source app is the first consumer and proving ground, not the host.
+Pre-1.0, so breaking changes arrive as minor bumps with a migration line in `CHANGELOG.md`.
 
 ## Docs
 
-| file | contents |
-|---|---|
-| `design.md` | architecture: spec, tokens, block registry, presets for all three surfaces |
-| `roadmap.md` | milestones, settled decisions, competitive landscape, non-goals |
-| `CLAUDE.md` | architecture invariants and code conventions |
+| file           | contents                                                                   |
+| -------------- | -------------------------------------------------------------------------- |
+| `design.md`    | architecture: spec, tokens, block registry, presets for all three surfaces |
+| `roadmap.md`   | milestones, settled decisions, competitive landscape, non-goals            |
+| `CLAUDE.md`    | architecture invariants and code conventions                               |
+| `CHANGELOG.md` | breaking changes and migration lines                                       |
 
 ## Origin
 
