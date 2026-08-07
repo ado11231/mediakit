@@ -160,17 +160,17 @@ The guidance to "degrade gracefully rather than throw" is correct for a runtime 
 here. A silently degraded render produces a plausible-looking asset that is subtly off brand,
 and nobody notices until App Review. Fail early, fail loudly, and say what to do next.
 
-| misuse | required behavior |
-|---|---|
-| missing `mediakit.config.ts` | throw, name the expected path, suggest `mediakit init` |
-| `registerBlock` or `registerLayout` called twice with the same name | throw, name it and both registration sites |
-| render called before config is loaded | throw, since this indicates a broken CLI wiring bug rather than user error |
-| block props fail their Zod schema | throw, report every failing field at once rather than the first |
-| a referenced font weight is not loaded | throw, since satori silently substitutes and a wrong-weight screenshot is the worst outcome |
-| an unknown `preset` string | throw, list the registered presets |
-| an unknown block `type` | throw, list the registered block types |
-| an unknown `layout` string | throw, list the registered layouts |
-| a `slot` the frame's layout does not declare | throw, name the layout and list the slots it does declare |
+| misuse                                                              | required behavior                                                                           |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| missing `mediakit.config.ts`                                        | throw, name the expected path, suggest `mediakit init`                                      |
+| `registerBlock` or `registerLayout` called twice with the same name | throw, name it and both registration sites                                                  |
+| render called before config is loaded                               | throw, since this indicates a broken CLI wiring bug rather than user error                  |
+| block props fail their Zod schema                                   | throw, report every failing field at once rather than the first                             |
+| a referenced font weight is not loaded                              | throw, since satori silently substitutes and a wrong-weight screenshot is the worst outcome |
+| an unknown `preset` string                                          | throw, list the registered presets                                                          |
+| an unknown block `type`                                             | throw, list the registered block types                                                      |
+| an unknown `layout` string                                          | throw, list the registered layouts                                                          |
+| a `slot` the frame's layout does not declare                        | throw, name the layout and list the slots it does declare                                   |
 
 Every one of these messages names the offending file and, where a spec is involved, the frame
 index. An error that says only "invalid spec" costs more than it saves.
@@ -196,6 +196,7 @@ unhelpful errors, so treat these as lint rules applied by hand.
   markup that visibly has one child, and the message points at the wrong problem. `h` in
   `@mediakit/core` collapses a lone child to a scalar for exactly this reason, and core's
   tests assert it. Verified against satori 0.29.
+
 - **No CSS grid.** Flexbox only.
 - **`boxSizing` is ignored.** satori is always border-box.
 - **Gradients go in `backgroundImage`,** not the `background` shorthand.
@@ -248,7 +249,7 @@ discover it.
 ## Comments
 
 - **Do not restate the code in English.** No `// increment counter`, no `// loop through
-  items`, no `// return result`.
+items`, no `// return result`.
 - **Comment only on why.** A decision and its alternative, a non-obvious constraint, a
   workaround and what it works around, or something a future editor could easily get wrong.
 - **The test before writing one:** would a competent engineer reading this code still be
@@ -319,10 +320,11 @@ Landed since M0:
   example is a test, not a demo: if `pnpm --filter @mediakit-example/source-app test` breaks,
   the extension API broke.
 
-Still open at M2: `check`, `preview`, listing presets (`ios-6.9`, `ipad-13`, `play-*`,
-web presets), and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame`
-`Caption` `Background`). Also before publish: prove determinism on Linux, since every hash so
-far is macOS arm64 and the golden-file rule rests on it.
+Still open at M2: web presets (verified against docs), listing presets are landed
+(`ios-6.9`, `ipad-13`, `play-*`), as are `check` and `preview` and the six remaining
+built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`). Also
+before publish: prove determinism on Linux, since every hash so far is macOS arm64 and
+the golden-file rule rests on it.
 
 Three things a future editor should know rather than rediscover:
 

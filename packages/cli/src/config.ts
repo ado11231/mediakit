@@ -57,14 +57,30 @@ export const resolveConfigPath = (cwd: string): string => {
   return path;
 };
 
+export interface ImportConfigOptions {
+  /**
+   * Preview re-imports the config after every file save. Node caches modules by URL, so
+   * appending a unique query string busts the cache without touching the render path. The
+   * counter is monotonic and never touches the clock, so the determinism invariant holds.
+   */
+  bustCache?: boolean;
+}
+
+let bustCounter = 0;
+
 /**
  * Loads `mediakit.config.(ts|js)` and returns the `defineConfig` value. `defineConfig` is an
  * identity, so the default export of the consumer's config module is the `MediakitConfig`
  * itself, renderers and all: the bin re-exec happens once before any import, so a `.ts`
  * config reaches this point with strip-types active.
  */
-export const importConfig = async (configPath: string): Promise<MediakitConfig> => {
-  const module = (await import(pathToFileURL(configPath).href)) as { default: unknown };
+export const importConfig = async (
+  configPath: string,
+  options?: ImportConfigOptions,
+): Promise<MediakitConfig> => {
+  const url = pathToFileURL(configPath).href;
+  const importUrl = options?.bustCache ? `${url}?t=${++bustCounter}` : url;
+  const module = (await import(importUrl)) as { default: unknown };
   const config = module.default;
   if (
     config === undefined ||

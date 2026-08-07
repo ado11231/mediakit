@@ -1,7 +1,7 @@
 {
   "name": "@mediakit/cli",
   "version": "0.0.0",
-  "description": "The mediakit command line: init, render, check.",
+  "description": "The mediakit command line: init, preview, render, check.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
