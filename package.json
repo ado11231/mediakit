@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "budget": "node scripts/install-budget.mjs"
+    "budget": "node scripts/install-budget.mjs",
+    "pack-smoke": "node scripts/pack-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

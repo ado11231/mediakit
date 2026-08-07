@@ -39,3 +39,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm budget
+
+  pack-smoke:
+    # Proves the published surface installs and runs from outside the workspace: packs every
+    # package as a consumer receives it, installs the tarballs into a throwaway project, and
+    # runs init, render, and check. Catches a broken exports map, a missing dist, or an absent
+    # bin shebang, none of which typecheck or the workspace tests can see. Runs on Node 22 so
+    # the bin's strip-types re-exec path is exercised rather than the unflagged one.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm pack-smoke
