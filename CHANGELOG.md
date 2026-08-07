@@ -3,7 +3,7 @@
 Pre-1.0, so breaking changes arrive as minor bumps. Every one gets a migration line, because
 the person reading it is you, six months from now, when a project stops building.
 
-## Unreleased
+## 0.1.0 - 2026-08-07
 
 ### Fixed
 

@@ -1,6 +1,6 @@
 {
   "name": "@mediakit/render-still",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Renders a mediakit spec to PNG with satori and resvg. No browser.",
   "keywords": [
     "mediakit",

@@ -1,6 +1,6 @@
 {
   "name": "mediakit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Marketing assets as code. The mediakit CLI plus the config-authoring API in a single install.",
   "keywords": [
     "mediakit",

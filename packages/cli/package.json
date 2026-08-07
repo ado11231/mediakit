@@ -1,6 +1,6 @@
 {
   "name": "@mediakit/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The mediakit command line: init, preview, render, check.",
   "keywords": [
     "mediakit",

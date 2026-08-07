@@ -1,6 +1,6 @@
 {
   "name": "@mediakit/blocks",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Generic built-in blocks and layouts for mediakit.",
   "keywords": [
     "mediakit",
