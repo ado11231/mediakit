@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "budget": "node scripts/install-budget.mjs",
-    "pack-smoke": "node scripts/pack-smoke.mjs"
+    "pack-smoke": "node scripts/pack-smoke.mjs",
+    "render-readme-assets": "node scripts/render-readme-assets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

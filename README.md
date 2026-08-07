@@ -7,6 +7,13 @@ surface: social stills, store and web listing images, and (opt-in) vertical vide
 spec  +  design tokens  ->  deterministic render  ->  platform-sized output
 ```
 
+<p align="center">
+  <img alt="A social still rendered from a spec using a custom block, layout, and preset" src="examples/source-app/marketing/launch/frame-01.png" width="360" />
+  <img alt="An App Store 6.9-inch listing screenshot: a rendered app screen framed in a DeviceFrame" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" width="188" />
+</p>
+
+<p align="center"><sub>Rendered by mediakit in CI from the committed specs in <code>examples/source-app/marketing</code>, never hand-placed. <code>pnpm render-readme-assets</code> regenerates them and fails on any drift.</sub></p>
+
 ## Why
 
 Every marketing asset is made by hand in a design tool, then drifts from the product the moment
