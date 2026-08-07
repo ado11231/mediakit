@@ -2,6 +2,7 @@ import process from 'node:process';
 import { runInit } from './commands/init.js';
 import { runRender } from './commands/render.js';
 import { runCheck } from './commands/check.js';
+import { runPreview } from './commands/preview.js';
 
 export {
   importConfig,
@@ -10,15 +11,18 @@ export {
   stripTypesAvailable,
   stripTypesUnflagged,
 } from './config.js';
+export type { ImportConfigOptions } from './config.js';
 
 export { runInit };
 export { runRender };
 export { runCheck };
+export { runPreview };
 
 const USAGE = `mediakit <command> [args]
 
 commands:
   init     scaffold mediakit.config.ts and an example spec
+  preview  serve a spec's rendered PNGs over HTTP with live reload
   render   render a spec to one or more presets, writing PNGs to disk
   check    validate specs and brand rules against store constraints
 `;
@@ -33,13 +37,15 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return Promise.resolve(0);
     case 'init':
       return runInit(rest);
+    case 'preview':
+      return runPreview(rest);
     case 'render':
       return runRender(rest);
     case 'check':
       return runCheck(rest);
     default:
       process.stderr.write(
-        `mediakit: unknown command "${command}". Available: init, render, check.\n`,
+        `mediakit: unknown command "${command}". Available: init, preview, render, check.\n`,
       );
       return Promise.resolve(1);
   }
