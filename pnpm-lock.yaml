@@ -103,6 +103,19 @@ importers:
         specifier: ^22.20.1
         version: 22.20.1
 
+  packages/mediakit:
+    dependencies:
+      '@mediakit/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@mediakit/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.1
+        version: 22.20.1
+
   packages/render-still:
     dependencies:
       '@mediakit/core':

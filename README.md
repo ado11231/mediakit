@@ -26,10 +26,15 @@ response is not reproducible.
 ## Install
 
 ```sh
-pnpm add -D @mediakit/cli
+pnpm add -D mediakit
 npx mediakit init
 npx mediakit render marketing/example.spec.json
 ```
+
+`mediakit` is the single package to install. It owns the `mediakit` bin and re-exports the
+config-authoring API, so the scaffolded `mediakit.config.ts` imports `defineConfig` from
+`mediakit` itself. The `@mediakit/*` packages remain published for consumers who prefer to
+depend on the pieces directly.
 
 `init` scaffolds `mediakit.config.ts` and an example spec that renders on first run: no API key,
 no network call, no manual file copy. The only required token is `color.accent`, and a font is

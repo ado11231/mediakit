@@ -35,7 +35,7 @@ const BUDGET = {
 };
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const workspaces = ['core', 'blocks', 'render-still', 'cli'];
+const workspaces = ['core', 'blocks', 'render-still', 'cli', 'mediakit'];
 
 const dirSize = (dir) => {
   let total = 0;

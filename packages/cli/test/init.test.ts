@@ -24,10 +24,12 @@ describe('runInit', () => {
     expect(existsSync(join(dir, 'marketing', 'example.spec.json'))).toBe(true);
   });
 
-  it('writes a config that imports defineConfig and ships the bundled accent', async () => {
+  it('writes a config that imports defineConfig from the installed `mediakit` package', async () => {
     await runInit([dir]);
     const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
-    expect(config).toMatch(/import\s*\{[^}]*defineConfig[^}]*\}\s*from\s*'@mediakit\/core'/);
+    // The scaffold must import from the one package a newcomer installs, not a transitive
+    // dependency: pnpm's strict layout would refuse to resolve `@mediakit/core` by name.
+    expect(config).toMatch(/import\s*\{[^}]*defineConfig[^}]*\}\s*from\s*'mediakit'/);
     expect(config).toContain("color: { accent: '#2563EB' }");
   });
 

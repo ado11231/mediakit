@@ -1,0 +1,58 @@
+{
+  "name": "mediakit",
+  "version": "0.0.0",
+  "description": "Marketing assets as code. The mediakit CLI plus the config-authoring API in a single install.",
+  "keywords": [
+    "mediakit",
+    "marketing",
+    "design-tokens",
+    "app-store",
+    "screenshots",
+    "satori",
+    "deterministic",
+    "cli"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ado11231/mediakit#readme",
+  "bugs": {
+    "url": "https://github.com/ado11231/mediakit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ado11231/mediakit.git",
+    "directory": "packages/mediakit"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "mediakit": "./dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ./scripts/shebang.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mediakit/cli": "workspace:*",
+    "@mediakit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -13,7 +13,10 @@ Options:
   -h, --help
 `;
 
-const CONFIG_TEMPLATE = `import { defineConfig } from '@mediakit/core';
+// Imports from `mediakit`, not `@mediakit/core`: a newcomer installs the single `mediakit`
+// package, and pnpm's strict node_modules will not resolve a transitive dependency by name.
+// The facade re-exports the core authoring API so the scaffolded config renders on first run.
+const CONFIG_TEMPLATE = `import { defineConfig } from 'mediakit';
 
 export default defineConfig({
   tokens: {

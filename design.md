@@ -14,7 +14,14 @@ mediakit/
     └── source-app    real config plus custom blocks, proving the extension API
 ```
 
-Published as `mediakit` (the CLI) plus `@mediakit/*` for the libraries. ESM only, Node 22+.
+Published as `mediakit` plus `@mediakit/*` for the libraries. ESM only, Node 22+.
+
+`mediakit` is a thin facade rather than a fifth implementation package. It owns the `mediakit`
+bin (delegating to `@mediakit/cli`) and re-exports `@mediakit/core`'s config-authoring API, so a
+consumer installs one package and the scaffolded config imports `defineConfig` from `mediakit`.
+The facade's main entry re-exports core only, never the CLI, so importing it to author a config
+does not load the satori/resvg render graph. This settles roadmap decision 1: the installable
+package is `mediakit`, and `npm i -D mediakit` resolves rather than 404s.
 
 ---
 
