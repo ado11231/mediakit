@@ -14,15 +14,13 @@ import { renderSpec } from '../src/index.js';
  * contract, or a built-in block that alters output is caught here as a byte diff, not
  * discovered when a regenerated App Store screenshot silently shifts.
  *
- * The committed goldens were rendered on macOS arm64. resvg ships per-platform native
- * binaries, so byte agreement with Linux CI is the pre-publish task in roadmap.md, not a
- * premise this test can lean on. The byte comparison is therefore gated to darwin/arm64;
- * every other platform still runs the render (a throw is a regression anywhere) but skips the
- * compare with a pointer at the task that would close it.
+ * Cross-platform byte identity was verified in August 2026 by rendering all 13 presets on
+ * macOS arm64 and Linux x64 (via Docker, node:22) and confirming every SHA-256 matches. The
+ * committed goldens therefore compare on every platform, not just the one they were rendered
+ * on. See `cross-platform-hashes.mjs` for the script that reproduces the verification.
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const goldenDir = join(here, 'golden');
-const isGoldenHost = process.platform === 'darwin' && process.arch === 'arm64';
 
 const tokens = { color: { accent: '#2563EB' } };
 
@@ -70,7 +68,7 @@ const registries = applyConfig(createDefaultRegistries(), {
 
 const sha = (buffer: Buffer): string => createHash('sha256').update(buffer).digest('hex');
 
-describe.skipIf(!isGoldenHost)('golden files (darwin/arm64)', () => {
+describe('golden files', () => {
   for (const preset of presetNames(spec)) {
     it(`reproduces the committed golden for ${preset}`, async () => {
       const golden = join(goldenDir, `${preset}.png`);
@@ -89,25 +87,4 @@ describe.skipIf(!isGoldenHost)('golden files (darwin/arm64)', () => {
       expect(sha(frame?.png ?? Buffer.alloc(0))).toBe(sha(expected));
     }, 30_000);
   }
-});
-
-describe.skipIf(isGoldenHost)('golden files (non-darwin/arm64)', () => {
-  /**
-   * resvg's native binaries disagree across platforms at the byte level, so a golden committed
-   * from macOS arm64 would fail the compare here without indicating a real regression. The
-   * render still runs, so a satori throw or a preset that no longer exists is caught on every
-   * platform. Closing the cross-platform byte gap is the pre-publish Linux task in roadmap.md.
-   */
-  it('renders every preset without a throw, even where the byte compare is skipped', async () => {
-    for (const preset of presetNames(spec)) {
-      const [frame] = await renderSpec({
-        spec,
-        registries,
-        tokens,
-        preset,
-        file: 'golden.spec.json',
-      });
-      expect(frame?.png.length ?? 0).toBeGreaterThan(0);
-    }
-  }, 60_000);
 });

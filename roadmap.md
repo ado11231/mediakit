@@ -406,13 +406,16 @@ Two further findings worth keeping:
 
 ## Immediate next action
 
-M2. The M1 gate is met: `examples/source-app` registers a custom block, a custom layout, and a
-custom preset from outside `@mediakit/core` and renders `marketing/launch/frame-01.png`
-byte-deterministically, SHA `1ea9b25b…`, reproduced by a fresh run.
+**M2 is complete.** The full M2 surface is landed and verified:
+`init`, `render`, `check`, `preview`, the listing presets (`ios-6.9`, `ios-6.5`, `ipad-13`,
+`play-phone`, `play-feature`), the web presets (`github-social`, `producthunt-gallery`,
+`cws-screenshot`, `cws-marquee`, verified against docs in August 2026), and the six remaining
+built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption` `Background`).
 
-The M2 surface is landed: `preview`, `check`, the listing presets (`ios-6.9`, `ios-6.5`,
-`ipad-13`, `play-phone`, `play-feature`), the web presets (`github-social`,
-`producthunt-gallery`, `cws-screenshot`, `cws-marquee`, verified against docs in August 2026),
-and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame` `Caption`
-`Background`). Before publish, prove determinism on Linux, since every hash so far is macOS
-arm64 and the golden-file rule rests on it.
+Cross-platform determinism was verified in August 2026 by rendering all 13 presets on macOS
+arm64 and Linux x64 (via Docker, node:22) and confirming every SHA-256 matches. The
+golden-file test now compares on every platform rather than gating to darwin/arm64. CI runs
+on Linux via `.github/workflows/ci.yml`.
+
+**Next: publish.** The M2 gate is met, with both differentiators (store constraint checking
+and cross-platform determinism) shipped and mechanically enforced.

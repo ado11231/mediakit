@@ -306,31 +306,32 @@ reproduces those bytes, which is the example-level determinism gate.
 
 Landed since M0:
 
-- `packages/cli`: `init`, `render`, and the loader. `check` and `preview` are deferred to M2.
-  `init` scaffolds `mediakit.config.ts` and an example spec that renders on first run with no
-  API key, no network call, and no manual file copy. `render` loads the config, builds the
-  registries (built-ins first so a custom block reusing a built-in name surfaces as
+- `packages/cli`: `init`, `render`, `check`, and `preview`. `init` scaffolds
+  `mediakit.config.ts` and an example spec that renders on first run with no API key, no
+  network call, and no manual file copy. `render` loads the config, builds the registries
+  (built-ins first so a custom block reusing a built-in name surfaces as
   `duplicateRegistration`), iterates the spec's `presetNames`, and writes a PNG per frame to
   `marketing/<spec-id>/<preset>/frame-NN.png`, nesting under the preset name only when the
   spec declares more than one. A TypeScript config loads without a transpiler dependency via
   `--experimental-strip-types` (re-exec'd by the bin on Node 22.6 through 23.5; unflagged
-  after) so the install-size budget stays closed.
+  after) so the install-size budget stays closed. `check` validates specs and brand rules
+  against store constraints in spec and asset modes. `preview` serves rendered PNGs over HTTP
+  with live reload on file change, using `node:http`, `node:fs.watch`, and SSE with zero new
+  dependencies.
 - `examples/source-app`: registers `PricingCard`, `pricing-split`, and `preview-card` from a
   workspace consumer config and renders `marketing/launch/frame-01.png` (1080x1350). The
   example is a test, not a demo: if `pnpm --filter @mediakit-example/source-app test` breaks,
   the extension API broke.
 
-Still open at M2: listing presets are landed (`ios-6.9`, `ipad-13`, `play-*`), as are
-`check`, `preview`, web presets (`github-social`, `producthunt-gallery`, `cws-screenshot`,
+The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `check`,
+`preview`, web presets (`github-social`, `producthunt-gallery`, `cws-screenshot`,
 `cws-marquee`), and the six remaining built-in blocks (`Subhead` `Stat` `CTA` `DeviceFrame`
-`Caption` `Background`). Also before publish: prove determinism on Linux, since every hash so
-far is macOS arm64 and the golden-file rule rests on it.
+`Caption` `Background`). Cross-platform determinism was verified in August 2026: all 13
+presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
+compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-Three things a future editor should know rather than rediscover:
+Two things a future editor should know rather than rediscover:
 
-- **Determinism is verified on macOS arm64 only.** `@resvg/resvg-js` ships per-platform native
-  binaries, so byte-identical output between a developer's machine and Linux CI is still an
-  assumption, and the golden-file rule below rests on it entirely.
 - **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the
   default scale is expressed in 400 and 700 alone. satori substitutes a missing weight silently.
   A test asserts the two stay consistent; do not add a 500 to one without the other.
