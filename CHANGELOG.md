@@ -41,8 +41,20 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **`mediakit`, the package a consumer installs.** A thin facade that owns the `mediakit` bin
+  (delegating to `@mediakit/cli`) and re-exports `@mediakit/core`'s config-authoring API, so
+  `npm i -D mediakit` resolves rather than 404s. `init` now scaffolds a config that imports
+  `defineConfig` from `mediakit`, because pnpm's strict layout will not resolve `@mediakit/core`
+  by name for a consumer who installed only `mediakit`. Settles roadmap decision 1.
+- **Pack-based external-consumer smoke test (`pnpm pack-smoke`), gated in CI.** Packs every
+  publishable package as a consumer receives it, installs the tarballs into a throwaway project,
+  and runs init, render, and check. Catches a broken `exports` map, a missing `dist`, or an
+  absent bin shebang, none of which typecheck or the workspace tests can see.
+- **The repo renders its own README (`pnpm render-readme-assets`), gated in CI.** The README
+  embeds the launch still and the `ios-6.9` store listing, regenerated from their committed
+  specs and failing on any drift.
 - Install-size and dependency-count budget enforced in CI (`pnpm budget`). Currently 18.3 MB
-  across 29 packages.
+  across 30 packages.
 - `examples/source-app` renders and checks store assets at `ios-6.9` and `play-phone`, composing
   a rendered app screen inside a `DeviceFrame`. This is the test that caught the alpha-channel
   bug above.

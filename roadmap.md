@@ -431,15 +431,22 @@ Presets declaring `noAlpha` are now re-encoded as 24-bit PNGs, asserted against 
 The general lesson, worth keeping: a constraint verified only against a fixture the test author
 wrote is a test of the fixture. The gate has to run the real pipeline.
 
-**Next: publish.** Remaining, and all judgment calls rather than engineering:
+**Publish-readiness landed on the `publish-ready` branch (7 August 2026).** Three of the four
+items below are done and gated in CI; only the manual npm steps remain.
 
-1. **Claim the `@mediakit` org on npm**, still manual (settled decision 1).
-2. **Decide the headline package.** Decision 1 names `mediakit` as the package a consumer
-   installs, with `@mediakit/*` for libraries. Today only `@mediakit/cli` exists and provides the
-   `mediakit` bin, so `npm i -D mediakit` 404s. Either publish a thin `mediakit` that re-exports
-   the CLI, or amend decision 1 and point the README at `@mediakit/cli`.
-3. **Set versions.** Everything is `0.0.0`. Pre-1.0 with breaking changes as minor bumps implies
-   starting at `0.1.0`.
-4. **Render the README's own images in CI** from committed specs (discovery strategy 1). The
-   store assets in `examples/source-app/marketing/store/` are the obvious candidates and already
-   regenerate deterministically.
+1. **Claim the `@mediakit` org on npm and publish.** Still manual (settled decision 1). The
+   packages are versioned, packable, and proven to install from tarballs by `pnpm pack-smoke`,
+   so this is `npm publish` once the org exists, in dependency order (`core`, `blocks`,
+   `render-still`, `cli`, then `mediakit`).
+2. **Headline package: done.** `mediakit` is a thin facade that owns the bin and re-exports the
+   core authoring API, so `npm i -D mediakit` resolves. `init` scaffolds a config importing from
+   `mediakit`. Decision 1 is settled rather than amended.
+3. **Versions: done.** All publishable packages are `0.1.0`; the CHANGELOG's Unreleased section
+   became the `0.1.0` entry.
+4. **README renders its own images: done.** `pnpm render-readme-assets` regenerates the embedded
+   launch still and `ios-6.9` store listing from their committed specs and fails on drift,
+   gated in CI (discovery strategy 1).
+
+An external repo can already test this end to end: `pnpm pack-smoke` packs every package and
+drives init, render, and check from a throwaway consumer, which is the same path a stranger
+takes after `npm i -D mediakit`.
