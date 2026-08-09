@@ -3,6 +3,31 @@
 Pre-1.0, so breaking changes arrive as minor bumps. Every one gets a migration line, because
 the person reading it is you, six months from now, when a project stops building.
 
+## Unreleased
+
+### Fixed
+
+- **`Stat` uppercased the value, rewriting the spec author's copy.** `textTransform:
+  'uppercase'` was hardcoded past the token spread on both the value and the label, so a spec
+  saying `"value": "5 min"` rendered `5 MIN` and no token or prop could turn it off. That is a
+  content change wearing a styling change's clothes: a price, a version string, or a product
+  name shipped altered with no error and no diff to point at. The value now defaults to
+  `transform: 'none'` and takes `'uppercase'` on request; the label keeps its uppercase default
+  through the new `labelTransform` prop, so the stats-tile look is unchanged.
+  **Migration:** add `"transform": "uppercase"` to any `Stat` whose value you wanted in caps.
+  Values that are digits or already capitalised (`3.2x`, `10K`) render identically and need
+  nothing. Re-render any asset containing a `Stat` with lowercase letters in its value.
+- **`Stat` and `CTA` pinned style values the token contract owns.** `Stat` forced
+  `letterSpacing` on both lines and `CTA` forced `fontWeight: 700`, each overriding the `type`
+  token the block had just read, which is invariant 9 in `CLAUDE.md`. Both now defer to the
+  token. **Migration:** with the default tokens, `CTA` is unchanged, because `callout` is
+  already 700. A config whose `callout` or `display` carries a different weight or tracking
+  will see those blocks change to match it, which is the intent. Set the token, not the prop.
+
+Neither block appears in the golden fixture, so no golden file changed. Found by rendering a
+real app's specs, where `"5 min"` came back as `5 MIN`; every fixture at the time used all-caps
+or digit-only values, so the whole suite passed over it.
+
 ## 0.1.0 - 2026-08-07
 
 ### Fixed

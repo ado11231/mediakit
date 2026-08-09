@@ -7,6 +7,10 @@ import { alignItems, typeStyle } from '../style.js';
  * tokens so a design system whose button inverts (ink on canvas) does not have to fork the
  * block. `align` controls the pill's position within its column via `alignSelf`, since the
  * pill must hug its content rather than stretch to the column width.
+ *
+ * Weight comes from the `size` token and is deliberately not forced here. Pinning it to 700 to
+ * make the pill read as a button overrode the one thing a consumer's type scale is for, and a
+ * design system whose buttons are medium had no way to say so.
  */
 export const CTA = defineBlock({
   schema: z.object({
@@ -33,7 +37,6 @@ export const CTA = defineBlock({
             display: 'flex',
             ...typeStyle(typeToken(tokens, size)),
             fontFamily: tokens.font.display.family,
-            fontWeight: 700,
             color: colorToken(tokens, color),
             backgroundColor: colorToken(tokens, background),
             borderRadius: radiusToken(tokens, radius),

@@ -116,7 +116,7 @@ describe('Subhead', () => {
 });
 
 describe('Stat', () => {
-  it('renders the value above the label, both uppercased for the stats-slide look', () => {
+  it('renders the value above the label, with only the label uppercased by default', () => {
     const element = render(Stat, { value: '3.2x', label: 'faster builds' });
     const children = element.props.children;
     expect(Array.isArray(children)).toBe(true);
@@ -124,10 +124,47 @@ describe('Stat', () => {
 
     const value = (children as readonly Element[])[0]!;
     const label = (children as readonly Element[])[1]!;
-    expect(value.props.style?.textTransform).toBe('uppercase');
+    expect(value.props.style?.textTransform).toBe('none');
     expect(label.props.style?.textTransform).toBe('uppercase');
     expect(value.props.style?.color).toBe(context.tokens.color.ink);
     expect(label.props.style?.color).toBe(context.tokens.color.inkMuted);
+  });
+
+  /**
+   * The regression this exists for shipped: an uppercase hardcoded past the token spread
+   * rendered a spec's `5 min` as `5 MIN`, and every fixture at the time used all-caps or
+   * digits, so nothing failed. Any value asserted here must carry lowercase letters.
+   */
+  it('does not alter the case of the value the spec author wrote', () => {
+    const value = (
+      render(Stat, { value: '5 min', label: 'job to invoice' }).props
+        .children as readonly Element[]
+    )[0]!;
+    expect(value.props.children).toBe('5 min');
+    expect(value.props.style?.textTransform).not.toBe('uppercase');
+  });
+
+  it('takes uppercase on the value when the spec asks for it', () => {
+    const value = (
+      render(Stat, { value: '5 min', label: 'x', transform: 'uppercase' }).props
+        .children as readonly Element[]
+    )[0]!;
+    expect(value.props.style?.textTransform).toBe('uppercase');
+  });
+
+  it('lets a sentence-case design system turn the label transform off', () => {
+    const label = (
+      render(Stat, { value: '1', label: 'two', labelTransform: 'none' }).props
+        .children as readonly Element[]
+    )[1]!;
+    expect(label.props.style?.textTransform).toBe('none');
+  });
+
+  it('takes letterSpacing from the type token rather than pinning its own', () => {
+    const value = (
+      render(Stat, { value: '1', label: 'two' }).props.children as readonly Element[]
+    )[0]!;
+    expect(value.props.style?.letterSpacing).toBe(context.tokens.type.display?.letterSpacing);
   });
 
   it('aligns the column to the start, end, or center via alignItems, not text-align', () => {
@@ -154,6 +191,14 @@ describe('CTA', () => {
   it('resolves the radius through the token contract, not a magic number', () => {
     const inner = render(CTA, { text: 'Sign up' }).props.children as Element;
     expect(inner.props.style?.borderRadius).toBe(context.tokens.radius.full);
+  });
+
+  it('takes its weight from the size token rather than pinning the pill to bold', () => {
+    const inner = render(CTA, { text: 'Sign up' }).props.children as Element;
+    expect(inner.props.style?.fontWeight).toBe(context.tokens.type.callout?.fontWeight);
+
+    const light = render(CTA, { text: 'Sign up', size: 'body' }).props.children as Element;
+    expect(light.props.style?.fontWeight).toBe(context.tokens.type.body?.fontWeight);
   });
 });
 
