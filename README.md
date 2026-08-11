@@ -75,6 +75,15 @@ constraints `check` enforces: exact or documented-alternate sizes, frame-count c
 aspect ceiling, and 24-bit output where a store rejects an alpha channel. Presets are a
 registry, so a size mediakit does not ship is a registration rather than a fork.
 
+## Listing screenshots are bring-your-own
+
+For store and web listings you supply the screenshot PNG and mediakit frames, captions, and
+sizes it. It never captures, so the input is backend and framework agnostic: seed Supabase, a
+Firebase emulator, your own API, or just screenshot by hand, then point a `DeviceFrame` at the
+file. Commit those PNGs next to your specs so renders stay reproducible. If you would rather
+ship no capture step at all, rebuild the screen from your tokens as blocks: no app, no backend,
+fully deterministic.
+
 ## Determinism
 
 The same spec, tokens, and fonts produce a byte-identical PNG on every run and every platform.

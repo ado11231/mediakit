@@ -618,6 +618,31 @@ simulator capture properly. For web, capture would mean driving a real browser, 
 invariant 2 in `CLAUDE.md` forbids outright. Same conclusion from two independent directions,
 which is usually a sign the boundary is in the right place.
 
+### Capture is out of scope, which is what keeps it stack-agnostic
+
+Because mediakit never captures, the input is always a PNG the consumer produced however their
+stack produces one, and `DeviceFrame`'s `src` is a plain file path that encodes nothing about
+where the pixels came from. That is not a limitation pushed onto the consumer, it is the thing
+that keeps the input backend-neutral: a Supabase app seeds Supabase, a Firebase app seeds the
+emulator, a REST backend hits its own fixtures, a static app is screenshotted by hand, and
+mediakit's half is byte-for-byte identical in every case.
+
+The capture command that produces those PNGs is the consumer's and belongs in their app, never
+in mediakit or a mediakit plugin core depends on. It almost always needs a simulator or a
+browser, so pulling it inside would break invariant 2 and drag a backend into a tool that makes
+zero network requests. If an official capture helper is ever warranted it ships as a separate
+opt-in package, the way `render-video` isolates Remotion, and browser-driven ones especially
+never enter `core`, `blocks`, or `render-still`.
+
+Recommended practice is to commit the screenshots into the repo next to the specs, so a render
+stays reproducible and diffable even though the capture that wrote them was not. The framing is
+deterministic regardless; only the captured pixels change when the app changes.
+
+The zero-capture path remains available and is the default a newcomer should reach first:
+rebuild the screen from tokens as blocks. No app to run, no backend to seed, no simulator, fully
+deterministic. Captured real screens are the opt-in upgrade a consumer reaches for when pixel
+fidelity to the shipping app matters more than having no capture step at all.
+
 ### Constraints enforced by `check`
 
 - No alpha channel on App Store output. Apple rejects transparency.
