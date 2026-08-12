@@ -1,141 +1,134 @@
-# mediakit
-
-Marketing assets as code. One declarative spec plus your design tokens renders every marketing
-surface: social stills, store and web listing images, and (opt-in) vertical video.
-
-```
-spec  +  design tokens  ->  deterministic render  ->  platform-sized output
-```
+<h3 align="center">mediakit</h3>
 
 <p align="center">
-  <img alt="A social still rendered from a spec using a custom block, layout, and preset" src="examples/source-app/marketing/launch/frame-01.png" width="360" />
-  <img alt="An App Store 6.9-inch listing screenshot: a rendered app screen framed in a DeviceFrame" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" width="188" />
+  <a href="https://www.npmjs.com/package/mediakit"><img src="https://img.shields.io/npm/v/mediakit?style=flat&color=CB3837&logo=npm&logoColor=white" alt="npm version"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22-5FA04E?style=flat&logo=nodedotjs&logoColor=white" alt="Node 22 or newer"></a>
+  <a href="https://github.com/ado11231/mediakit/actions/workflows/ci.yml"><img src="https://github.com/ado11231/mediakit/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat" alt="MIT license"></a>
 </p>
 
-<p align="center"><sub>Rendered by mediakit in CI from the committed specs in <code>examples/source-app/marketing</code>, never hand-placed. <code>pnpm render-readme-assets</code> regenerates them and fails on any drift.</sub></p>
+<p align="center"><b>App Store screenshots that build like code.</b></p>
 
-## Why
+<p align="center">
+  One spec plus your design tokens, one command, every size a store asks for.
+  Rendered in CI, reviewed in a pull request, never opened in a design tool.
+</p>
 
-Every marketing asset is made by hand in a design tool, then drifts from the product the moment
-you change a color, a font, or a screen. Making them a build artifact of the design system fixes
-it. Change a token, run one command, everything regenerates on brand.
-
-## What makes it different
-
-Nothing else reads a design system. Competing packages make you retype your brand into their
-JSON, cannot be extended with your own blocks, only handle App Store screenshots, and validate
-nothing before you upload. All four gaps are open.
-
-It also sends nothing. No telemetry, no network requests at any point, including install. That
-is an architecture invariant rather than a policy, because a render that depends on a network
-response is not reproducible.
-
-## Install
-
-```sh
-pnpm add -D mediakit
+```bash
+npm i -D mediakit
 npx mediakit init
 npx mediakit render marketing/example.spec.json
 ```
 
-`mediakit` is the single package to install. It owns the `mediakit` bin and re-exports the
-config-authoring API, so the scaffolded `mediakit.config.ts` imports `defineConfig` from
-`mediakit` itself. The `@mediakit/*` packages remain published for consumers who prefer to
-depend on the pieces directly.
+Needs Node 22 or newer. Nothing is ever sent anywhere, at any point, including install.
 
-`init` scaffolds `mediakit.config.ts` and an example spec that renders on first run: no API key,
-no network call, no manual file copy. The only required token is `color.accent`, and a font is
-bundled.
+## App Store Screenshots
 
-Node 22 or later. ESM only.
+<p align="center">
+  <img width="264" src="examples/source-app/marketing/store-light/frame-01.png" alt="An App Store screenshot on a light theme: an app screen in a phone frame under a headline">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img width="264" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" alt="The same App Store screenshot on a dark theme">
+</p>
+
+One spec made both of those. The only difference is a config that swaps four colour
+tokens, so a theme is a file rather than a second set of images to keep in sync.
+
+You bring the screen, mediakit does the rest: the device frame, the headline, the sizing,
+and the checks. There are two ways to get the screen.
+
+**Use a real screenshot.** Take it however you already do, from a simulator, a test run,
+or by hand, and point at the file.
+
+```json
+{ "type": "DeviceFrame", "props": { "chrome": "phone", "src": "captures/today.png" } }
+```
+
+**Or build the screen out of blocks,** from the same tokens as your app. No simulator, no
+backend, nothing to capture.
+
+```json
+{ "type": "DeviceFrame", "props": { "chrome": "phone-notch", "src": "marketing/screen.png" } }
+```
+
+They use different frames because a real screenshot already has a status bar and a Dynamic
+Island in it. `phone` leaves room for them, `phone-notch` draws them.
+
+> If you seed a database to take screenshots, give it its own account. A test account is
+> full of things that look fine in a test and terrible in a listing: `(Test User)` name
+> suffixes and dashboards reading `$0`.
+
+## Stills and Carousels
+
+<p align="center">
+  <img width="420" src="examples/source-app/marketing/launch/frame-01.png" alt="A social still: a headline column beside a pricing card, built from a custom block and layout">
+</p>
+
+The same blocks and tokens make social posts, so a launch announcement is another spec
+rather than another tool. A spec with several frames renders `frame-01`, `frame-02`, and so
+on, which is a carousel. That image uses a block, a layout, and a canvas size that are not
+built in; all three came from a config file, which is how anything mediakit does not ship
+gets added.
 
 ## Commands
 
-| command   | what it does                                                              |
-| --------- | ------------------------------------------------------------------------- |
-| `init`    | scaffold `mediakit.config.ts` and an example spec                         |
-| `render`  | render a spec to PNG, fanning out across every preset the spec declares   |
-| `preview` | serve rendered PNGs over HTTP with live reload on spec, config, font edit |
-| `check`   | validate specs and rendered assets against store rules, non-zero on fail  |
+|           |                                                    |
+| --------- | -------------------------------------------------- |
+| `init`    | write a config and a first spec that renders as-is |
+| `render`  | render a spec, once per size it asks for           |
+| `preview` | a local page that re-renders as you edit           |
+| `check`   | catch what a store would reject, before you upload |
 
-`check` also runs against hand-made screenshots with no renderer adopted:
+`check` works on its own, so you can point it at screenshots you already made:
 
-```sh
+```bash
 npx mediakit check ./screenshots --preset ios-6.9
 ```
 
-## Presets
+Add `--config <path>` to any of them to keep several configs, say a light one and a dark
+one, in a single folder.
 
-Social: `ig-portrait` `ig-square` `story` `li-portrait`.
-Mobile listings: `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`.
-Web: `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee`.
+## Sizes
 
-Dimensions are verified against each channel's official docs, and every one carries the
-constraints `check` enforces: exact or documented-alternate sizes, frame-count caps, the Play
-aspect ceiling, and 24-bit output where a store rejects an alpha channel. Presets are a
-registry, so a size mediakit does not ship is a registration rather than a fork.
+App Store and Play: `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`
+Social: `ig-portrait` `ig-square` `story` `li-portrait`
+Web: `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee`
 
-## Listing screenshots are bring-your-own
+Each is checked against that channel's published rules: exact sizes, image counts, and
+whether an alpha channel gets you rejected. A size mediakit does not ship is a few lines in
+your config, not a fork.
 
-For store and web listings you supply the screenshot PNG and mediakit frames, captions, and
-sizes it. It never captures, so the input is backend and framework agnostic: seed Supabase, a
-Firebase emulator, your own API, or just screenshot by hand, then point a `DeviceFrame` at the
-file. Commit those PNGs next to your specs so renders stay reproducible. If you would rather
-ship no capture step at all, rebuild the screen from your tokens as blocks: no app, no backend,
-fully deterministic.
+## Your Design System
 
-## Determinism
-
-The same spec, tokens, and fonts produce a byte-identical PNG on every run and every platform.
-All 13 presets are golden-file tested, and cross-platform byte identity was verified on macOS
-arm64 and Linux x64. That is what makes assets diffable in git, and it is enforced mechanically
-rather than asserted here.
-
-## Extending
-
-Blocks, layouts, frames, and presets are all registries, and registration is config rather than
-an import side effect:
+mediakit will not make you retype your brand. Point it at the tokens you already have.
 
 ```ts
 export default defineConfig({
-  tokens: { color: { accent: '#7C3AED' } },
+  tokens: { color: { accent: '#0D9488' } },
   blocks: { PricingCard },
   layouts: { 'pricing-split': pricingSplit },
   presets: { 'preview-card': { width: 1080, height: 1350, renderer: 'still', scale: 2.5 } },
 });
 ```
 
-`examples/source-app` exercises exactly this from outside core, and it is a test rather than a
-demo: if it stops building, the extension API broke.
+Only `color.accent` is required and a font comes bundled, so `init` renders on the first
+run.
 
-## Status
+## Same Input, Same Pixels
 
-**M2 complete.** Stills render end to end across social, mobile listing, and web presets, with
-`check`, `preview`, and the extension API landed. `render-video` is M4 and not yet started.
-
-Pre-1.0, so breaking changes arrive as minor bumps with a migration line in `CHANGELOG.md`.
+Render twice and the files are identical, byte for byte, on macOS and Linux. That is what
+makes an image reviewable in a pull request: when one changes, something really changed.
+Every size is tested for it.
 
 ## Docs
 
-| file           | contents                                                                   |
-| -------------- | -------------------------------------------------------------------------- |
-| `design.md`    | architecture: spec, tokens, block registry, presets for all three surfaces |
-| `roadmap.md`   | milestones, settled decisions, competitive landscape, non-goals            |
-| `CLAUDE.md`    | architecture invariants and code conventions                               |
-| `CHANGELOG.md` | breaking changes and migration lines                                       |
+| file           |                                              |
+| -------------- | -------------------------------------------- |
+| `design.md`    | how it works and why it is built this way    |
+| `roadmap.md`   | what is done, what is next                   |
+| `CHANGELOG.md` | breaking changes, each with a migration line |
 
-## Origin
-
-mediakit was extracted from a production app, where the same block vocabulary had
-been built twice by hand: once for static social posts, once for animated video. That
-duplication is what made the abstraction obvious enough to pull out.
-
-The source app remains the reference consumer. `examples/source-app` is a real config that
-has to keep building, which is what stops the extension API from rotting. It is an example,
-not a dependency, and nothing in core knows it exists.
+Pre-1.0, so breaking changes come as minor versions.
 
 ## License
 
-MIT. `render-video` carries Remotion as a peer dependency, which is free for individuals,
-non-profits, and organizations up to 3 employees, and paid above that. Nothing else pulls
-Remotion in.
+MIT. Video rendering is a separate opt-in package; nothing here pulls it in.

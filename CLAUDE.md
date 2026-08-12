@@ -295,7 +295,8 @@ bearing for determinism.
 **M0 passed on 3 August 2026.** All three criteria met by `spike/`: it renders with no satori
 throw, it matches the reference by eye with no fallback font and no collapsed layout, and two
 runs produce byte-identical PNGs (`fcb72d3e…`) across separate processes, not only within one.
-`spike/` is throwaway and is deleted once `render-still` renders the same frame.
+`spike/` was throwaway and is now deleted, since `render-still` renders the same frame.
+Recoverable at `git show 06ff919` if the harness is ever worth reading again.
 
 **M1 passed on 5 August 2026.** The source app's carousels render from mediakit through the
 extension API: a custom block, a custom layout, and a custom preset, all registered from
@@ -330,7 +331,7 @@ The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `che
 presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-Two things a future editor should know rather than rediscover:
+Four things a future editor should know rather than rediscover:
 
 - **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the
   default scale is expressed in 400 and 700 alone. satori substitutes a missing weight silently.
@@ -338,3 +339,13 @@ Two things a future editor should know rather than rediscover:
 - **Display-size type does not fit a `split` column.** `minWidth: 0` stops a column from
   refusing to shrink, but no layout can rescue a single word wider than half the canvas. The
   answer is authoring: point the block at a smaller type token.
+- **`phone` draws no island and `phone-notch` does, and no code may decide between them.** A
+  device capture already contains the status bar; a screen composed from blocks does not. The
+  pressure to "just detect whether the screenshot already has an island" will arrive, and it
+  loses to invariant 11: it is inference in the render path, and it fails silently, because a
+  doubled island renders, validates under `check`, and uploads. A test asserts `phone` emits no
+  absolutely-positioned child for exactly this reason.
+- **`DEFAULT_COLOR.bezel` and `DEFAULT_COLOR.canvas` are the same value.** A device framed on an
+  unstyled dark page is therefore a phone-shaped hole with only its shadow to separate it, which
+  is why `examples/source-app` overrides `bezel`. Changing the default is tempting and would
+  silently restyle every consumer who never set it; overriding in config is the supported answer.
