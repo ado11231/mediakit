@@ -61,14 +61,18 @@ Island in it. `phone` leaves room for them, `phone-notch` draws them.
 ## Stills and Carousels
 
 <p align="center">
-  <img width="320" src="examples/source-app/marketing/launch/frame-01.png" alt="A social still: a headline column beside a pricing card, built from a custom block and layout">
+  <img width="170" src="examples/source-app/marketing/launch/frame-01.png" alt="Carousel frame one: a headline column beside a Solo pricing card">
+  &nbsp;&nbsp;
+  <img width="170" src="examples/source-app/marketing/launch/frame-02.png" alt="Carousel frame two: the same layout with a Pro pricing card">
+  &nbsp;&nbsp;
+  <img width="170" src="examples/source-app/marketing/launch/frame-03.png" alt="Carousel frame three: the same layout with a Team pricing card">
 </p>
 
 The same blocks and tokens make social posts, so a launch announcement is another spec
-rather than another tool. A spec with several frames renders `frame-01`, `frame-02`, and so
-on, which is a carousel. That image uses a block, a layout, and a canvas size that are not
-built in; all three came from a config file, which is how anything mediakit does not ship
-gets added.
+rather than another tool. Those three are one spec: a frame per slide, rendered to
+`frame-01`, `frame-02`, `frame-03`, which is a carousel. They use a block, a layout, and a
+canvas size that are not built in; all three came from a config file, which is how anything
+mediakit does not ship gets added.
 
 ## Commands
 
