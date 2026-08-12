@@ -56,7 +56,7 @@ describe('source-app extension API', () => {
     const path = join(outDir, 'store-pair', 'frame-01.png');
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
-    expect(pngSize(png)).toEqual({ width: 560, height: 560 });
+    expect(pngSize(png)).toEqual({ width: 1120, height: 720 });
   }, 30_000);
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {

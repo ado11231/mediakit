@@ -5,24 +5,22 @@
     {
       "layout": "centered",
       "blocks": [
-        { "type": "Background", "props": { "color": "stage" } },
+        {
+          "type": "Background",
+          "props": { "gradient": { "from": "surface", "to": "canvas", "angle": 180 } }
+        },
         { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
         {
           "type": "Headline",
-          "props": {
-            "text": "Your whole day, one screen",
-            "size": "title",
-            "align": "center",
-            "color": "stageInk"
-          }
+          "props": { "text": "Your whole day, one screen", "size": "title", "align": "center" }
         },
         {
           "type": "DeviceFrame",
           "props": {
             "chrome": "phone-notch",
             "src": "marketing/app-screen/frame-01.png",
-            "width": 780,
-            "height": 1688
+            "width": 880,
+            "height": 1904
           }
         }
       ]

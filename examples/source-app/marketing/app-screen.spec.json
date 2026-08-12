@@ -3,7 +3,7 @@
   "preset": "app-screen",
   "frames": [
     {
-      "layout": "centered",
+      "layout": "screen",
       "blocks": [
         { "type": "Background", "props": { "color": "surface" } },
         { "type": "Eyebrow", "props": { "text": "Today", "color": "accent" } },
@@ -15,6 +15,7 @@
         {
           "type": "BulletList",
           "props": {
+            "gap": "lg",
             "items": [
               "08:00  Oak Street Properties",
               "09:45  1420 Aspen Way",
@@ -24,7 +25,8 @@
               "16:40  550 Marina Court"
             ]
           }
-        }
+        },
+        { "type": "CTA", "props": { "text": "Add a job" } }
       ]
     }
   ]

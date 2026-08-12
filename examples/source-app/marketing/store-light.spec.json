@@ -5,7 +5,10 @@
     {
       "layout": "centered",
       "blocks": [
-        { "type": "Background", "props": { "color": "canvas" } },
+        {
+          "type": "Background",
+          "props": { "gradient": { "from": "surface", "to": "canvas", "angle": 180 } }
+        },
         { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
         {
           "type": "Headline",
@@ -16,8 +19,8 @@
           "props": {
             "chrome": "phone-notch",
             "src": "marketing/light/app-screen/frame-01.png",
-            "width": 780,
-            "height": 1688
+            "width": 880,
+            "height": 1904
           }
         }
       ]

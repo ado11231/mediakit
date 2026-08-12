@@ -3,6 +3,9 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import gifenc from 'gifenc';
+
+const { GIFEncoder, quantize, applyPalette } = gifenc;
 
 /**
  * Discovery strategy 1: the repo renders its own README. The images the README shows are not
@@ -29,8 +32,11 @@ import { fileURLToPath } from 'node:url';
  * example test hashes those bytes) and dark writes under `marketing/dark/`.
  *
  * `docs/assets/` is a display copy, not a second source of truth. Pair is already 2x the README
- * width, so it is copied. Carousel frames are 1080px and downscaled to 400px (2x of 200px) so
- * a fixture change cannot silently rewrite the README with a 1350px-tall image.
+ * width (1120px canvas, 560px display), so it is copied. The carousel ships as one animated GIF
+ * per theme rather than three stills: GitHub strips scripts and interactivity from a README, so
+ * a cycling GIF is the closest a repo page gets to a swipeable carousel. Frames are downscaled
+ * to 560px (2x of the 280px display width) before encoding. gifenc is pure integer math with no
+ * timestamps, so the GIF bytes stay deterministic and the drift check below applies to them too.
  */
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -44,7 +50,8 @@ const requireFromRenderStill = createRequire(
 const { Resvg } = requireFromRenderStill('@resvg/resvg-js');
 
 const LIGHT = 'configs/light.config.ts';
-const CAROUSEL_WIDTH = 400;
+const CAROUSEL_WIDTH = 560;
+const CAROUSEL_FRAME_MS = 1600;
 
 const SPECS = [
   { spec: 'marketing/app-screen.spec.json' },
@@ -59,13 +66,27 @@ const SPECS = [
 const run = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: 'pipe' });
 
-const downscalePng = (png, targetWidth) => {
+const downscaleRgba = (png, targetWidth) => {
   const width = png.readUInt32BE(16);
   const height = png.readUInt32BE(20);
   const targetHeight = Math.round((height * targetWidth) / width);
   const href = `data:image/png;base64,${png.toString('base64')}`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetWidth}" height="${targetHeight}"><image href="${href}" width="${targetWidth}" height="${targetHeight}"/></svg>`;
-  return new Resvg(svg, { fitTo: { mode: 'width', value: targetWidth } }).render().asPng();
+  return new Resvg(svg, { fitTo: { mode: 'width', value: targetWidth } }).render();
+};
+
+const carouselGif = (framesDir) => {
+  const gif = GIFEncoder();
+  for (const n of ['01', '02', '03']) {
+    const png = readFileSync(join(framesDir, `frame-${n}.png`));
+    const image = downscaleRgba(png, CAROUSEL_WIDTH);
+    const rgba = new Uint8Array(image.pixels);
+    const palette = quantize(rgba, 256);
+    const index = applyPalette(rgba, palette);
+    gif.writeFrame(index, image.width, image.height, { palette, delay: CAROUSEL_FRAME_MS });
+  }
+  gif.finish();
+  return Buffer.from(gif.bytes());
 };
 
 const publishDocsAssets = () => {
@@ -75,15 +96,14 @@ const publishDocsAssets = () => {
     join(docsAssets, 'store-pair.png'),
   );
 
-  for (const n of ['01', '02', '03']) {
-    const light = readFileSync(join(app, 'marketing', 'launch', `frame-${n}.png`));
-    const dark = readFileSync(join(app, 'marketing', 'dark', 'launch', `frame-${n}.png`));
-    writeFileSync(
-      join(docsAssets, `launch-${n}-light.png`),
-      downscalePng(light, CAROUSEL_WIDTH),
-    );
-    writeFileSync(join(docsAssets, `launch-${n}-dark.png`), downscalePng(dark, CAROUSEL_WIDTH));
-  }
+  writeFileSync(
+    join(docsAssets, 'launch-light.gif'),
+    carouselGif(join(app, 'marketing', 'launch')),
+  );
+  writeFileSync(
+    join(docsAssets, 'launch-dark.gif'),
+    carouselGif(join(app, 'marketing', 'dark', 'launch')),
+  );
 };
 
 try {

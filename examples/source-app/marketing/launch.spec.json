@@ -12,14 +12,17 @@
         },
         {
           "type": "Headline",
-          "props": { "text": "Ship faster, with the same asset twice", "size": "title" },
+          "props": { "text": "Start free, stay fast", "size": "title" },
           "slot": "headline"
         },
         {
           "type": "Body",
-          "props": {
-            "text": "Custom block, custom layout, custom preset, all registered from this config and rendered byte-deterministically."
-          },
+          "props": { "text": "Every block and layout, on one project, at no cost." },
+          "slot": "headline"
+        },
+        {
+          "type": "CTA",
+          "props": { "text": "Get started" },
           "slot": "headline"
         },
         {
@@ -27,9 +30,14 @@
           "props": {
             "tier": "Solo",
             "price": "$0",
-            "feature": "Every block and preset, on one project"
+            "feature": "One project, every block"
           },
           "slot": "card"
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "01 / 03" },
+          "slot": "footer"
         }
       ]
     },
@@ -43,24 +51,33 @@
         },
         {
           "type": "Headline",
-          "props": { "text": "One spec, every size you ship", "size": "title" },
+          "props": { "text": "One spec, every size", "size": "title" },
           "slot": "headline"
         },
         {
           "type": "Body",
-          "props": {
-            "text": "Change a token and every frame regenerates on brand, across social, store, and web."
-          },
+          "props": { "text": "Change a token and every frame follows." },
+          "slot": "headline"
+        },
+        {
+          "type": "CTA",
+          "props": { "text": "Go Pro" },
           "slot": "headline"
         },
         {
           "type": "PricingCard",
           "props": {
             "tier": "Pro",
-            "price": "$12/mo",
-            "feature": "Unlimited projects and custom presets"
+            "price": "$12",
+            "period": "per month",
+            "feature": "Unlimited projects and presets"
           },
           "slot": "card"
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "02 / 03" },
+          "slot": "footer"
         }
       ]
     },
@@ -74,24 +91,33 @@
         },
         {
           "type": "Headline",
-          "props": { "text": "Your whole team, one design system", "size": "title" },
+          "props": { "text": "Your whole team, on brand", "size": "title" },
           "slot": "headline"
         },
         {
           "type": "Body",
-          "props": {
-            "text": "Shared presets keep every surface consistent, however many people are shipping."
-          },
+          "props": { "text": "Shared presets keep every surface consistent." },
+          "slot": "headline"
+        },
+        {
+          "type": "CTA",
+          "props": { "text": "Bring the team" },
           "slot": "headline"
         },
         {
           "type": "PricingCard",
           "props": {
             "tier": "Team",
-            "price": "$24/mo",
+            "price": "$24",
+            "period": "per month",
             "feature": "Everything in Pro, plus shared presets"
           },
           "slot": "card"
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "03 / 03" },
+          "slot": "footer"
         }
       ]
     }

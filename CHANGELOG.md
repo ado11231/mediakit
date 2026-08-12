@@ -8,7 +8,8 @@ the person reading it is you, six months from now, when a project stops building
 ### Changed
 
 - **README images no longer link at example fixtures.** The light/dark store pair is one
-  composite spec (`store-pair`) on a mid-tone field, and the carousel uses GitHub's
+  cropped composite spec (`store-pair`): both listings on a `field` colour pulled from the
+  example's accent, with Light and Dark labels in the spec. The carousel uses GitHub's
   `<picture>` plus `prefers-color-scheme` to swap themes. Display copies live in `docs/assets/`
   at 2x the README width, so a fixture change cannot silently rewrite the page, and an
   `ios-6.9` frame cannot render at full container height. `pnpm render-readme-assets` still

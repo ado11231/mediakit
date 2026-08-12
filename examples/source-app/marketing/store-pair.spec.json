@@ -11,9 +11,14 @@
           "props": {
             "chrome": "none",
             "src": "marketing/store-light/ios-6.9/frame-01.png",
-            "width": 220,
-            "height": 478
+            "width": 532,
+            "height": 1156
           },
+          "slot": "left"
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "Light", "color": "ink", "align": "center" },
           "slot": "left"
         },
         {
@@ -21,9 +26,14 @@
           "props": {
             "chrome": "none",
             "src": "marketing/store/ios-6.9/frame-01.png",
-            "width": 220,
-            "height": 478
+            "width": 532,
+            "height": 1156
           },
+          "slot": "right"
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "Dark", "color": "ink", "align": "center" },
           "slot": "right"
         }
       ]
