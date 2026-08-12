@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { MediakitError, type MediakitConfig } from '@mediakit/core';
 
 const CANDIDATES = [
@@ -47,11 +47,28 @@ export const needsStripTypesFlag = (version: string, execArgv: readonly string[]
   return stripTypesAvailable(version) && !stripTypesUnflagged(version);
 };
 
-export const resolveConfigPath = (cwd: string): string => {
+/**
+ * `explicit` is the `--config` flag. Without it a project needs one directory per config, and
+ * every script that renders a variant has to `cd` into it, which drags a parallel `specs/` and
+ * output tree along per variant. Naming the config instead lets one directory hold several.
+ *
+ * Paths inside a spec still resolve against cwd rather than against the config's directory, so
+ * a `DeviceFrame` src means the same thing whichever config renders it. Font paths in a config
+ * should therefore be built from `import.meta.dirname` rather than left relative.
+ */
+export const resolveConfigPath = (cwd: string, explicit?: string): string => {
+  if (explicit !== undefined) {
+    const path = resolve(cwd, explicit);
+    if (!existsSync(path)) {
+      throw new MediakitError(`No mediakit config at ${path} (from --config ${explicit}).`);
+    }
+    return path;
+  }
+
   const path = CANDIDATES.map((name) => join(cwd, name)).find((p) => existsSync(p));
   if (path === undefined) {
     throw new MediakitError(
-      `No mediakit.config.ts found in ${cwd}.\nRun \`mediakit init\` to scaffold one.`,
+      `No mediakit.config.ts found in ${cwd}.\nRun \`mediakit init\` to scaffold one, or pass --config <path>.`,
     );
   }
   return path;

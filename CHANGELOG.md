@@ -35,6 +35,12 @@ the person reading it is you, six months from now, when a project stops building
   inside the frame, which is invariant 9. It cannot fall back to `canvas`: a consumer with a
   light page would render a light bezel and the device would disappear into the background. A
   silver or white phone is now a token override rather than a fork of the frame.
+- **`--config <path>` on `render`, `check`, and `preview`.** The config was found only by looking
+  in cwd, so a project rendering the same tokens at two scales needed one directory per config,
+  each dragging its own `specs/` and output tree along, and every script had to `cd` into one.
+  Naming the config instead lets a single directory hold several. Spec-relative paths still
+  resolve against cwd, so a `DeviceFrame` src means the same thing whichever config renders it;
+  build font paths from `import.meta.dirname` rather than leaving them relative.
 - **`@mediakit/blocks/frame/*` deep imports**, covering `none`, `phone`, and `phone-notch`.
   Frames were reachable only through `./defaults`, so a consumer wanting `phone` alone had to
   pull in every built-in block to get it. Layouts and blocks already had this and frames were

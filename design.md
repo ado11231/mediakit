@@ -735,6 +735,13 @@ mediakit render <spec> [--preset] render a spec's presets, or one named preset
 mediakit check                    validate specs, brand rules, and store constraints
 ```
 
+`render`, `check`, and `preview` accept `--config <path>`. Without it the config is found only
+in the working directory, so a project rendering the same tokens at two scales needs one
+directory per config, each with its own `specs/` and output tree, and every script has to `cd`.
+Spec-relative paths still resolve against cwd rather than the config's directory, so a
+`DeviceFrame` src means the same thing whichever config renders it; font paths in a config
+should be built from `import.meta.dirname` for the same reason.
+
 `check` is the cheapest on-ramp in the product. It works standalone, so someone with hand-made
 screenshots can adopt it without adopting the renderer.
 

@@ -20,7 +20,7 @@ import { renderSpec, type RenderedFrame } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
 import { buildRegistries } from '../workspace.js';
 
-const USAGE = `mediakit preview <spec> [--port <n>] [--preset <name>]
+const USAGE = `mediakit preview <spec> [--port <n>] [--preset <name>] [--config <path>]
 
 Start a local dev server that renders the spec in memory and serves PNGs over
 HTTP. Re-renders on spec, config, or font file change. It does not drive a
@@ -29,6 +29,7 @@ browser; it serves files to yours, so the browser-free invariant is untouched.
 Options:
   --port <n>       listen on this port (default: 3000)
   --preset <name>   render only this preset, which must be one the spec names
+  --config <path>   use this config instead of mediakit.config.ts in cwd
   -h, --help
 `;
 
@@ -204,7 +205,13 @@ export const runPreview = async (
   }
   const specRel = relative(cwd, specAbs);
 
-  const configPath = resolveConfigPath(cwd);
+  const configFlag = findValue(argv, '--config');
+  if (argv.includes('--config') && configFlag === undefined) {
+    process.stderr.write('mediakit: --config requires a value.\n');
+    return 1;
+  }
+
+  const configPath = resolveConfigPath(cwd, configFlag);
   const config = await importConfig(configPath);
   const spec = await parseSpecFile(specAbs, specRel);
 

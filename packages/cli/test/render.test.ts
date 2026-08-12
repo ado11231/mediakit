@@ -113,6 +113,40 @@ describe('runRender', () => {
     );
   });
 
+  /**
+   * The point of --config is that a project can keep several configs in one directory instead
+   * of one directory per config, so the test puts the config somewhere `resolveConfigPath`
+   * would never find on its own and asserts the render still picks up its tokens.
+   */
+  it('--config loads a config the cwd search would not find', async () => {
+    const specPath = await setup('example', 'ig-portrait');
+    await rm(join(dir, 'mediakit.config.js'));
+    await mkdir(join(dir, 'configs'), { recursive: true });
+    await writeFile(
+      join(dir, 'configs', 'store.config.js'),
+      `export default { tokens: { color: { accent: '#2563EB' } }, outDir: 'store-out' };`,
+      'utf8',
+    );
+
+    const code = await runRender([specPath, '--config', 'configs/store.config.js'], {
+      cwd: dir,
+    });
+    expect(code).toBe(0);
+    expect(existsSync(join(dir, 'store-out', 'example', 'frame-01.png'))).toBe(true);
+  }, 30_000);
+
+  it('names the path it was given when --config points at nothing', async () => {
+    const specPath = await setup('example', 'ig-portrait');
+    await expect(
+      runRender([specPath, '--config', 'configs/missing.js'], { cwd: dir }),
+    ).rejects.toThrow(/configs\/missing\.js/);
+  });
+
+  it('returns 1 when --config has no value', async () => {
+    const specPath = await setup('example', 'ig-portrait');
+    expect(await runRender([specPath, '--config'], { cwd: dir })).toBe(1);
+  });
+
   it('returns 1 when no spec path is given', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), MINIMAL_CONFIG, 'utf8');
     const code = await runRender([], { cwd: dir });

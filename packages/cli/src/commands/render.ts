@@ -8,7 +8,7 @@ import { renderSpec } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
 import { buildRegistries, outputDir } from '../workspace.js';
 
-const USAGE = `mediakit render <spec> [--preset <name>] [--out <dir>]
+const USAGE = `mediakit render <spec> [--preset <name>] [--out <dir>] [--config <path>]
 
 Render a spec to PNG. Fans out across every preset the spec declares unless
 --preset names one. Output nests under the preset name whenever the spec
@@ -18,6 +18,7 @@ produced.
 Options:
   --preset <name>   render only this preset, which must be one the spec names
   --out <dir>        write under this directory instead of marketing/
+  --config <path>    use this config instead of mediakit.config.ts in cwd
   -h, --help
 `;
 
@@ -57,10 +58,15 @@ export const runRender = async (
     process.stderr.write('mediakit: --out requires a value.\n');
     return 1;
   }
+  const configFlag = findValue(argv, '--config');
+  if (argv.includes('--config') && configFlag === undefined) {
+    process.stderr.write('mediakit: --config requires a value.\n');
+    return 1;
+  }
 
   const cwd = deps.cwd ?? process.cwd();
 
-  const configPath = resolveConfigPath(cwd);
+  const configPath = resolveConfigPath(cwd, configFlag);
   const config = await importConfig(configPath);
 
   const specAbs = resolve(cwd, specArg);

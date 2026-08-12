@@ -20,6 +20,7 @@ mediakit check <file|dir> --preset <name>  validate rendered PNGs against a pres
 Options:
   --preset <name>   asset mode: check PNGs against this preset, no spec needed
   --out <dir>       where rendered output lives (default: marketing)
+  --config <path>   use this config instead of mediakit.config.ts in cwd
   -h, --help
 
 check reports every violation together and exits non-zero if any. It is the cheapest on-ramp:
@@ -69,22 +70,29 @@ export const runCheck = async (
     return 1;
   }
 
+  const configFlag = findValue(argv, '--config');
+  if (argv.includes('--config') && configFlag === undefined) {
+    process.stderr.write('mediakit: --config requires a value.\n');
+    return 1;
+  }
+
   const namedPreset = findValue(argv, '--preset');
   if (argv.includes('--preset')) {
     if (namedPreset === undefined) {
       process.stderr.write('mediakit: --preset requires a value.\n');
       return 1;
     }
-    return runAssetCheck(resolve(cwd, target), namedPreset, cwd);
+    return runAssetCheck(resolve(cwd, target), namedPreset, cwd, configFlag);
   }
 
-  return runSpecCheck(resolve(cwd, target), findValue(argv, '--out'), cwd);
+  return runSpecCheck(resolve(cwd, target), findValue(argv, '--out'), cwd, configFlag);
 };
 
 const runAssetCheck = async (
   path: string,
   presetName: string,
   cwd: string,
+  configFlag: string | undefined,
 ): Promise<number> => {
   if (!existsSync(path)) {
     process.stderr.write(`mediakit: path not found: ${relative(cwd, path)}\n`);
@@ -93,7 +101,7 @@ const runAssetCheck = async (
 
   let config: MediakitConfig;
   try {
-    config = await importConfig(resolveConfigPath(cwd));
+    config = await importConfig(resolveConfigPath(cwd, configFlag));
   } catch {
     // Asset mode with a built-in preset works without a config; a custom preset name will
     // surface as unknownRegistryKey below, which lists the built-ins the user can name instead.
@@ -127,13 +135,14 @@ const runSpecCheck = async (
   specPath: string,
   outFlag: string | undefined,
   cwd: string,
+  configFlag: string | undefined,
 ): Promise<number> => {
   if (!existsSync(specPath)) {
     process.stderr.write(`mediakit: spec file not found: ${relative(cwd, specPath)}\n`);
     return 1;
   }
 
-  const configPath = resolveConfigPath(cwd);
+  const configPath = resolveConfigPath(cwd, configFlag);
   const config = await importConfig(configPath);
   const registries = buildRegistries(config);
 
