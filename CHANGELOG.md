@@ -50,6 +50,11 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Fixed
 
+- **Builds left deleted files behind in `dist`, and `files: ["dist"]` shipped them.** `tsc` does
+  not clear its output directory, so a renamed or removed source file kept its compiled artifact
+  in every subsequent tarball. With a wildcard export like `./frame/*` that is not cosmetic: a
+  module moved out of the directory stayed importable from the published package anyway. Every
+  package now clears `dist` before compiling.
 - **`Stat` uppercased the value, rewriting the spec author's copy.** `textTransform:
 'uppercase'` was hardcoded past the token spread on both the value and the label, so a spec
   saying `"value": "5 min"` rendered `5 MIN` and no token or prop could turn it off. That is a
