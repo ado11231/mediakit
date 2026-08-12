@@ -25,9 +25,9 @@ Needs Node 22 or newer. Nothing is ever sent anywhere, at any point, including i
 ## App Store Screenshots
 
 <p align="center">
-  <img width="264" src="examples/source-app/marketing/store-light/frame-01.png" alt="An App Store screenshot on a light theme: an app screen in a phone frame under a headline">
+  <img width="190" src="examples/source-app/marketing/store-light/frame-01.png" alt="An App Store screenshot on a light theme: an app screen in a phone frame under a headline">
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img width="264" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" alt="The same App Store screenshot on a dark theme">
+  <img width="190" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" alt="The same App Store screenshot on a dark theme">
 </p>
 
 One spec made both of those. The only difference is a config that swaps four colour
@@ -60,7 +60,7 @@ Island in it. `phone` leaves room for them, `phone-notch` draws them.
 ## Stills and Carousels
 
 <p align="center">
-  <img width="420" src="examples/source-app/marketing/launch/frame-01.png" alt="A social still: a headline column beside a pricing card, built from a custom block and layout">
+  <img width="320" src="examples/source-app/marketing/launch/frame-01.png" alt="A social still: a headline column beside a pricing card, built from a custom block and layout">
 </p>
 
 The same blocks and tokens make social posts, so a launch announcement is another spec
