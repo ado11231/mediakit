@@ -30,8 +30,9 @@ Needs Node 22 or newer. Nothing is ever sent anywhere, at any point, including i
   <img width="190" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" alt="The same App Store screenshot on a dark theme">
 </p>
 
-One spec made both of those. The only difference is a config that swaps four colour
-tokens, so a theme is a file rather than a second set of images to keep in sync.
+Same blocks, same layout, same copy. The two differ only in the colour tokens they are
+handed, so a second theme is a config file rather than a second set of images to keep in
+sync.
 
 You bring the screen, mediakit does the rest: the device frame, the headline, the sizing,
 and the checks. There are two ways to get the screen.

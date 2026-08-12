@@ -5,11 +5,16 @@
     {
       "layout": "centered",
       "blocks": [
-        { "type": "Background", "props": { "color": "canvas" } },
+        { "type": "Background", "props": { "color": "stage" } },
         { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
         {
           "type": "Headline",
-          "props": { "text": "Your whole day, one screen", "size": "title", "align": "center" }
+          "props": {
+            "text": "Your whole day, one screen",
+            "size": "title",
+            "align": "center",
+            "color": "stageInk"
+          }
         },
         {
           "type": "DeviceFrame",

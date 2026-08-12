@@ -125,11 +125,20 @@ export default defineConfig({
      * `accent` is a teal dark enough to clear 3:1 against white and light enough to clear it
      * against the dark canvas, since one value has to carry both themes.
      *
-     * `bezel` is overridden because the default is the same value as the default `canvas`, so a
-     * device on an unstyled dark page renders as a phone-shaped hole with only its shadow to
-     * separate it. Lifting it a few steps is what makes the store frame read as a device.
+     * `stage` is the backdrop the store frame stands the device on, kept separate from `canvas`
+     * because the two want opposite things here. The screen inside the phone is dark, so `ink`
+     * has to stay light for it; the backdrop is light, so its own copy needs `stageInk`. One
+     * `ink` cannot be both, which is why this is two tokens rather than a redefinition.
+     *
+     * `bezel` is black rather than the default, which is the same value as `canvas` and would
+     * render the device as a phone-shaped hole with only its shadow to separate it.
      */
-    color: { accent: '#0D9488', bezel: '#232B3B' },
+    color: {
+      accent: '#0D9488',
+      bezel: '#0B0E14',
+      stage: '#ECEEF1',
+      stageInk: '#0B0E14',
+    },
   },
   blocks: { PricingCard: card },
   layouts: { 'pricing-split': pricingSplit },
