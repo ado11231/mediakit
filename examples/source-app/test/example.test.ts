@@ -16,7 +16,8 @@ const cwd = fileURLToPath(new URL('../', import.meta.url));
  *
  * launch renders through `--config` rather than the config in cwd, so the flag is exercised by
  * a real consumer rather than only by the CLI's own unit tests. The light config it names is
- * the same spec in the other theme, which is what the two README images show.
+ * the same spec in the other theme, which is what the README carousel swaps with
+ * `prefers-color-scheme`.
  */
 const LIGHT = ['--config', 'configs/light.config.ts'];
 
@@ -46,6 +47,16 @@ describe('source-app extension API', () => {
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
     expect(pngSize(png)).toEqual({ width: 1080, height: 1350 });
+  }, 30_000);
+
+  it('renders the README pair composite at the registered custom preset dimensions', async () => {
+    const code = await runRender(['marketing/store-pair.spec.json', '--out', outDir], { cwd });
+    expect(code).toBe(0);
+
+    const path = join(outDir, 'store-pair', 'frame-01.png');
+    expect(existsSync(path)).toBe(true);
+    const png = await readFile(path);
+    expect(pngSize(png)).toEqual({ width: 560, height: 560 });
   }, 30_000);
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {

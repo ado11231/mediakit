@@ -443,9 +443,9 @@ items below are done and gated in CI; only the manual npm steps remain.
    `mediakit`. Decision 1 is settled rather than amended.
 3. **Versions: done.** All publishable packages are `0.1.0`; the CHANGELOG's Unreleased section
    became the `0.1.0` entry.
-4. **README renders its own images: done.** `pnpm render-readme-assets` regenerates the embedded
-   launch still and `ios-6.9` store listing from their committed specs and fails on drift,
-   gated in CI (discovery strategy 1).
+4. **README renders its own images: done.** `pnpm render-readme-assets` regenerates the
+   composite store pair and the light/dark launch carousel from their committed specs, writes
+   display copies to `docs/assets/`, and fails on drift, gated in CI (discovery strategy 1).
 
 An external repo can already test this end to end: `pnpm pack-smoke` packs every package and
 drives init, render, and check from a throwaway consumer, which is the same path a stranger

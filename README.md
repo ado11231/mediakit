@@ -25,14 +25,13 @@ Needs Node 22 or newer. Nothing is ever sent anywhere, at any point, including i
 ## App Store Screenshots
 
 <p align="center">
-  <img width="190" src="examples/source-app/marketing/store-light/frame-01.png" alt="An App Store screenshot on a light theme: an app screen in a phone frame under a headline">
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img width="190" src="examples/source-app/marketing/store/ios-6.9/frame-01.png" alt="The same App Store screenshot on a dark theme">
+  <img width="280" src="docs/assets/store-pair.png" alt="A light-theme and a dark-theme App Store screenshot side by side: the same app screen in a phone frame under the same headline, differing only in colour tokens">
 </p>
 
 Same blocks, same layout, same copy. The two differ only in the colour tokens they are
 handed, so a second theme is a config file rather than a second set of images to keep in
-sync.
+sync. That pair is itself a spec: both listings composited onto a mid-tone field, so
+neither dissolves into the page nor floats as a hard rectangle.
 
 You bring the screen, mediakit does the rest: the device frame, the headline, the sizing,
 and the checks. There are two ways to get the screen.
@@ -61,11 +60,20 @@ Island in it. `phone` leaves room for them, `phone-notch` draws them.
 ## Stills and Carousels
 
 <p align="center">
-  <img width="170" src="examples/source-app/marketing/launch/frame-01.png" alt="Carousel frame one: a headline column beside a Solo pricing card">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/launch-01-dark.png">
+    <img width="200" src="docs/assets/launch-01-light.png" alt="Carousel frame one: a headline column beside a Solo pricing card">
+  </picture>
   &nbsp;&nbsp;
-  <img width="170" src="examples/source-app/marketing/launch/frame-02.png" alt="Carousel frame two: the same layout with a Pro pricing card">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/launch-02-dark.png">
+    <img width="200" src="docs/assets/launch-02-light.png" alt="Carousel frame two: the same layout with a Pro pricing card">
+  </picture>
   &nbsp;&nbsp;
-  <img width="170" src="examples/source-app/marketing/launch/frame-03.png" alt="Carousel frame three: the same layout with a Team pricing card">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/launch-03-dark.png">
+    <img width="200" src="docs/assets/launch-03-light.png" alt="Carousel frame three: the same layout with a Team pricing card">
+  </picture>
 </p>
 
 The same blocks and tokens make social posts, so a launch announcement is another spec

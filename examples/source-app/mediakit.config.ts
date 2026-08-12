@@ -4,6 +4,7 @@ import {
   defineConfig,
   defineLayout,
   h,
+  radiusToken,
   spaceToken,
   typeToken,
 } from '@mediakit/core';
@@ -109,6 +110,48 @@ const pricingSplit = defineLayout({
   },
 });
 
+/**
+ * Two screenshots on one canvas, which is how the README shows a light/dark pair without
+ * either image dissolving into the page or floating as a hard rectangle. Rounding is the
+ * cheaper edge treatment applied inside the composite: the clipped corners pick up `field`
+ * rather than the GitHub page colour.
+ */
+const pair = defineLayout({
+  slots: ['left', 'right'],
+  still: ({ slots }, { tokens }) => {
+    const radius = radiusToken(tokens, 'lg');
+    const cell = (name: string) =>
+      h(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            overflow: 'hidden',
+            borderRadius: radius,
+          },
+        },
+        ...(slots[name] ?? []),
+      );
+    return h(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          flexDirection: 'row',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spaceToken(tokens, 'xl'),
+          padding: spaceToken(tokens, '3xl'),
+        },
+      },
+      cell('left'),
+      cell('right'),
+    );
+  },
+});
+
 const typeStyle = (style: ReturnType<typeof typeToken>, family: string, color: string) => ({
   ...style,
   fontFamily: family,
@@ -118,9 +161,9 @@ const typeStyle = (style: ReturnType<typeof typeToken>, family: string, color: s
 export default defineConfig({
   tokens: {
     /**
-     * The dark half of the pair. `configs/light.config.ts` spreads this and swaps the four
-     * surface colours, which is the whole difference between the two README images: same spec,
-     * same blocks, same layout, different tokens.
+     * The dark half of the store pair. `configs/light.config.ts` spreads this and swaps the
+     * four surface colours, which is the whole difference between the two screenshots the
+     * README composites: same spec, same blocks, same layout, different tokens.
      *
      * `accent` is a teal dark enough to clear 3:1 against white and light enough to clear it
      * against the dark canvas, since one value has to carry both themes.
@@ -138,16 +181,31 @@ export default defineConfig({
       bezel: '#0B0E14',
       stage: '#ECEEF1',
       stageInk: '#0B0E14',
+      /**
+       * Mid-tone the README pair sits on, so both screenshots read on GitHub light and dark.
+       * Not a brand colour: a page-theme problem the listing canvases cannot solve themselves.
+       */
+      field: '#6E7681',
     },
   },
   blocks: { PricingCard: card },
-  layouts: { 'pricing-split': pricingSplit },
+  layouts: { 'pricing-split': pricingSplit, pair },
   presets: {
     'preview-card': {
       width: 1080,
       height: 1350,
       renderer: 'still',
       scale: 2.5,
+    },
+    /**
+     * 2x the README's 280px pair image. Sized here rather than downscaled later so the
+     * composite the README embeds is itself a spec output, not a post-processed screenshot.
+     */
+    'readme-pair': {
+      width: 560,
+      height: 560,
+      renderer: 'still',
+      scale: 1,
     },
     /**
      * An iPhone 15 Pro screen in device pixels. The store spec frames the PNG this renders

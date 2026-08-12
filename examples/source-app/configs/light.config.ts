@@ -1,10 +1,10 @@
 import base from '../mediakit.config.ts';
 
 /**
- * The light half of the README pair, and the reason the pair is worth showing: `launch.spec.json`
- * is rendered by this config and nothing else changes. Same custom block, same custom layout,
- * same custom preset, same copy. Only the four surface colours differ, which is the claim the
- * project makes in one image.
+ * The light half of the store pair the README composites, and of the launch carousel it swaps
+ * with `prefers-color-scheme`. Same specs, same custom block, same custom layout, same custom
+ * preset, same copy. Only the four surface colours differ, which is the claim the project
+ * makes in one image.
  *
  * `accent` is inherited rather than restated. A second literal here would be the exact drift the
  * token contract exists to prevent: the two themes would agree until someone changed one.

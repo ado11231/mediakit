@@ -1,6 +1,6 @@
 {
   "id": "store-light",
-  "preset": "ios-6.9",
+  "preset": ["ios-6.9", "play-phone"],
   "frames": [
     {
       "layout": "centered",
@@ -19,6 +19,21 @@
             "width": 780,
             "height": 1688
           }
+        }
+      ]
+    },
+    {
+      "layout": "centered",
+      "blocks": [
+        { "type": "Background", "props": { "color": "surface" } },
+        { "type": "Eyebrow", "props": { "text": "Invoicing", "align": "center" } },
+        {
+          "type": "Headline",
+          "props": { "text": "Get paid before you leave", "size": "title", "align": "center" }
+        },
+        {
+          "type": "Caption",
+          "props": { "text": "Invented sample data, no real customers.", "align": "center" }
         }
       ]
     }

@@ -1,34 +1,50 @@
 import { execFileSync } from 'node:child_process';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
  * Discovery strategy 1: the repo renders its own README. The images the README shows are not
  * hand-placed screenshots, they are committed artifacts of the source app's specs and tokens.
- * This regenerates them in place from the committed specs and fails if the result differs from
- * what git has, so an edit to a spec that was not re-rendered cannot ship a stale README image.
+ * This regenerates them in place from the committed specs, writes downscaled copies into
+ * `docs/assets/` (what the README actually embeds), and fails if either tree differs from
+ * what git has, so a spec edit that was not re-rendered cannot ship a stale README image.
  *
  * Byte-level determinism is proven separately by the example test, which renders to a temp dir
  * and hashes against the committed files. This script's job is narrower and complementary: keep
  * the specific PNGs the README embeds current, with a single command to regenerate them.
  *
- * Order matters, because two of these specs consume another's output. A store spec frames a
+ * Order matters, because several specs consume another's output. A store spec frames a
  * rendered app screen through its DeviceFrame src, so both app-screen renders have to come
- * first. Rendering uses the source app's own installed bin so the custom block, layout, and
- * preset registered in its config are in scope.
+ * first. `store-pair` then composites those two store frames, so it runs last. Rendering uses
+ * the source app's own installed bin so the custom block, layout, and preset registered in its
+ * config are in scope.
  *
  * The light entries are what makes the README's hero a pair. `app-screen.spec.json` is rendered
  * twice, once per theme, and `--out` keeps the second from overwriting the first; the screen's
  * content therefore lives in exactly one file and cannot drift between themes. Only the framing
  * spec is duplicated, because a spec's DeviceFrame src is a literal path and cannot vary by
- * config.
+ * config. Launch is the same idea for the carousel: light stays at `marketing/launch/` (the
+ * example test hashes those bytes) and dark writes under `marketing/dark/`.
+ *
+ * `docs/assets/` is a display copy, not a second source of truth. Pair is already 2x the README
+ * width, so it is copied. Carousel frames are 1080px and downscaled to 400px (2x of 200px) so
+ * a fixture change cannot silently rewrite the README with a 1350px-tall image.
  */
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const app = join(root, 'examples', 'source-app');
 const bin = join(app, 'node_modules', '.bin', 'mediakit');
+const docsAssets = join(root, 'docs', 'assets');
+
+const requireFromRenderStill = createRequire(
+  join(root, 'packages', 'render-still', 'package.json'),
+);
+const { Resvg } = requireFromRenderStill('@resvg/resvg-js');
 
 const LIGHT = 'configs/light.config.ts';
+const CAROUSEL_WIDTH = 400;
 
 const SPECS = [
   { spec: 'marketing/app-screen.spec.json' },
@@ -36,10 +52,39 @@ const SPECS = [
   { spec: 'marketing/store.spec.json' },
   { spec: 'marketing/store-light.spec.json', config: LIGHT },
   { spec: 'marketing/launch.spec.json', config: LIGHT },
+  { spec: 'marketing/launch.spec.json', out: 'marketing/dark' },
+  { spec: 'marketing/store-pair.spec.json' },
 ];
 
 const run = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: 'pipe' });
+
+const downscalePng = (png, targetWidth) => {
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  const targetHeight = Math.round((height * targetWidth) / width);
+  const href = `data:image/png;base64,${png.toString('base64')}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetWidth}" height="${targetHeight}"><image href="${href}" width="${targetWidth}" height="${targetHeight}"/></svg>`;
+  return new Resvg(svg, { fitTo: { mode: 'width', value: targetWidth } }).render().asPng();
+};
+
+const publishDocsAssets = () => {
+  mkdirSync(docsAssets, { recursive: true });
+  copyFileSync(
+    join(app, 'marketing', 'store-pair', 'frame-01.png'),
+    join(docsAssets, 'store-pair.png'),
+  );
+
+  for (const n of ['01', '02', '03']) {
+    const light = readFileSync(join(app, 'marketing', 'launch', `frame-${n}.png`));
+    const dark = readFileSync(join(app, 'marketing', 'dark', 'launch', `frame-${n}.png`));
+    writeFileSync(
+      join(docsAssets, `launch-${n}-light.png`),
+      downscalePng(light, CAROUSEL_WIDTH),
+    );
+    writeFileSync(join(docsAssets, `launch-${n}-dark.png`), downscalePng(dark, CAROUSEL_WIDTH));
+  }
+};
 
 try {
   for (const { spec, config, out } of SPECS) {
@@ -50,9 +95,11 @@ try {
     );
   }
 
+  publishDocsAssets();
+
   const drift = run(
     'git',
-    ['status', '--porcelain', '--', 'examples/source-app/marketing'],
+    ['status', '--porcelain', '--', 'examples/source-app/marketing', 'docs/assets'],
     root,
   ).trim();
 
@@ -61,7 +108,7 @@ try {
       [
         'render-readme-assets: the committed README assets drifted from their specs.',
         'The renderer produced different bytes than what is committed, so re-run this script',
-        'and commit the regenerated PNGs under examples/source-app/marketing:',
+        'and commit the regenerated PNGs under examples/source-app/marketing and docs/assets:',
         '',
         drift,
       ].join('\n'),

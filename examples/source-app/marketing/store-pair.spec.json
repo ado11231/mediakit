@@ -1,0 +1,32 @@
+{
+  "id": "store-pair",
+  "preset": "readme-pair",
+  "frames": [
+    {
+      "layout": "pair",
+      "background": "field",
+      "blocks": [
+        {
+          "type": "DeviceFrame",
+          "props": {
+            "chrome": "none",
+            "src": "marketing/store-light/ios-6.9/frame-01.png",
+            "width": 220,
+            "height": 478
+          },
+          "slot": "left"
+        },
+        {
+          "type": "DeviceFrame",
+          "props": {
+            "chrome": "none",
+            "src": "marketing/store/ios-6.9/frame-01.png",
+            "width": 220,
+            "height": 478
+          },
+          "slot": "right"
+        }
+      ]
+    }
+  ]
+}
