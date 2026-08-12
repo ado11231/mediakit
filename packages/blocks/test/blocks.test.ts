@@ -273,8 +273,8 @@ describe('the default vocabulary', () => {
     ]);
   });
 
-  it('ships none and phone as the default device chromes', () => {
-    expect(Object.keys(BUILTIN_FRAMES).sort()).toEqual(['none', 'phone']);
+  it('ships none, phone, and phone-notch as the default device chromes', () => {
+    expect(Object.keys(BUILTIN_FRAMES).sort()).toEqual(['none', 'phone', 'phone-notch']);
   });
 
   it('gives split two slots and leaves the others slotless', () => {
@@ -335,17 +335,70 @@ describe('device frames', () => {
     expect(largeBezel / smallBezel).toBeCloseTo(3, 0);
   });
 
-  it('phone overlays a notch pill at the top of the screen, which the frame owns', () => {
+  const absoluteChildren = (element: Element): readonly Element[] => {
+    const children = element.props.children;
+    const list: readonly Element[] = Array.isArray(children) ? children : [];
+    return list.filter((c) => c.props.style?.position === 'absolute');
+  };
+
+  /**
+   * The regression this pair exists for: a simulator capture already contains the Dynamic
+   * Island, so a frame that draws its own stacks two pills. Nothing but asserting the absence
+   * catches it, since the render succeeds and the dimensions still validate.
+   */
+  it('phone draws no island, so a real capture is not given a second one', () => {
     const element = renderFramed(DeviceFrame, {
       chrome: 'phone',
       src: PNG_1X1,
       width: 400,
       height: 800,
     });
-    const children = element.props.children as readonly Element[];
-    const notch = children.find((c) => c.props.style?.position === 'absolute');
-    expect(notch).toBeDefined();
-    expect(notch?.props.style?.top).toBe(element.props.style?.padding);
+    expect(absoluteChildren(element)).toEqual([]);
+  });
+
+  it('phone-notch insets its island rather than sitting it flush against the top edge', () => {
+    const element = renderFramed(DeviceFrame, {
+      chrome: 'phone-notch',
+      src: PNG_1X1,
+      width: 440,
+      height: 900,
+    });
+    const [island, ...rest] = absoluteChildren(element);
+    expect(rest).toEqual([]);
+    if (island === undefined) throw new Error('phone-notch must draw an island');
+
+    const bezel = element.props.style?.padding as number;
+    // 125x36pt inset 14pt on a 440pt-wide display, so the numbers land whole at width 440.
+    expect(island.props.style?.width).toBe(125);
+    expect(island.props.style?.height).toBe(36);
+    expect(island.props.style?.top).toBe(bezel + 14);
+  });
+
+  it('phone-notch scales its island with the screen, matching the bezel', () => {
+    const element = renderFramed(DeviceFrame, {
+      chrome: 'phone-notch',
+      src: PNG_1X1,
+      width: 880,
+      height: 1800,
+    });
+    const [island] = absoluteChildren(element);
+    expect(island?.props.style?.width).toBe(250);
+    expect(island?.props.style?.height).toBe(72);
+  });
+
+  it('both phone chromes take their shell colour from the bezel token, not a literal', () => {
+    const tokens = { ...context.tokens, color: { ...context.tokens.color, bezel: '#C0C0C0' } };
+    const silver: RenderContext = { ...framedContext, tokens };
+    const still = DeviceFrame.still;
+    if (still === undefined) throw new Error('DeviceFrame must declare a still renderer');
+
+    const plain = still({ chrome: 'phone', src: PNG_1X1, width: 400, height: 800 }, silver);
+    const notched = still(
+      { chrome: 'phone-notch', src: PNG_1X1, width: 400, height: 800 },
+      silver,
+    );
+    expect(plain.props.style?.backgroundColor).toBe('#C0C0C0');
+    expect(notched.props.style?.backgroundColor).toBe('#C0C0C0');
   });
 
   it('DeviceFrame throws when the chrome is not registered', () => {

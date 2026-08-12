@@ -5,10 +5,47 @@ the person reading it is you, six months from now, when a project stops building
 
 ## Unreleased
 
+### Changed
+
+- **`chrome: "phone"` no longer draws a notch.** It framed every screenshot with a drawn pill,
+  including the case the README calls the headline one: a real capture from a device or
+  simulator, which already contains the status bar and the Dynamic Island. The result was two
+  stacked islands, offset from each other because the drawn one sat flush against the screen's
+  top edge while the real one is inset. Nothing reported it. The render succeeded, the
+  dimensions validated, `check` passed, and the asset was uploadable.
+
+  `phone` is now bezel only, which is correct for a capture. The drawn island moved to the new
+  `phone-notch`, for screen content that genuinely has no status bar because it was composed
+  from blocks rather than captured. Which one applies is a property of how the image was
+  produced, so it stays an authoring decision: a render that sniffed the pixels would be
+  inference in the render path, which is invariant 11.
+
+  **Migration:** if your `DeviceFrame` src is a real screenshot, change nothing, and re-render
+  to drop the doubled island. If it is an app screen mediakit rendered for you, change
+  `"chrome": "phone"` to `"chrome": "phone-notch"`. `examples/source-app` is the second case and
+  shows the change.
+
+### Added
+
+- **`phone-notch` device chrome**, with the island sized from Apple's published geometry:
+  125x36pt inset 14pt from the top edge of a 440pt-wide 6.9-inch display, expressed as fractions
+  of screen width so it tracks the bezel at any render size. The previous pill was too wide, too
+  short, and flush to the edge, which read as an older device's notch rather than an island.
+- **`color.bezel` token**, defaulting to `#0B0E14`. The device shell colour was a hex literal
+  inside the frame, which is invariant 9. It cannot fall back to `canvas`: a consumer with a
+  light page would render a light bezel and the device would disappear into the background. A
+  silver or white phone is now a token override rather than a fork of the frame.
+- **`@mediakit/blocks/frame/*` deep imports**, covering `none`, `phone`, and `phone-notch`.
+  Frames were reachable only through `./defaults`, so a consumer wanting `phone` alone had to
+  pull in every built-in block to get it. Layouts and blocks already had this and frames were
+  the gap. The bezel geometry the two phone frames share lives outside `frames/` precisely
+  because that directory is published wholesale, and a shared helper is not a promise worth
+  making.
+
 ### Fixed
 
 - **`Stat` uppercased the value, rewriting the spec author's copy.** `textTransform:
-  'uppercase'` was hardcoded past the token spread on both the value and the label, so a spec
+'uppercase'` was hardcoded past the token spread on both the value and the label, so a spec
   saying `"value": "5 min"` rendered `5 MIN` and no token or prop could turn it off. That is a
   content change wearing a styling change's clothes: a price, a version string, or a product
   name shipped altered with no error and no diff to point at. The value now defaults to

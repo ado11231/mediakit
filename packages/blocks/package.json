@@ -33,6 +33,10 @@
       "types": "./dist/layouts/*.d.ts",
       "default": "./dist/layouts/*.js"
     },
+    "./frame/*": {
+      "types": "./dist/frames/*.d.ts",
+      "default": "./dist/frames/*.js"
+    },
     "./defaults": {
       "types": "./dist/defaults.d.ts",
       "default": "./dist/defaults.js"

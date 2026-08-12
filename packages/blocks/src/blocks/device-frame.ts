@@ -36,9 +36,13 @@ const pngDimensions = (bytes: Buffer): { width: number; height: number } | undef
 
 /**
  * One block with a `chrome` prop rather than a block per device. `chrome` is an open string
- * resolved against the frame registry at render time, so a watch or a bezel-less variant is a
- * registration rather than another block. `phone` `tablet` `browser` `none` ship as defaults
- * from `@mediakit/blocks`.
+ * resolved against the frame registry at render time, so a watch or a laptop is a registration
+ * rather than another block. `none`, `phone`, and `phone-notch` ship as defaults from
+ * `@mediakit/blocks`.
+ *
+ * Choosing between `phone` and `phone-notch` is an authoring decision, not something the block
+ * infers from the image: whether the source already contains a status bar is a property of how
+ * it was produced, and a render that guessed would break determinism (invariant 11).
  *
  * `width` and `height` size the screen content in canvas pixels. Omitting them reads the
  * intrinsic dimensions from a PNG header, so a spec can frame a screenshot without doing

@@ -10,6 +10,7 @@ import { Headline } from './blocks/headline.js';
 import { Stat } from './blocks/stat.js';
 import { Subhead } from './blocks/subhead.js';
 import { none } from './frames/none.js';
+import { phoneNotch } from './frames/phone-notch.js';
 import { phone } from './frames/phone.js';
 import { centered } from './layouts/centered.js';
 import { fullBleed } from './layouts/full-bleed.js';
@@ -48,4 +49,5 @@ export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
 export const BUILTIN_FRAMES: Readonly<Record<string, FrameDefinition>> = {
   none,
   phone,
+  'phone-notch': phoneNotch,
 };

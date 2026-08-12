@@ -529,9 +529,24 @@ supports alpha; the others do not explicitly forbid it but do not require it eit
 ```
 
 `chrome` is an open string resolved against a small frame registry, for the same reason
-everything else is. `phone` and `none` ship as defaults today; a browser, a tablet, a watch, or
-a bezel-less variant is a registration rather than a core change, which is the point of the
-registry and the reason shipping two rather than five costs a consumer nothing.
+everything else is. `none`, `phone`, and `phone-notch` ship as defaults today; a browser, a
+tablet, or a watch is a registration rather than a core change, which is the point of the
+registry and the reason shipping three rather than eight costs a consumer nothing.
+
+`phone` and `phone-notch` split on one question: does the screen content already have a status
+bar? A capture from a device or simulator does, so `phone` draws a bezel and stops. A screen
+composed from blocks does not, so `phone-notch` supplies the island, sized from Apple's
+published 125x36pt at a 14pt inset on a 440pt-wide display and expressed as fractions of screen
+width so it tracks the bezel at any render size.
+
+The split is deliberately not inferred. Detecting an existing island from image content would
+put a heuristic in the render path, breaking invariant 11 and, worse, breaking it silently: a
+doubled island renders, validates, and uploads. Making it an authoring decision means the
+failure is a wrong string in a spec rather than a wrong asset in a store listing.
+
+The device shell reads `color.bezel`, which defaults to `#0B0E14` and cannot fall back to
+`canvas`: a light page would render a light bezel and the device would vanish into the
+background. A silver or white phone is a token override.
 
 Both variants exist in the source app as visual references, not as code to lift:
 `carousels/src/remotion/registry/PhoneMockup.tsx` and `motion/src/components/BrowserMockup.tsx`
