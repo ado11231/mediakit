@@ -12,28 +12,42 @@ import { fileURLToPath } from 'node:url';
  * and hashes against the committed files. This script's job is narrower and complementary: keep
  * the specific PNGs the README embeds current, with a single command to regenerate them.
  *
- * Order matters. The store spec frames a rendered app screen (its DeviceFrame src is
- * marketing/app-screen/frame-01.png), so app-screen must render before store. launch is
- * independent. Rendering uses the source app's own installed bin so the custom block, layout,
- * and preset registered in its mediakit.config.ts are in scope.
+ * Order matters, because two of these specs consume another's output. A store spec frames a
+ * rendered app screen through its DeviceFrame src, so both app-screen renders have to come
+ * first. Rendering uses the source app's own installed bin so the custom block, layout, and
+ * preset registered in its config are in scope.
+ *
+ * The light entries are what makes the README's hero a pair. `app-screen.spec.json` is rendered
+ * twice, once per theme, and `--out` keeps the second from overwriting the first; the screen's
+ * content therefore lives in exactly one file and cannot drift between themes. Only the framing
+ * spec is duplicated, because a spec's DeviceFrame src is a literal path and cannot vary by
+ * config.
  */
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const app = join(root, 'examples', 'source-app');
 const bin = join(app, 'node_modules', '.bin', 'mediakit');
 
+const LIGHT = 'configs/light.config.ts';
+
 const SPECS = [
-  'marketing/app-screen.spec.json',
-  'marketing/store.spec.json',
-  'marketing/launch.spec.json',
+  { spec: 'marketing/app-screen.spec.json' },
+  { spec: 'marketing/app-screen.spec.json', config: LIGHT, out: 'marketing/light' },
+  { spec: 'marketing/store.spec.json' },
+  { spec: 'marketing/store-light.spec.json', config: LIGHT },
+  { spec: 'marketing/launch.spec.json', config: LIGHT },
 ];
 
 const run = (cmd, args, cwd) =>
   execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: 'pipe' });
 
 try {
-  for (const spec of SPECS) {
-    run(bin, ['render', spec], app);
+  for (const { spec, config, out } of SPECS) {
+    run(
+      bin,
+      ['render', spec, ...(config ? ['--config', config] : []), ...(out ? ['--out', out] : [])],
+      app,
+    );
   }
 
   const drift = run(

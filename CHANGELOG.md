@@ -55,6 +55,10 @@ the person reading it is you, six months from now, when a project stops building
   in every subsequent tarball. With a wildcard export like `./frame/*` that is not cosmetic: a
   module moved out of the directory stayed importable from the published package anyway. Every
   package now clears `dist` before compiling.
+- **The committed README assets were stale.** `Stat`'s fix below changed what
+  `examples/source-app/marketing/app-screen/frame-01.png` renders, and the assets were not
+  regenerated, so `pnpm render-readme-assets` had been failing since that commit and the store
+  image in the README showed the pre-fix `Stat`. Regenerated.
 - **`Stat` uppercased the value, rewriting the spec author's copy.** `textTransform:
 'uppercase'` was hardcoded past the token spread on both the value and the label, so a spec
   saying `"value": "5 min"` rendered `5 MIN` and no token or prop could turn it off. That is a

@@ -5,10 +5,7 @@
     {
       "layout": "centered",
       "blocks": [
-        {
-          "type": "Background",
-          "props": { "gradient": { "from": "canvas", "to": "surface", "angle": 160 } }
-        },
+        { "type": "Background", "props": { "color": "canvas" } },
         { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
         {
           "type": "Headline",
@@ -17,10 +14,10 @@
         {
           "type": "DeviceFrame",
           "props": {
-            "chrome": "phone",
+            "chrome": "phone-notch",
             "src": "marketing/app-screen/frame-01.png",
-            "width": 560,
-            "height": 1212
+            "width": 780,
+            "height": 1688
           }
         }
       ]
@@ -28,10 +25,7 @@
     {
       "layout": "centered",
       "blocks": [
-        {
-          "type": "Background",
-          "props": { "gradient": { "from": "surface", "to": "canvas", "angle": 160 } }
-        },
+        { "type": "Background", "props": { "color": "surface" } },
         { "type": "Eyebrow", "props": { "text": "Invoicing", "align": "center" } },
         {
           "type": "Headline",

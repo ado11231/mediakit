@@ -13,7 +13,13 @@ const cwd = fileURLToPath(new URL('../', import.meta.url));
  * examples/source-app is a test, not a demo. If this stops rendering, the extension API
  * broke, since the spec exercises a custom block, a custom layout, and a custom preset
  * registered from outside @mediakit/core.
+ *
+ * launch renders through `--config` rather than the config in cwd, so the flag is exercised by
+ * a real consumer rather than only by the CLI's own unit tests. The light config it names is
+ * the same spec in the other theme, which is what the two README images show.
  */
+const LIGHT = ['--config', 'configs/light.config.ts'];
+
 describe('source-app extension API', () => {
   let outDir: string;
 
@@ -31,7 +37,9 @@ describe('source-app extension API', () => {
   });
 
   it('renders the spec end to end at the registered custom preset dimensions', async () => {
-    const code = await runRender(['marketing/launch.spec.json', '--out', outDir], { cwd });
+    const code = await runRender(['marketing/launch.spec.json', '--out', outDir, ...LIGHT], {
+      cwd,
+    });
     expect(code).toBe(0);
 
     const path = join(outDir, 'launch', 'frame-01.png');
@@ -41,7 +49,9 @@ describe('source-app extension API', () => {
   }, 30_000);
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {
-    const code = await runRender(['marketing/launch.spec.json', '--out', outDir], { cwd });
+    const code = await runRender(['marketing/launch.spec.json', '--out', outDir, ...LIGHT], {
+      cwd,
+    });
     expect(code).toBe(0);
 
     const fresh = await readFile(join(outDir, 'launch', 'frame-01.png'));

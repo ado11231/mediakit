@@ -5,7 +5,7 @@
   "description": "The M1 gate: a project that installs @mediakit/* as a consumer and exercises the extension API with one custom block, one custom layout, and one custom preset.",
   "license": "MIT",
   "scripts": {
-    "render": "mediakit render marketing/launch.spec.json",
+    "render": "mediakit render marketing/launch.spec.json --config configs/light.config.ts",
     "test": "vitest run"
   },
   "dependencies": {

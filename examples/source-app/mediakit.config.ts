@@ -117,7 +117,19 @@ const typeStyle = (style: ReturnType<typeof typeToken>, family: string, color: s
 
 export default defineConfig({
   tokens: {
-    color: { accent: '#7C3AED' },
+    /**
+     * The dark half of the pair. `configs/light.config.ts` spreads this and swaps the four
+     * surface colours, which is the whole difference between the two README images: same spec,
+     * same blocks, same layout, different tokens.
+     *
+     * `accent` is a teal dark enough to clear 3:1 against white and light enough to clear it
+     * against the dark canvas, since one value has to carry both themes.
+     *
+     * `bezel` is overridden because the default is the same value as the default `canvas`, so a
+     * device on an unstyled dark page renders as a phone-shaped hole with only its shadow to
+     * separate it. Lifting it a few steps is what makes the store frame read as a device.
+     */
+    color: { accent: '#0D9488', bezel: '#232B3B' },
   },
   blocks: { PricingCard: card },
   layouts: { 'pricing-split': pricingSplit },

@@ -1,0 +1,26 @@
+{
+  "id": "store-light",
+  "preset": "ios-6.9",
+  "frames": [
+    {
+      "layout": "centered",
+      "blocks": [
+        { "type": "Background", "props": { "color": "canvas" } },
+        { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
+        {
+          "type": "Headline",
+          "props": { "text": "Your whole day, one screen", "size": "title", "align": "center" }
+        },
+        {
+          "type": "DeviceFrame",
+          "props": {
+            "chrome": "phone-notch",
+            "src": "marketing/light/app-screen/frame-01.png",
+            "width": 780,
+            "height": 1688
+          }
+        }
+      ]
+    }
+  ]
+}
