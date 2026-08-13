@@ -112,6 +112,13 @@ const card = defineBlock({
   },
 });
 
+/**
+ * The carousel card. The frame's own background is the ground it sits on, and the content is
+ * inset from it so the rounded corners read as a card rather than as a clipped canvas. The
+ * radius has to live here rather than on the canvas: resvg composites the frame background
+ * into every pixel to strip alpha, so a rounded outer edge would render as a square of ground
+ * colour, not as transparency.
+ */
 const pricingSplit = defineLayout({
   slots: ['headline', 'card', 'footer'],
   still: ({ slots }, { tokens }) => {
@@ -126,14 +133,16 @@ const pricingSplit = defineLayout({
       gap,
     } as const;
     const footer = slots.footer ?? [];
-    return h(
+    const card = h(
       'div',
       {
         style: {
           display: 'flex',
           flexDirection: 'column',
+          flexGrow: 1,
           width: '100%',
-          height: '100%',
+          backgroundColor: colorToken(tokens, 'canvas'),
+          borderRadius: radiusToken(tokens, 'lg'),
           padding: spaceToken(tokens, '3xl'),
           gap,
         },
@@ -166,6 +175,19 @@ const pricingSplit = defineLayout({
             ...footer,
           )
         : undefined,
+    );
+
+    return h(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          padding: spaceToken(tokens, 'lg'),
+        },
+      },
+      card,
     );
   },
 });
@@ -201,8 +223,8 @@ const screen = defineLayout({
 
 /**
  * Two screenshots on one canvas. Each slot is a column: the listing, clipped to its upper
- * portion so the headline and the top of the phone stay readable at README size, then a
- * label. The DeviceFrame is sized to the full listing aspect; this clip is the crop.
+ * portion so the headline and the top of the phone stay readable at README size, then any
+ * labels. The DeviceFrame is sized to the full listing aspect; this clip is the crop.
  * Rounding on the clip picks up `field` rather than the GitHub page colour.
  */
 const pair = defineLayout({
@@ -313,13 +335,14 @@ export default defineConfig({
      * render the device as a phone-shaped hole with only its shadow to separate it. Store
      * frames stand the device on `surface` so the bezel still separates on both themes.
      *
-     * `field` is a deep desaturated teal pulled from `accent`, the ground the README pair
-     * sits on.
+     * `field` is the ground the README pair sits on. A neutral one step darker than the light
+     * listing's `surface`, so the light card's edge still separates against it; pure white
+     * would dissolve that edge and leave only the corner radius.
      */
     color: {
       accent: '#0D9488',
       bezel: '#0B0E14',
-      field: '#1A3D3A',
+      field: '#E8ECF1',
     },
   },
   blocks: { PricingCard: card },

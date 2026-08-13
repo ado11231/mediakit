@@ -17,11 +17,6 @@
           "slot": "left"
         },
         {
-          "type": "Caption",
-          "props": { "text": "Light", "color": "ink", "align": "center" },
-          "slot": "left"
-        },
-        {
           "type": "DeviceFrame",
           "props": {
             "chrome": "none",
@@ -29,11 +24,6 @@
             "width": 532,
             "height": 1156
           },
-          "slot": "right"
-        },
-        {
-          "type": "Caption",
-          "props": { "text": "Dark", "color": "ink", "align": "center" },
           "slot": "right"
         }
       ]

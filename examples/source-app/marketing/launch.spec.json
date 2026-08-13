@@ -4,6 +4,7 @@
   "frames": [
     {
       "layout": "pricing-split",
+      "background": "field",
       "blocks": [
         {
           "type": "Eyebrow",
@@ -43,6 +44,7 @@
     },
     {
       "layout": "pricing-split",
+      "background": "field",
       "blocks": [
         {
           "type": "Eyebrow",
@@ -83,6 +85,7 @@
     },
     {
       "layout": "pricing-split",
+      "background": "field",
       "blocks": [
         {
           "type": "Eyebrow",

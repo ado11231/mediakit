@@ -28,14 +28,14 @@ const { GIFEncoder, quantize, applyPalette } = gifenc;
  * twice, once per theme, and `--out` keeps the second from overwriting the first; the screen's
  * content therefore lives in exactly one file and cannot drift between themes. Only the framing
  * spec is duplicated, because a spec's DeviceFrame src is a literal path and cannot vary by
- * config. Launch is the same idea for the carousel: light stays at `marketing/launch/` (the
- * example test hashes those bytes) and dark writes under `marketing/dark/`.
+ * config. The carousel is rendered once, through the light config, since the README embeds a
+ * single GIF rather than one per colour scheme.
  *
  * `docs/assets/` is a display copy, not a second source of truth. Pair is already 2x the README
- * width (1120px canvas, 560px display), so it is copied. The carousel ships as one animated GIF
- * per theme rather than three stills: GitHub strips scripts and interactivity from a README, so
- * a cycling GIF is the closest a repo page gets to a swipeable carousel. Frames are downscaled
- * to 560px (2x of the 280px display width) before encoding. gifenc is pure integer math with no
+ * width (1120px canvas, 560px display), so it is copied. The carousel ships as an animated GIF
+ * rather than three stills: GitHub strips scripts and interactivity from a README, so a cycling
+ * GIF is the closest a repo page gets to a swipeable carousel. Frames are downscaled to 560px
+ * (2x of the 280px display width) before encoding. gifenc is pure integer math with no
  * timestamps, so the GIF bytes stay deterministic and the drift check below applies to them too.
  */
 
@@ -59,7 +59,6 @@ const SPECS = [
   { spec: 'marketing/store.spec.json' },
   { spec: 'marketing/store-light.spec.json', config: LIGHT },
   { spec: 'marketing/launch.spec.json', config: LIGHT },
-  { spec: 'marketing/launch.spec.json', out: 'marketing/dark' },
   { spec: 'marketing/store-pair.spec.json' },
 ];
 
@@ -96,14 +95,7 @@ const publishDocsAssets = () => {
     join(docsAssets, 'store-pair.png'),
   );
 
-  writeFileSync(
-    join(docsAssets, 'launch-light.gif'),
-    carouselGif(join(app, 'marketing', 'launch')),
-  );
-  writeFileSync(
-    join(docsAssets, 'launch-dark.gif'),
-    carouselGif(join(app, 'marketing', 'dark', 'launch')),
-  );
+  writeFileSync(join(docsAssets, 'launch.gif'), carouselGif(join(app, 'marketing', 'launch')));
 };
 
 try {

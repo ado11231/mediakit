@@ -9,7 +9,6 @@
           "type": "Background",
           "props": { "gradient": { "from": "surface", "to": "canvas", "angle": 180 } }
         },
-        { "type": "Eyebrow", "props": { "text": "Scheduling", "align": "center" } },
         {
           "type": "Headline",
           "props": { "text": "Your whole day, one screen", "size": "title", "align": "center" }

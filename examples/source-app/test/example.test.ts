@@ -16,8 +16,7 @@ const cwd = fileURLToPath(new URL('../', import.meta.url));
  *
  * launch renders through `--config` rather than the config in cwd, so the flag is exercised by
  * a real consumer rather than only by the CLI's own unit tests. The light config it names is
- * the same spec in the other theme, which is what the README carousel swaps with
- * `prefers-color-scheme`.
+ * the theme the README carousel is rendered in.
  */
 const LIGHT = ['--config', 'configs/light.config.ts'];
 

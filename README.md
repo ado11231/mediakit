@@ -7,12 +7,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat" alt="MIT license"></a>
 </p>
 
-<p align="center"><b>App Store screenshots that build like code.</b></p>
+<p align="center">Render App Store screenshots, carousels, and social images from a JSON spec.</p>
 
-<p align="center">
-  One spec, one command, every size a store asks for.<br>
-  Rendered in CI, reviewed in a pull request, never opened in a design tool.
-</p>
+## Install
 
 ```bash
 npm i -D mediakit
@@ -20,46 +17,59 @@ npx mediakit init
 npx mediakit render marketing/example.spec.json
 ```
 
-Node 22 or newer. Zero network calls, ever, including install.
+Node 22 or newer. No network calls at any point, including install.
 
-## App Store Screenshots
+## How it works
+
+A spec names one or more presets (the canvas sizes) and a list of frames. A frame names a
+layout and the blocks that fill it. `render` reads `mediakit.config.ts` for tokens, resolves
+every name against a registry, and writes one PNG per frame.
+
+```json
+{
+  "id": "store",
+  "preset": ["ios-6.9", "play-phone"],
+  "frames": [
+    {
+      "layout": "centered",
+      "blocks": [
+        { "type": "Background", "props": { "color": "surface" } },
+        { "type": "Headline", "props": { "text": "Your whole day, one screen" } },
+        {
+          "type": "DeviceFrame",
+          "props": { "chrome": "phone-notch", "src": "captures/today.png" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+Output goes to `marketing/<spec-id>/frame-NN.png`, nested under the preset name when a spec
+lists more than one.
+
+## Screenshots
 
 <p align="center">
-  <img width="560" src="docs/assets/store-pair.png" alt="A light and a dark App Store screenshot side by side: the same app screen in a phone frame under the same headline, differing only in color tokens">
+  <img width="560" src="docs/assets/store-pair.png" alt="Two App Store screenshots side by side: an app screen in a phone frame under a headline">
 </p>
 
-Same spec, same blocks, same copy. Only the color tokens differ, so the second theme is a config file, not a second set of images.
+`DeviceFrame` puts a screen inside a phone. Set `src` to a real capture, or to another spec's
+render if you build the screen from blocks instead.
 
-You bring the screen. mediakit adds the frame, the headline, the sizing, and the checks.
-
-Point at a real screenshot:
-
-```json
-{ "type": "DeviceFrame", "props": { "chrome": "phone", "src": "captures/today.png" } }
-```
-
-Or build the screen from blocks, no simulator, nothing to capture:
-
-```json
-{ "type": "DeviceFrame", "props": { "chrome": "phone-notch", "src": "marketing/screen.png" } }
-```
-
-`phone` leaves room for the status bar a capture already has. `phone-notch` draws one.
-
-> Seeding a database for screenshots? Give it its own account. `(Test User)` names and `$0` dashboards look fine in a test and terrible in a listing.
+Use `chrome: "phone"` for a capture that already contains a status bar, and
+`chrome: "phone-notch"` for a screen that does not, which draws one.
 
 ## Carousels
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/launch-dark.gif">
-    <img width="280" src="docs/assets/launch-light.gif" alt="A three-frame pricing carousel cycling through Solo, Pro, and Team cards">
-  </picture>
+  <img width="280" src="docs/assets/launch.gif" alt="A three-frame pricing carousel cycling through Solo, Pro, and Team cards">
 </p>
 
-Three frames, one spec, rendered to `frame-01` through `frame-03`. A README cannot swipe, so this one loops.
+Three frames in one spec render to `frame-01` through `frame-03`. A README cannot swipe, so
+this one loops.
 
-The block, the layout, and the canvas size above are not built in. All three come from a config file, which is how anything mediakit does not ship gets added.
+The block, the layout, and the canvas size above are registered in a config file, not built in.
 
 ## Commands
 
@@ -70,13 +80,13 @@ The block, the layout, and the canvas size above are not built in. All three com
 | `preview` | a local page that re-renders as you edit           |
 | `check`   | catch what a store would reject, before you upload |
 
-`check` also works on screenshots you already have:
+`check` also runs against images you already have:
 
 ```bash
 npx mediakit check ./screenshots --preset ios-6.9
 ```
 
-Add `--config <path>` to any command to keep several configs, say a light and a dark one, in one folder.
+`--config <path>` points any command at a different config file.
 
 ## Sizes
 
@@ -84,11 +94,10 @@ App Store and Play: `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`
 Social: `ig-portrait` `ig-square` `story` `li-portrait`
 Web: `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee`
 
-Each is checked against that channel's published rules: exact pixels, frame counts, alpha channel. A size mediakit does not ship is a few lines of config, not a fork.
+Each is checked against that channel's published rules: exact pixels, frame counts, alpha
+channel. A size mediakit does not ship is a few lines of config.
 
-## Your Design System
-
-Point mediakit at the tokens you already have. It will not make you retype your brand.
+## Config
 
 ```ts
 export default defineConfig({
@@ -99,11 +108,13 @@ export default defineConfig({
 });
 ```
 
-Only `color.accent` is required. A font comes bundled, so `init` renders on the first run.
+Only `color.accent` is required. A font is bundled, so `init` renders on the first run. Blocks
+read tokens, so changing a token changes every frame that uses it.
 
-## Same Input, Same Pixels
+## Same input, same pixels
 
-Render twice and the files are byte-identical, on macOS and Linux. When a PNG changes in a pull request, something really changed. Every size is tested for it.
+Two renders of the same spec produce byte-identical PNGs, on macOS and Linux. A PNG that
+changes in a pull request is a real change. Every size is tested for it.
 
 ## Docs
 
