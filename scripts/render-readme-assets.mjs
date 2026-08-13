@@ -51,7 +51,9 @@ const { Resvg } = requireFromRenderStill('@resvg/resvg-js');
 
 const LIGHT = 'configs/light.config.ts';
 const CAROUSEL_WIDTH = 560;
-const CAROUSEL_FRAME_MS = 1600;
+const CAROUSEL_HOLD_MS = 1600;
+const CAROUSEL_FADE_STEPS = 8;
+const CAROUSEL_FADE_STEP_MS = 40;
 
 const SPECS = [
   { spec: 'marketing/app-screen.spec.json' },
@@ -74,15 +76,39 @@ const downscaleRgba = (png, targetWidth) => {
   return new Resvg(svg, { fitTo: { mode: 'width', value: targetWidth } }).render();
 };
 
+/**
+ * A hard cut between slides reads as a glitch at README size, so each slide holds and then
+ * crossfades into the next, wrapping from the last back to the first so the loop point is as
+ * smooth as every other transition. The blend is integer math on the downscaled RGBA buffers,
+ * so the GIF bytes stay deterministic and the drift check still applies.
+ */
 const carouselGif = (framesDir) => {
-  const gif = GIFEncoder();
-  for (const n of ['01', '02', '03']) {
+  const frames = ['01', '02', '03'].map((n) => {
     const png = readFileSync(join(framesDir, `frame-${n}.png`));
     const image = downscaleRgba(png, CAROUSEL_WIDTH);
-    const rgba = new Uint8Array(image.pixels);
+    return { width: image.width, height: image.height, rgba: new Uint8Array(image.pixels) };
+  });
+
+  const gif = GIFEncoder();
+  const writeFrame = ({ width, height }, rgba, delay) => {
     const palette = quantize(rgba, 256);
     const index = applyPalette(rgba, palette);
-    gif.writeFrame(index, image.width, image.height, { palette, delay: CAROUSEL_FRAME_MS });
+    gif.writeFrame(index, width, height, { palette, delay });
+  };
+
+  for (let i = 0; i < frames.length; i += 1) {
+    const current = frames[i];
+    const next = frames[(i + 1) % frames.length];
+    writeFrame(current, current.rgba, CAROUSEL_HOLD_MS);
+
+    for (let step = 1; step <= CAROUSEL_FADE_STEPS; step += 1) {
+      const t = step / (CAROUSEL_FADE_STEPS + 1);
+      const blended = new Uint8Array(current.rgba.length);
+      for (let p = 0; p < blended.length; p += 1) {
+        blended[p] = Math.round(current.rgba[p] + (next.rgba[p] - current.rgba[p]) * t);
+      }
+      writeFrame(current, blended, CAROUSEL_FADE_STEP_MS);
+    }
   }
   gif.finish();
   return Buffer.from(gif.bytes());
