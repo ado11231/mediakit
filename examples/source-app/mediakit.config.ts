@@ -335,14 +335,14 @@ export default defineConfig({
      * render the device as a phone-shaped hole with only its shadow to separate it. Store
      * frames stand the device on `surface` so the bezel still separates on both themes.
      *
-     * `field` is the ground the README pair sits on. A neutral one step darker than the light
-     * listing's `surface`, so the light card's edge still separates against it; pure white
-     * would dissolve that edge and leave only the corner radius.
+     * `field` is the ground both README images sit on. A pure neutral grey, no tint: far
+     * enough from white that the light card's edge separates, far enough from black that
+     * the dark card's does too, and equal RGB so it reads as a stage rather than a colour.
      */
     color: {
       accent: '#0D9488',
       bezel: '#0B0E14',
-      field: '#E8ECF1',
+      field: '#A9A9A9',
     },
   },
   blocks: { PricingCard: card },
