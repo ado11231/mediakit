@@ -2,13 +2,16 @@
 
 ## Milestones
 
-| #      | scope                                                                                      | gate / definition of done                                                                                                              |
-| ------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **M0** | **satori spike.** Build `DeviceFrame` and the `split` layout from scratch in satori        | **go / no-go for the entire plan**                                                                                                     |
-| M1     | `core`, `blocks`, `render-still`, social presets, **token contract**, **registration API** | the source app's carousels render from mediakit, with a custom **block, layout, and preset** all registered from `examples/source-app` |
-| M2     | listing presets (mobile and web), `DeviceFrame`, `check`                                   | the source app's store assets generated end to end, and at least one web preset proving the surface is not mobile-only                 |
-| M3     | token extraction as `init`-time codegen, preview UI, registry-derived LLM vocabulary       | a **second** app works, with different tokens, fonts, and blocks. Your own next project counts and is the easiest way to run this gate |
-| M4     | `render-video`, opt-in                                                                     | Reels and App Preview output, passing Apple's constraints                                                                              |
+| #      | scope                                                                                               | gate / definition of done                                                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **M0** | **satori spike.** Build `DeviceFrame` and the `split` layout from scratch in satori                 | **go / no-go for the entire plan**                                                                                                     |
+| M1     | `core`, `blocks`, `render-still`, social presets, **token contract**, **registration API**          | the source app's carousels render from mediakit, with a custom **block, layout, and preset** all registered from `examples/source-app` |
+| M2     | listing presets (mobile and web), `DeviceFrame`, `check`                                            | the source app's store assets generated end to end, and at least one web preset proving the surface is not mobile-only                 |
+| M2.5   | **pre-publish hardening.** No-watermark guarantee, glyph coverage, overflow linting, CLI ergonomics | every failure a reviewer or a user would notice has a check, and the watermark promise is a test rather than a claim                   |
+| M3     | token extraction as `init`-time codegen, preview UI, registry-derived LLM vocabulary                | a **second** app works, with different tokens, fonts, and blocks. Measured by the conformance harness below, not by eye                |
+| M4     | **depth.** Carousel continuity, listing completeness, contrast, safe zones                          | a five-frame carousel reads as one piece, and `check` catches what App Review catches                                                  |
+| M5     | **reach.** `@mediakit/channels`, export bundles, LinkedIn PDF                                       | one command produces an upload-ready folder per channel, with no API integration anywhere                                              |
+| M6     | `render-video`, opt-in                                                                              | Reels and App Preview output, passing Apple's constraints. Independent of M4 and M5 and may be pulled forward                          |
 
 **Publish at M2**, with both differentiators already shipped.
 
@@ -183,28 +186,33 @@ which is a structural argument that the satori bet holds beyond this one spike.
 
 ## Settled decisions
 
-| #   | decision                                           | resolution                                                                                                                                                                                                                                                                                                                      |
-| --- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Package name**                                   | **`mediakit`**, with `@mediakit/*` for libraries. Verified available on npm 30 July 2026. The `@mediakit` org still needs claiming manually. Avoids both traps: never "carousel", not bare "screenshot". Covers all three surfaces, where a `screenshot-*` name would have locked us into Surface 2.                            |
-| 2   | **Token source format**                            | Plain TS object only in v1, defined as a `Tokens` interface. Adapters are additive, a wrong core shape is not.                                                                                                                                                                                                                  |
-| 3   | **Font ergonomics**                                | Explicit paths only in v1. No `node_modules` resolution, no Google Fonts fetch, which would also violate the no-network invariant. Invest in the error message.                                                                                                                                                                 |
-| 4   | **Monorepo tooling**                               | pnpm workspaces plus turbo, matching `reeve`. `source-app` uses npm workspaces. Do not inherit that.                                                                                                                                                                                                                            |
-| 5   | **Milestone order**                                | Token contract and `registerBlock` moved into M1. Extraction stays M3.                                                                                                                                                                                                                                                          |
-| 6   | **Telemetry**                                      | None, ever. Zero network requests at any point including install. Enforced as an architecture invariant in `CLAUDE.md`, because a render that depends on a network response is not reproducible.                                                                                                                                |
-| 7   | **Failure posture**                                | Fail early and loudly rather than degrading silently. A wrong asset uploaded to App Review costs more than a failed build. Full table in `CLAUDE.md`.                                                                                                                                                                           |
-| 8   | **Where the repo lives**                           | **Standalone repo, open source.** the source app becomes a consumer that installs mediakit, not a host that contains it. Keeps tooling, licensing, and dependency story clean from day one, and "someone else's app works" cannot be tested honestly from inside the app you extracted from.                                    |
-| 9   | **License**                                        | **MIT** for everything except `render-video`, which stays MIT itself but carries Remotion as a peer dependency, so the licensing obligation lands on the consumer who opts in. Matches `snapscene` and `@appmockup/cli`, and anything more restrictive costs adoption for no gain.                                              |
-| 10  | **M0 is a rewrite, not a port**                    | `carousels/` is a design reference only: no import, no workspace link, no path dependency, either direction. Porting would carry forward code that violates most of the invariants it would be ported into. Detail above.                                                                                                       |
-| 11  | **Closed enums banned from the spec schema**       | `preset`, `layout`, `type`, `background`, and `slot` are all open strings resolved against registries. Generalized as invariant 3 in `CLAUDE.md`. A closed set anywhere in the spec means adding a marketing surface requires editing core and cutting a release.                                                               |
-| 12  | **`surface` folded into the preset registry**      | It selected no renderer, carried no constraints, and set no dimensions, all of which are properties of the preset. Keeping it meant two sources of truth that can disagree. The preset entry now carries `renderer`, `constraints`, and `scale`.                                                                                |
-| 13  | **Layouts are a registry**                         | `registerLayout` is symmetrical with `registerBlock`, and layouts declare their own slots, which makes `slot` validation stricter than the union it replaces. Most new marketing surfaces need a preset; the ones needing more usually need an arrangement, not a content type.                                                 |
-| 14  | **Token scale is one explicit multiplier**         | Design system values pass through unchanged and the config declares `scale`, defaulted per preset. Auto-deriving from preset width was rejected as silent-when-wrong; hand-written canvas values were rejected as a second source of truth that drifts. Color is scale invariant, spacing and type are not.                     |
-| 15  | **`preset` accepts an array**                      | `string \| string[]`, with `--preset` overriding. The asset knows how many sizes it needs, so fan-out intent is committed and reviewable rather than living in a shell flag. Output nests under the preset name when more than one is produced.                                                                                 |
-| 16  | **Blocks receive a `RenderContext`**               | `{ tokens, preset, frameIndex, frameCount }`, with `scale` already applied to `tokens`. Blocks need tokens regardless, so the object exists either way; frame position rides along because widening this signature later breaks every block a consumer has written. Unlocks panorama backgrounds and progress indicators at M2. |
-| 17  | **Registration is a config map**                   | `defineConfig({ blocks, layouts })`, with `registerBlock` and `registerLayout` as the primitives underneath. Imperative calls must live in a module, and importing that module to trigger them is the import-time side effect `sideEffects: false` forbids.                                                                     |
-| 18  | **The only required token is `color.accent`**      | Everything else defaults, including a bundled font. Forced by three rules colliding: fonts must be buffers, no network requests ever, and `init` must render on first run. The font is part of the install-size budget the CI gate measures.                                                                                    |
-| 19  | **Inference happens in `init`, never in `render`** | Token detection, font discovery, and `scale` proposal all run at scaffold time and write a committed file. Invariant 11 in `CLAUDE.md`. A render that depends on inference is not reproducible, and it fails silently.                                                                                                          |
-| 20  | **Annotations take typed props, not raw SVG**      | satori supports inline `<svg>` and propagates `currentColor` (verified against `satori/src/layout.ts` on 31 July 2026), so callouts are buildable at M2. Raw SVG stays out of specs because brand rules cannot inspect it and tokens cannot color it. Custom blocks, being TypeScript rather than spec data, may emit any SVG.  |
+| #   | decision                                           | resolution                                                                                                                                                                                                                                                                                                                                                     |
+| --- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Package name**                                   | **`mediakit`**, with `@mediakit/*` for libraries. Verified available on npm 30 July 2026. The `@mediakit` org still needs claiming manually. Avoids both traps: never "carousel", not bare "screenshot". Covers all three surfaces, where a `screenshot-*` name would have locked us into Surface 2.                                                           |
+| 2   | **Token source format**                            | Plain TS object only in v1, defined as a `Tokens` interface. Adapters are additive, a wrong core shape is not.                                                                                                                                                                                                                                                 |
+| 3   | **Font ergonomics**                                | Explicit paths only in v1. No `node_modules` resolution, no Google Fonts fetch, which would also violate the no-network invariant. Invest in the error message.                                                                                                                                                                                                |
+| 4   | **Monorepo tooling**                               | pnpm workspaces plus turbo, matching `reeve`. `source-app` uses npm workspaces. Do not inherit that.                                                                                                                                                                                                                                                           |
+| 5   | **Milestone order**                                | Token contract and `registerBlock` moved into M1. Extraction stays M3.                                                                                                                                                                                                                                                                                         |
+| 6   | **Telemetry**                                      | None, ever. Zero network requests at any point including install. Enforced as an architecture invariant in `CLAUDE.md`, because a render that depends on a network response is not reproducible.                                                                                                                                                               |
+| 7   | **Failure posture**                                | Fail early and loudly rather than degrading silently. A wrong asset uploaded to App Review costs more than a failed build. Full table in `CLAUDE.md`.                                                                                                                                                                                                          |
+| 8   | **Where the repo lives**                           | **Standalone repo, open source.** the source app becomes a consumer that installs mediakit, not a host that contains it. Keeps tooling, licensing, and dependency story clean from day one, and "someone else's app works" cannot be tested honestly from inside the app you extracted from.                                                                   |
+| 9   | **License**                                        | **MIT** for everything except `render-video`, which stays MIT itself but carries Remotion as a peer dependency, so the licensing obligation lands on the consumer who opts in. Matches `snapscene` and `@appmockup/cli`, and anything more restrictive costs adoption for no gain.                                                                             |
+| 10  | **M0 is a rewrite, not a port**                    | `carousels/` is a design reference only: no import, no workspace link, no path dependency, either direction. Porting would carry forward code that violates most of the invariants it would be ported into. Detail above.                                                                                                                                      |
+| 11  | **Closed enums banned from the spec schema**       | `preset`, `layout`, `type`, `background`, and `slot` are all open strings resolved against registries. Generalized as invariant 3 in `CLAUDE.md`. A closed set anywhere in the spec means adding a marketing surface requires editing core and cutting a release.                                                                                              |
+| 12  | **`surface` folded into the preset registry**      | It selected no renderer, carried no constraints, and set no dimensions, all of which are properties of the preset. Keeping it meant two sources of truth that can disagree. The preset entry now carries `renderer`, `constraints`, and `scale`.                                                                                                               |
+| 13  | **Layouts are a registry**                         | `registerLayout` is symmetrical with `registerBlock`, and layouts declare their own slots, which makes `slot` validation stricter than the union it replaces. Most new marketing surfaces need a preset; the ones needing more usually need an arrangement, not a content type.                                                                                |
+| 14  | **Token scale is one explicit multiplier**         | Design system values pass through unchanged and the config declares `scale`, defaulted per preset. Auto-deriving from preset width was rejected as silent-when-wrong; hand-written canvas values were rejected as a second source of truth that drifts. Color is scale invariant, spacing and type are not.                                                    |
+| 15  | **`preset` accepts an array**                      | `string \| string[]`, with `--preset` overriding. The asset knows how many sizes it needs, so fan-out intent is committed and reviewable rather than living in a shell flag. Output nests under the preset name when more than one is produced.                                                                                                                |
+| 16  | **Blocks receive a `RenderContext`**               | `{ tokens, preset, frameIndex, frameCount }`, with `scale` already applied to `tokens`. Blocks need tokens regardless, so the object exists either way; frame position rides along because widening this signature later breaks every block a consumer has written. Unlocks panorama backgrounds and progress indicators at M2.                                |
+| 17  | **Registration is a config map**                   | `defineConfig({ blocks, layouts })`, with `registerBlock` and `registerLayout` as the primitives underneath. Imperative calls must live in a module, and importing that module to trigger them is the import-time side effect `sideEffects: false` forbids.                                                                                                    |
+| 18  | **The only required token is `color.accent`**      | Everything else defaults, including a bundled font. Forced by three rules colliding: fonts must be buffers, no network requests ever, and `init` must render on first run. The font is part of the install-size budget the CI gate measures.                                                                                                                   |
+| 19  | **Inference happens in `init`, never in `render`** | Token detection, font discovery, and `scale` proposal all run at scaffold time and write a committed file. Invariant 11 in `CLAUDE.md`. A render that depends on inference is not reproducible, and it fails silently.                                                                                                                                         |
+| 20  | **Annotations take typed props, not raw SVG**      | satori supports inline `<svg>` and propagates `currentColor` (verified against `satori/src/layout.ts` on 31 July 2026), so callouts are buildable at M2. Raw SVG stays out of specs because brand rules cannot inspect it and tokens cannot color it. Custom blocks, being TypeScript rather than spec data, may emit any SVG.                                 |
+| 21  | **No watermark, ever**                             | Invariant 12 in `CLAUDE.md`. Nothing is composited into an output that the spec did not name: no badge, no attribution, no free versus paid mark. It is a determinism rule as much as a positioning one, and it is enforced by a flat-field pixel assertion rather than by inspection, because a golden written after a mark was added would bake the mark in. |
+| 22  | **Export bundles, not direct posting**             | Decided 17 August 2026. `export` writes an upload-ready folder per channel: correct sizes, ordered filenames, caption and alt text in a sidecar, LinkedIn carousels as PDF. No OAuth, no vendor SDKs, no credential storage, so non-goal 2 stands unamended and the render path stays offline.                                                                 |
+| 23  | **Channel presets ship separately**                | `@mediakit/channels` rather than more built-ins in `core`. Platform sizes drift and invariant 8 leaves no update channel, so a channel spec change must be a patch release of a package a consumer opted into, not a `core` release. Keeps `core`'s preset list to the set that can be personally verified, and keeps the install lean for store-only users.   |
+| 24  | **Windows is unverified, and says so**             | Decided 17 August 2026. CI stays on macOS arm64 and Linux x64; the README states plainly that Windows is untested. A third `@resvg/resvg-js` binary that has to agree byte for byte is real work, and doubling the matrix before there are users is the wrong trade. A manual `pack-smoke` run on Windows is the cheap version if someone asks.                |
+| 25  | **Color and progress are TTY-only**                | Rendering to a terminal may be decorated; rendering to a pipe may not. Non-TTY output stays plain, stable, and greppable, because CLI tests capture stdout and CI logs are read by machines. `node:util`'s `styleText` provides color with no dependency, and `NO_COLOR` is honored. See the CLI section below.                                                |
 
 ### Cutover plan
 
@@ -217,7 +225,7 @@ real, so it should be time-boxed rather than left open:
    `StatusChip` into its own block registrations, and **deletes `carousels/`**. Meeting the
    M1 gate and deleting the old directory are the same event. If the delete cannot happen, the
    gate was not met.
-3. **At M4:** the same for `motion/`.
+3. **At M6:** the same for `motion/`.
 
 Deleting is safe: `carousels/` was added in `f71fc94b` and `motion/` in `bc96988c`, so both stay
 recoverable indefinitely via `git show <sha>:<path>`. The only artifact that deletion would
@@ -251,6 +259,177 @@ things are not automatically fine and need a decision before the first public pu
 - **Anything real in the sample data.** The current screens use invented customers and addresses
   (`Oak Street Properties`, `2847 Cedar Ln`). Keep it that way deliberately rather than by
   accident, and never let a real customer name reach the example.
+
+---
+
+## M2.5 through M5 in detail
+
+Written 17 August 2026, from the question "does this work on a repo that is not mine, and does
+an App Store screenshot come out right". Everything here is grounded in what is already landed:
+`check` validates what an upload rejects, and nothing validates what a reviewer or a user
+notices.
+
+### M2.5, pre-publish hardening
+
+Three checks and one guarantee, all of which protect the claim the launch is made on. Each is
+cheap, and each catches a failure of the same class as the RGBA bug M2 caught: passes every
+existing test, renders, validates, uploads, and is wrong.
+
+**The no-watermark guarantee.** `grep -ri watermark` across the repo returns nothing, so there
+is nothing to remove. What is missing is the promise, which is now invariant 12 in `CLAUDE.md`,
+and the test that holds it: render one `Background` block at a known color for every registered
+preset, inflate the IDAT with `node:zlib`, assert every pixel matches. Zero dependencies, and it
+is the only test shape that can catch this, since a golden file written after a mark was
+introduced would contain the mark.
+
+**Glyph coverage.** `render-still/src/fonts.ts` already throws when a referenced font weight is
+not loaded, because satori substitutes silently and a wrong-weight screenshot is the worst
+outcome on the failure table. A missing glyph is the identical failure one level down: an emoji,
+a CJK character, or a typographic quote with no glyph in the loaded font renders as blank or
+tofu, `check` passes, and it uploads. Parsing a TrueType `cmap` is roughly 100 lines against
+`node:fs` with no new dependency, and it turns every string in every spec into a validated one.
+This is the highest-value check on the list.
+
+**Overflow and clipping.** satori clips or overflows without complaint, and the `CLAUDE.md` note
+that display type does not fit a `split` column is currently a rule a human has to remember.
+`renderFrame` already returns the satori SVG next to the PNG (`render.ts:160`), so a linter that
+walks it for text boxes exceeding the canvas or their parent is a pure function over an artifact
+that already exists. No second render, no browser, no measurement pass. Ships as a `check` rule
+rather than a render-time throw, so it cannot break an existing consumer's build on upgrade.
+
+**Contrast** is the fourth, and the cheapest: a WCAG ratio over resolved token pairs catches the
+"reads fine on my monitor" class before App Review does.
+
+**The unautomatable gate.** None of this proves a listing is accepted. Upload the example's
+generated set to App Store Connect as a draft once, and record the result here with a date, the
+way M0 and M2 were recorded. Do that before 1.0.
+
+### M3, the second-app gate and how it is measured
+
+The gate has always read "a second app works". The thing that makes it testable is noticing that
+inference lives only in `init` (invariant 11), so testing on other repos is testing **`init`'s
+token and font extraction**. The harness and the feature are therefore the same work, and the
+harness is the gate.
+
+`pack-smoke` already proves the published surface installs and renders from outside the
+workspace. It proves nothing about a stranger's _design system_, which is what M3 is about.
+
+**Tier 1: fixture consumers. In CI, offline, deterministic.** Small repos under
+`test/consumers/`, each shaped like a different ecosystem rather than each being a real product.
+These may fail the build, so they may not touch the network.
+
+| fixture                          | what it proves                                                             |
+| -------------------------------- | -------------------------------------------------------------------------- |
+| Tailwind, Next.js shaped         | extraction from a `tailwind.config`, the most common real case             |
+| Expo or React Native             | the `snapscene` interop story, and RN-shaped token files                   |
+| Vite plus TS SPA, npm not pnpm   | package-manager independence, and the `--experimental-strip-types` re-exec |
+| a non-Latin brand, CJK or Arabic | glyph coverage, RTL, and font files that are not the bundled default       |
+| a yarn or bun workspace          | the resolution path most likely to break silently                          |
+
+**Tier 2: real public repos. Opt-in, network, never in CI.** A script that clones pinned SHAs of
+five or six public repos with real design tokens (`cal.com`, `excalidraw`, `documenso`, `tldraw`,
+`supabase` are good candidates: distinctive brands, public Tailwind configs), runs `init`, and
+reports per repo. Pinned SHAs keep it reproducible, and running it by hand before a release keeps
+it off the maintenance treadmill. Network in a development script is fine; it is the render path
+that must stay offline.
+
+**The gate is two numbers per repo**, not a yes or no: time to first correct render, and count of
+hand edits after `init`. "It worked" is not a gate. "Three of six rendered with zero edits" is.
+
+### M4, depth
+
+**Carousel continuity.** `RenderContext` carries `frameIndex` and `frameCount` (settled decision 16) and **no block reads either one**. The feature the context was widened for was never built,
+which means that part of the contract is also untested. What lands here:
+
+- `ProgressDots` and `FrameCounter` as built-ins, generic enough for `blocks`, and the first
+  consumers of frame position.
+- **Panorama backgrounds**, offset by `frameIndex / frameCount`, so a five-frame carousel reads
+  as one continuous image. Called out as an M2 unlock and never taken.
+- **Per-frame token override**, one dark frame in a light carousel. This is the one item here
+  that needs a schema decision rather than a block, and it should be argued before it is written.
+- **Channel safe zones.** Instagram crops a 4:5 carousel to 1:1 in the profile grid, so anything
+  in the outer band is invisible to someone browsing a profile. A `safeArea` constraint on a
+  preset, reported through the same machinery as the overflow lint, is a differentiator no
+  competitor has.
+
+**The carousel test matrix.** `CLAUDE.md` already mandates the distinctness assertion, which
+exists because the reference renderer shipped every slide as slide 1 for its entire life. What is
+missing is a stress matrix rather than more one-off cases: **every layout crossed with a text
+fixture set** (one word, 200 characters, CJK, emoji, RTL, an unbreakable URL). Roughly four
+layouts by six fixtures is 24 cells, each of which must either render inside bounds or produce a
+named violation. That matrix is what makes "works on someone else's copy" defensible rather than
+hopeful.
+
+**Listing completeness** joins `check` here: Apple wants a 6.9 inch iPhone set and a 13 inch iPad
+set, and `check` currently validates one preset at a time. A bundle-level rule catches the
+missing iPad set at 11pm, which is when it is always found.
+
+### M5, reach
+
+**Channel packs** are registry entries, so they need no core change beyond two constraint kinds:
+a caption character budget and a maximum slide count. They ship as `@mediakit/channels` for the
+reason in settled decision 23. Every entry carries a `verifiedOn` date and a documentation URL,
+and CI warns when one is older than six months. Verification dates already live in comments
+throughout `core`; this makes them machine-readable, which is the only defense available to a
+project that has deliberately given itself no update channel.
+
+Initial set, each to be verified against live documentation before it ships: Instagram (portrait,
+square, story, carousel slide cap), LinkedIn (single image, portrait, document carousel), X,
+TikTok cover, YouTube thumbnail, Pinterest, Threads, Bluesky. The store and web presets stay in
+`core`, where they already are.
+
+**Export bundles.** `mediakit export <spec> --channel <name>` writes a folder ready to be dropped
+into an upload form: correctly ordered filenames, a sidecar carrying caption, alt text, and the
+hashtag budget, and per-locale folders where the channel expects them. Two pieces are worth
+calling out:
+
+- **LinkedIn carousels are PDF documents**, not image sets. Wrapping non-interlaced RGB PNGs into
+  a PDF needs no re-encoding at all: PNG's IDAT is already Flate-compressed, and PDF accepts a
+  `/FlateDecode` image XObject directly. That is a genuine feature in roughly 150 lines with zero
+  dependencies, fully deterministic, and no competitor has it.
+- **JPEG output** is the one place a dependency question arises, since resvg emits PNG only and
+  `sharp` is out of the question against the install-size posture. A small pure-JS encoder is the
+  candidate, and it needs justifying in a pull request description like any other dependency.
+
+### Setup and CLI experience, running through M2.5 and M3
+
+The two commands a stranger meets are `init` and `render`, and both currently print plain lines
+and stop. This is a workstream rather than a milestone because half of it lands with the checks
+above (an overflow violation is only useful if its output is readable) and half with `init`'s
+inference at M3.
+
+**Making setup easy.**
+
+- `init` should say what it inferred and what it guessed, per value, rather than writing a file
+  silently. Inference that a human reviews is the whole justification for invariant 11, and a
+  human cannot review what was never shown.
+- `init` stays non-interactive by default so CI keeps working, with prompts behind a flag rather
+  than the reverse. A tool that hangs waiting for input in a pipeline is worse than one that
+  asks nothing.
+- **`mediakit presets`**, listing every registered preset with dimensions and constraints. The
+  registry already knows; there is currently no way for a consumer to see it without reading
+  source. This is also the natural home for the `verifiedOn` dates from M5.
+- **`mediakit doctor`**, checking Node version, config resolution, font files on disk, and font
+  weight coverage, and printing what it found. Most first-run failures are one of those four,
+  and each currently surfaces as an error at render time instead of as a checklist.
+- Every command ends by naming the next one. `init` points at `render`, `render` points at
+  `check`.
+
+**Progress and completion output.**
+
+- **Where things landed, stated as a summary rather than a scroll.** `render` currently prints
+  one line per frame and nothing else. A closing summary naming the frame count, the preset
+  count, the total bytes, and the directory is what a person actually wants, with the per-frame
+  hash lines kept because they are what makes a changed PNG in a pull request reviewable.
+- **Progress while a long fan-out runs.** A multi-preset store render is slow enough to look
+  hung. A TTY gets a live counter; a pipe gets one line per completed frame.
+- **Color carries meaning, never decoration.** Green for a completed write, red for a violation,
+  dim for a path, and nothing else. `node:util`'s `styleText` gives this with no dependency,
+  which matters against the dependency-count gate that `chalk` or `ora` would blow.
+- **Non-TTY output stays plain and stable** (settled decision 25). CLI tests capture stdout and
+  CI logs are parsed by machines, so `NO_COLOR` and a non-TTY stream both mean plain text.
+- **No timing or timestamp ever reaches a file.** Durations printed to a terminal are fine.
+  Written into an artifact, they break invariant 7, which is the whole product.
 
 ---
 
@@ -322,7 +501,9 @@ rankable, `check`-able thing you launch with.
 - **Posting to social media.** Every platform is gated behind developer app registration, review,
   business accounts, or paid API tiers. Users would hit a multi-week bureaucratic wall before the
   library did anything, which destroys adoption, the entire point of an OSS package. It is also a
-  permanent unpaid maintenance treadmill across six vendors.
+  permanent unpaid maintenance treadmill across six vendors. Reaffirmed 17 August 2026, with
+  **export bundles** as the answer instead: mediakit produces the upload-ready folder and the
+  human drops it into the upload form. See settled decision 22.
 - **Required LLM.** Generation is opt-in, bring your own key. A package that demands
   `ANTHROPIC_API_KEY` before it renders anything has the same permission-gate problem.
   Hand-written specs must work standalone.
@@ -450,3 +631,9 @@ items below are done and gated in CI; only the manual npm steps remain.
 An external repo can already test this end to end: `pnpm pack-smoke` packs every package and
 drives init, render, and check from a throwaway consumer, which is the same path a stranger
 takes after `npm i -D mediakit`.
+
+**Next after publish is M2.5**, planned 17 August 2026 and detailed above. The ordering argument
+is that all four of its items protect the claim the launch is made on, and one of them (glyph
+coverage) is the same class of bug as the RGBA failure M2 caught: it passes every existing test,
+renders, validates, and uploads wrong. `pack-smoke` proves the surface installs for a stranger;
+nothing yet proves it renders correctly for a stranger's design system, which is M3.

@@ -104,6 +104,21 @@ positioning or licensing depends on.
     The pressure to add one small render-time convenience will arrive, and it needs a rule to
     lose to. Discover it, propose it, write it down.
 
+12. **Nothing is composited into an output that the spec did not name.** No watermark, no badge,
+    no attribution mark, no "made with mediakit", in any command, in any mode, ever, and no free
+    versus paid distinction that would motivate one. The only pixels in a rendered PNG come from
+    blocks the spec lists.
+
+    This is a determinism rule as much as a positioning one. A mark carrying a version string or
+    a date is a render whose bytes change while the spec does not, which breaks invariant 7, and
+    a mark placed by anything other than a block is a pixel no consumer can move, recolor, or
+    diff.
+
+    Enforced mechanically rather than by inspection: a test renders a single `Background` block
+    at a known color for every registered preset, inflates the IDAT with `node:zlib`, and asserts
+    every pixel equals that color. A golden-file test cannot catch this, since a mark introduced
+    before the golden was written would be baked into the golden. A flat field assertion can.
+
 ---
 
 ## Public API and versioning

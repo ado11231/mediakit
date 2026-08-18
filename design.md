@@ -667,7 +667,7 @@ fidelity to the shipping app matters more than having no capture step at all.
 
 ---
 
-## Surface 3: video (opt-in, M4)
+## Surface 3: video (opt-in, M6)
 
 | preset             | px          | notes                                                              |
 | ------------------ | ----------- | ------------------------------------------------------------------ |
