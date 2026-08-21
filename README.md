@@ -45,6 +45,10 @@ Requires Node 22 or newer. mediakit makes no network calls at any point, includi
 
 ## Project setup
 
+Already have a design system? `mediakit init --from app/globals.css` reads your colours and
+fonts and writes the config for you, marking every value it inferred with the token it came
+from and every value it guessed with `GUESS`. Review it, then render.
+
 `mediakit init` writes the two files a repo needs:
 
 - `mediakit.config.ts` at the project root. It holds tokens and any custom blocks, layouts,

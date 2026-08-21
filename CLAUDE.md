@@ -354,6 +354,15 @@ nothing when a font cannot be parsed, because a parser limitation must never fai
 font. The overflow lint and the contrast rule are still outstanding, as is the App Store Connect
 draft upload.
 
+**`init --from` is the only inference in the product (invariant 11), and it stays that way.**
+Its rules were shaped by real palettes, not reasoning: theme darkness is the median luminance
+rather than the lightest colour, `accent` is the most saturated unclaimed colour rather than a
+positional pick, and `bezel` may never equal `canvas`. It uses a discovered font family only
+if that family covers every weight `DEFAULT_TYPE` names, because `loadFonts` throws otherwise
+and `init` must leave a project renderable. Every value it writes carries provenance or a
+`GUESS` marker in the generated file; do not remove those, they are what makes invariant 11's
+"a human reviews it" true.
+
 **Invariant 5 now has an implementation.** `mediakit schema` walks the registries and emits
 JSON Schema or prose (`core/src/schema/vocabulary.ts`). Do not reintroduce a hardcoded catalog
 in any form; a test asserts a config-registered block reaches the output. The generated enums

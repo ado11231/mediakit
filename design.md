@@ -803,6 +803,26 @@ verifiable today against the sizes core ships.
 `preview` serves already-rendered PNGs over HTTP and re-renders on change. It does not drive a
 browser, it serves files to yours, so invariant 2 is untouched.
 
+`init --from <file>` extracts a palette from CSS custom properties (`:root` or Tailwind v4's
+`@theme`) or a TS/JS token module, and scans for font files to enumerate weights. It writes
+provenance into the generated config: the source token where a name matched, and a `GUESS`
+marker naming the fallback rule where none did. That marker is the point. Inference is allowed
+here and nowhere else (invariant 11) on the grounds that a human reviews it, and a reviewer
+cannot check a hex value that arrives without a reason attached.
+
+Three of its rules are the product of real palettes rather than of reasoning:
+
+- **Theme darkness is the median luminance**, not the lightest colour. A dark palette still
+  carries a near-white text colour, so the extremes answer the same for both themes.
+- **`accent` is the most saturated unclaimed colour.** A palette naming its gold `champagne`
+  and its background `obsidian` has no name for a reader to match, and picking positionally
+  gave an accent identical to the canvas.
+- **`bezel` may never equal `canvas`**, which is the phone-shaped-hole trap.
+
+A discovered font family is used only if it covers every weight `DEFAULT_TYPE` names, since
+`loadFonts` throws on a missing one and the bundled font is the correct answer rather than a
+degraded one.
+
 **`init` must leave the project in a state `render` can consume immediately:** a config, and a
 spec on disk that produces a PNG with no API key, no network call, and no manual file copy. The
 first run has to output an image.

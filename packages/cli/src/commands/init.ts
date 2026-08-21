@@ -1,22 +1,40 @@
 import process from 'node:process';
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { extname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { DEFAULT_TYPE, MediakitError } from '@mediakit/core';
+import {
+  flattenModuleTokens,
+  groupFontFiles,
+  mapToContract,
+  parseCssTokens,
+  type Assignment,
+  type ColorToken,
+  type FontCandidate,
+} from '../init/extract.js';
+import { generateConfig } from '../init/generate.js';
+import { bad, dim, ok } from '../style.js';
+import { displayPath } from '../workspace.js';
 
-const USAGE = `mediakit init [target]
+const USAGE = `mediakit init [target] [--from <file>] [--fonts <dir>] [--preset <name>]
 
 Create mediakit.config.ts and an example spec that renders on first run with
 no API key, no network call, and no manual file copy.
 
 Options:
-  --force   overwrite an existing mediakit.config.ts
+  --from <file>    extract colours from a CSS file (:root or @theme) or a
+                   TS/JS token module, and report what was inferred vs guessed
+  --fonts <dir>    scan this directory for .ttf/.otf files and enumerate weights
+  --preset <name>  scaffold the example spec at this preset (default ig-portrait)
+  --force          overwrite an existing mediakit.config.ts
   -h, --help
+
+\`init\` is the only command that infers anything (invariant 11). It runs once,
+you review what it wrote, and \`render\` reads that file and does nothing clever.
 `;
 
-// Imports from `mediakit`, not `@mediakit/core`: a newcomer installs the single `mediakit`
-// package, and pnpm's strict node_modules will not resolve a transitive dependency by name.
-// The facade re-exports the core authoring API so the scaffolded config renders on first run.
-const CONFIG_TEMPLATE = `import { defineConfig } from 'mediakit';
+const DEFAULT_CONFIG = `import { defineConfig } from 'mediakit';
 
 export default defineConfig({
   tokens: {
@@ -25,38 +43,129 @@ export default defineConfig({
 });
 `;
 
-const EXAMPLE_SPEC = `{
-  "id": "example",
-  "preset": "ig-portrait",
-  "frames": [
+const exampleSpec = (preset: string): string =>
+  `${JSON.stringify(
     {
-      "layout": "centered",
-      "blocks": [
-        { "type": "Eyebrow", "props": { "text": "Built with mediakit" } },
+      id: 'example',
+      preset,
+      frames: [
         {
-          "type": "Headline",
-          "props": { "text": "Your first asset", "align": "center" }
+          layout: 'centered',
+          blocks: [
+            { type: 'Eyebrow', props: { text: 'Built with mediakit' } },
+            { type: 'Headline', props: { text: 'Your first asset', align: 'center' } },
+            {
+              type: 'Body',
+              props: {
+                text: 'Edit this spec, edit your tokens, then re-render. The same spec plus same tokens plus same fonts produces a byte-identical PNG across runs.',
+                align: 'center',
+              },
+            },
+          ],
         },
-        {
-          "type": "Body",
-          "props": {
-            "text": "Edit this spec, edit your tokens, then re-render. The same spec plus same tokens plus same fonts produces a byte-identical PNG across runs.",
-            "align": "center"
-          }
-        }
-      ]
-    }
-  ]
-}
-`;
+      ],
+    },
+    null,
+    2,
+  )}\n`;
+
+const findValue = (argv: readonly string[], flag: string): string | undefined => {
+  const i = argv.indexOf(flag);
+  return i === -1 ? undefined : argv[i + 1];
+};
+
+/** Where a project conventionally keeps font files, checked only when --fonts is absent. */
+const FONT_DIRS = ['assets/fonts', 'public/fonts', 'src/fonts', 'fonts', 'src/assets/fonts'];
+
+const fontFilesIn = async (dir: string): Promise<string[]> => {
+  if (!existsSync(dir)) return [];
+  const entries = await readdir(dir, { withFileTypes: true });
+  return entries
+    .filter((e) => e.isFile() && /\.(ttf|otf)$/i.test(e.name))
+    .map((e) => join(dir, e.name))
+    .sort();
+};
+
+const readTokens = async (path: string): Promise<ColorToken[]> => {
+  const ext = extname(path).toLowerCase();
+  if (ext === '.css') return parseCssTokens(await readFile(path, 'utf8'));
+  if (['.ts', '.mts', '.js', '.mjs'].includes(ext)) {
+    // The whole namespace, not the default export: a token module names its palette
+    // (`export const color = ...`) as often as it default-exports one.
+    const module: unknown = await import(pathToFileURL(path).href);
+    return flattenModuleTokens(module);
+  }
+  throw new MediakitError(
+    `Cannot extract tokens from ${path}: expected a .css file with custom properties, or a ` +
+      `.ts/.js token module. Received "${ext || 'no extension'}".`,
+  );
+};
+
+const report = (
+  assignments: readonly Assignment[],
+  unused: readonly ColorToken[],
+  font: FontCandidate | undefined,
+  source: string,
+  total: number,
+): void => {
+  process.stdout.write(`\nRead ${total} colour token(s) from ${dim(source)}.\n\n`);
+
+  const width = Math.max(...assignments.map((a) => a.key.length));
+  for (const a of assignments) {
+    const label = a.inferred ? ok('inferred') : bad(' guessed');
+    process.stdout.write(
+      `  ${label}  ${a.key.padEnd(width)}  ${a.value.padEnd(9)} ${dim(
+        a.inferred ? `from ${a.source}` : a.source,
+      )}\n`,
+    );
+  }
+
+  const guesses = assignments.filter((a) => !a.inferred).length;
+  if (guesses > 0) {
+    process.stdout.write(
+      `\n  ${bad(`${guesses} value(s) guessed.`)} ${dim('Each is marked GUESS in the config. Check them.')}\n`,
+    );
+  }
+
+  if (unused.length > 0) {
+    // Truncated: a real design system carries dozens of colours, and a wall of them buries the
+    // inferred/guessed report above, which is the part that needs reading.
+    const shown = unused.slice(0, 12);
+    const rest = unused.length - shown.length;
+    process.stdout.write(
+      `\n  ${dim(`${unused.length} colour(s) found and unused:`)}\n` +
+        `  ${dim(shown.map((t) => `${t.name} ${t.value}`).join(', '))}` +
+        `${rest > 0 ? dim(`, and ${rest} more`) : ''}\n`,
+    );
+  }
+
+  process.stdout.write(
+    font === undefined
+      ? `\n  ${dim('No font files found. The bundled Geist (400, 700) is used.')}\n`
+      : `\n  ${ok('fonts')}     ${font.family} at ${font.files.map((f) => f.weight).join(', ')}\n`,
+  );
+};
 
 export const runInit = async (argv: readonly string[]): Promise<number> => {
   if (argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(USAGE);
     return 0;
   }
+
+  for (const flag of ['--from', '--fonts', '--preset']) {
+    if (argv.includes(flag) && findValue(argv, flag) === undefined) {
+      process.stderr.write(`mediakit: ${flag} requires a value.\n`);
+      return 1;
+    }
+  }
+
   const force = argv.includes('--force');
-  const targetArg = argv.find((a) => !a.startsWith('-'));
+  const fromFlag = findValue(argv, '--from');
+  const fontsFlag = findValue(argv, '--fonts');
+  const preset = findValue(argv, '--preset') ?? 'ig-portrait';
+
+  const flagValues = new Set([fromFlag, fontsFlag, preset].filter((v) => v !== undefined));
+  const targetArg = argv.find((a) => !a.startsWith('-') && !flagValues.has(a));
   const target = resolve(process.cwd(), targetArg ?? '.');
 
   const configPath = join(target, 'mediakit.config.ts');
@@ -70,15 +179,66 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
     return 1;
   }
 
-  await mkdir(specDir, { recursive: true });
-  await writeFile(configPath, CONFIG_TEMPLATE, 'utf8');
-  await writeFile(specPath, EXAMPLE_SPEC, 'utf8');
+  let contents = DEFAULT_CONFIG;
 
+  if (fromFlag !== undefined) {
+    const fromPath = resolve(process.cwd(), fromFlag);
+    if (!existsSync(fromPath)) {
+      process.stderr.write(`mediakit: --from file not found: ${fromFlag}\n`);
+      return 1;
+    }
+
+    const tokens = await readTokens(fromPath);
+    if (tokens.length === 0) {
+      process.stderr.write(
+        `mediakit: no colour values found in ${fromFlag}.\n` +
+          `Expected CSS custom properties under :root or @theme, or a module exporting ` +
+          `colour strings.\n`,
+      );
+      return 1;
+    }
+
+    const { assignments, unused } = mapToContract(tokens);
+
+    const fontDirs =
+      fontsFlag === undefined
+        ? FONT_DIRS.map((d) => join(target, d))
+        : [resolve(process.cwd(), fontsFlag)];
+    const found = (await Promise.all(fontDirs.map(fontFilesIn))).flat();
+
+    // A discovered family is only usable if it covers every weight the default type scale
+    // names. `loadFonts` throws on a missing weight, so accepting a family that ships only
+    // 500 and 600 would scaffold a config that cannot render, and `init` must leave the
+    // project in a state `render` consumes immediately. Falling back to the bundled font is
+    // the correct answer, not a degraded one.
+    const required = new Set(Object.values(DEFAULT_TYPE).map((style) => style.fontWeight));
+    const font = groupFontFiles(found).find((candidate) => {
+      const weights = new Set(candidate.files.map((f) => f.weight));
+      return [...required].every((weight) => weights.has(weight));
+    });
+
+    contents = generateConfig({
+      assignments,
+      font,
+      source: displayPath(process.cwd(), fromPath),
+    });
+    report(assignments, unused, font, displayPath(process.cwd(), fromPath), tokens.length);
+  }
+
+  await mkdir(specDir, { recursive: true });
+  await writeFile(configPath, contents, 'utf8');
+  await writeFile(specPath, exampleSpec(preset), 'utf8');
+
+  const rel = (p: string): string => displayPath(process.cwd(), p);
   process.stdout.write(
     [
-      `Created ${configPath}`,
-      `Created ${specPath}`,
-      `Run \`mediakit render ${specPath}\` to render an image.`,
+      '',
+      `${ok('created')} ${rel(configPath)}`,
+      `${ok('created')} ${rel(specPath)}`,
+      '',
+      fromFlag === undefined
+        ? `Next: ${dim(`\`mediakit render ${rel(specPath)}\``)}`
+        : `Review the config, then: ${dim(`\`mediakit render ${rel(specPath)}\``)}`,
       '',
     ].join('\n'),
   );

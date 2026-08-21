@@ -7,6 +7,32 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **`mediakit init --from <file>`**, extracting a palette from a CSS file (`:root` or Tailwind
+  v4's `@theme`) or a TS/JS token module, and finding font files on disk to enumerate weights.
+
+  Every value it writes carries its provenance as a comment in the generated config: `// from
+bg-base` where a source token matched by name, `// GUESS: darkest colour found` where nothing
+  matched and a stated fallback rule chose. Invariant 11 justifies inference only because a
+  human reviews what it wrote, and a reviewer cannot check a hex value without knowing which
+  token it came from. The comment survives into the committed file and into code review, where
+  terminal output does not.
+
+  Three rules exist because a real palette broke the obvious version of them. Theme darkness is
+  decided on the **median** luminance, not the lightest colour, since a dark palette still
+  carries a near-white text colour and the extremes answer the same for both themes. `accent`
+  is the most **saturated** unclaimed colour rather than the first, because a design system
+  that names its gold `champagne` and its background `obsidian` gave an accent identical to the
+  canvas. And `bezel` is explicitly forbidden from equalling `canvas`, which is the
+  phone-shaped-hole trap already recorded against the default token set.
+
+  A discovered font family is used only if it covers every weight `DEFAULT_TYPE` names.
+  `loadFonts` throws on a missing weight, so a family shipping only 500 and 600 would scaffold
+  a config that cannot render, and `init` must leave a project in a state `render` consumes
+  immediately.
+
+- **`mediakit init --preset <name>`**, so a project scaffolds its example spec at a store size
+  rather than always at `ig-portrait`.
+
 - **`mediakit schema`**, printing the spec vocabulary derived from the project's registries:
   every preset with its constraints, every layout with its slots, every block with its props,
   and the registered colour tokens. `--format json` emits JSON Schema for a structured-output
