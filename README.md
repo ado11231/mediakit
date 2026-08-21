@@ -88,12 +88,27 @@ against a registry, and writes one PNG per frame.
 
 ## Commands
 
-|           |                                                     |
-| --------- | --------------------------------------------------- |
-| `init`    | write a config and an example spec                  |
-| `render`  | render a spec to PNGs, once per preset it names     |
-| `preview` | serve rendered output locally, re-rendering on edit |
-| `check`   | validate specs and images against store rules       |
+|           |                                                        |
+| --------- | ------------------------------------------------------ |
+| `init`    | write a config and an example spec                     |
+| `presets` | list every size, with its dimensions and store rules   |
+| `render`  | render a spec to PNGs, once per preset it names        |
+| `preview` | serve rendered output locally, re-rendering on edit    |
+| `check`   | validate specs and images against store rules          |
+| `export`  | write an upload-ready folder, verified before it lands |
+
+`export` produces the folder you drag into App Store Connect or the Play Console: one directory
+per preset, frames named so the upload order follows the filename sort, and a `manifest.json`
+with a SHA-256 per frame and the constraints that were checked. Every rule runs before anything
+is written, so a bundle that exists is a bundle that passed.
+
+```bash
+npx mediakit export marketing/store.spec.json
+# export/store/ios-6.9/store-01.png, store-02.png, manifest.json
+```
+
+`presets` works before you have a config, so you can see what mediakit renders without setting
+anything up.
 
 `check` also runs against images you already have:
 

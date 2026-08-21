@@ -346,7 +346,18 @@ The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `che
 presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-Four things a future editor should know rather than rediscover:
+**M2.5 is in progress.** The no-watermark guarantee has landed: invariant 12 is now enforced by
+`packages/render-still/test/flat-field.test.ts`, verified against a deliberately injected 4x4
+mark that all 13 presets caught. Glyph coverage, the overflow lint, and the contrast rule are
+still outstanding, as is the App Store Connect draft upload.
+
+Landed alongside it: `mediakit export`, which writes a verified upload-ready folder per preset,
+and `mediakit presets`, which lists the registry. `export` renders rather than reading
+`marketing/`, so a stale PNG cannot be exported, and it writes nothing unless every constraint
+passes. Its `manifest.json` deliberately carries no timestamp and no version string, since
+either would change a bundle's bytes while the spec did not.
+
+Five things a future editor should know rather than rediscover:
 
 - **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the
   default scale is expressed in 400 and 700 alone. satori substitutes a missing weight silently.
@@ -360,6 +371,11 @@ Four things a future editor should know rather than rediscover:
   loses to invariant 11: it is inference in the render path, and it fails silently, because a
   doubled island renders, validates under `check`, and uploads. A test asserts `phone` emits no
   absolutely-positioned child for exactly this reason.
+- **Test timeouts live in `vitest.shared.ts`, not inline.** Turbo runs each package's suite
+  concurrently, so an idle 2s render becomes a 10s one and vitest's 5s default reports
+  "timeout" about correct code. Two rendering tests had no timeout at all and were latently
+  flaky for exactly this reason. Do not reintroduce a per-test timeout below the shared floor;
+  it re-creates the flake it looks like it prevents.
 - **`DEFAULT_COLOR.bezel` and `DEFAULT_COLOR.canvas` are the same value.** A device framed on an
   unstyled dark page is therefore a phone-shaped hole with only its shadow to separate it, which
   is why `examples/source-app` overrides `bezel`. Changing the default is tempting and would

@@ -1,9 +1,10 @@
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
   applyConfig,
   createDefaultRegistries,
   type AssetSpec,
+  type Constraint,
   type MediakitConfig,
   type Registries,
 } from '@mediakit/core';
@@ -41,3 +42,35 @@ export const outputDir = (
   preset: string,
   presets: readonly string[],
 ): string => (presets.length === 1 ? join(outDir, spec.id) : join(outDir, spec.id, preset));
+
+/**
+ * One-line human rendering of a channel constraint, shared by `presets` (which lists them)
+ * and `export` (which records the ones it verified into the bundle manifest). Kept next to
+ * the other shared CLI helpers so the two cannot drift into describing the same rule
+ * differently.
+ */
+export const describeConstraint = (constraint: Constraint): string => {
+  switch (constraint.kind) {
+    case 'noAlpha':
+      return 'no alpha channel';
+    case 'frameCount':
+      return `${constraint.min}-${constraint.max} frames`;
+    case 'aspectRatio':
+      return `at most ${constraint.maxRatio}:1`;
+    case 'altSizes':
+      return `also accepts ${constraint.sizes.map(([w, h]) => `${w}x${h}`).join(', ')}`;
+    case 'sizeRange':
+      return `${constraint.min}-${constraint.max}px per side`;
+  }
+};
+
+/**
+ * Paths are printed relative to cwd because that is what a person can paste back into the
+ * next command. `--out` may point anywhere, though, and a relative path that climbs out of
+ * cwd is strictly less readable than the absolute one it describes, so it loses.
+ */
+export const displayPath = (cwd: string, path: string): string => {
+  const rel = relative(cwd, path);
+  if (rel === '') return '.';
+  return rel.startsWith('..') ? path : rel;
+};

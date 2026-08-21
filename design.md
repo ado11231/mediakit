@@ -730,12 +730,14 @@ Chrome. Different text shapers and rasterizers cannot agree at the pixel level.
 
 ```
 mediakit init                     scaffold mediakit.config.ts plus an example spec
+mediakit presets                  list registered presets, dimensions, and constraints
 mediakit preview                  local dev server, live reload on spec or token change
 mediakit render <spec> [--preset] render a spec's presets, or one named preset
 mediakit check                    validate specs, brand rules, and store constraints
+mediakit export <spec> [--preset] write a verified, upload-ready folder per preset
 ```
 
-`render`, `check`, and `preview` accept `--config <path>`. Without it the config is found only
+`render`, `check`, `preview`, `presets`, and `export` accept `--config <path>`. Without it the config is found only
 in the working directory, so a project rendering the same tokens at two scales needs one
 directory per config, each with its own `specs/` and output tree, and every script has to `cd`.
 Spec-relative paths still resolve against cwd rather than the config's directory, so a
@@ -744,6 +746,32 @@ should be built from `import.meta.dirname` for the same reason.
 
 `check` is the cheapest on-ramp in the product. It works standalone, so someone with hand-made
 screenshots can adopt it without adopting the renderer.
+
+`presets` is the only command that works before a project exists. The registry already knows
+every size and constraint, and there was previously no way for a consumer to see them without
+reading source. A preset registered by the consumer's own config is labelled `custom`, which is
+the only confirmation available that a registration took effect short of rendering.
+
+`export` writes the folder a person drags into an upload form: one directory per preset, frames
+named `<spec-id>-NN.png` so the upload order follows the filename sort, and a `manifest.json`
+recording the dimensions, a SHA-256 per frame, and the constraints that were verified.
+
+Three properties are load bearing.
+
+- **It renders rather than reading `marketing/`.** Reading already-written PNGs would couple
+  export to a prior `render` and to that command's directory layout, and would make a stale
+  frame exportable in silence. One render path means one set of bytes, and `export` reproduces
+  `render`'s hashes exactly.
+- **A bundle that exists is a bundle that passed.** Spec rules run before any render, asset
+  rules run on every frame, and nothing reaches disk until all of them pass. A half-written
+  bundle is worse than none, because it uploads without complaint.
+- **The manifest carries no timestamp and no mediakit version.** Either would make the bundle's
+  bytes change while the spec did not, which is invariant 7. The manifest is a rendered artifact
+  like the PNGs beside it.
+
+Channel packs (`@mediakit/channels`, settled decision 23) layer onto `export` as a `--channel`
+flag later. They are not a prerequisite: presets already carry the constraints, so the bundle is
+verifiable today against the sizes core ships.
 
 `preview` serves already-rendered PNGs over HTTP and re-renders on change. It does not drive a
 browser, it serves files to yours, so invariant 2 is untouched.

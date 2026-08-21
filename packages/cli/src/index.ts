@@ -2,6 +2,8 @@ import process from 'node:process';
 import { runInit } from './commands/init.js';
 import { runRender } from './commands/render.js';
 import { runCheck } from './commands/check.js';
+import { runExport } from './commands/export.js';
+import { runPresets } from './commands/presets.js';
 import { runPreview } from './commands/preview.js';
 
 export {
@@ -16,15 +18,19 @@ export type { ImportConfigOptions } from './config.js';
 export { runInit };
 export { runRender };
 export { runCheck };
+export { runExport };
+export { runPresets };
 export { runPreview };
 
 const USAGE = `mediakit <command> [args]
 
 commands:
   init     scaffold mediakit.config.ts and an example spec
+  presets  list every registered preset with its dimensions and constraints
   preview  serve a spec's rendered PNGs over HTTP with live reload
   render   render a spec to one or more presets, writing PNGs to disk
   check    validate specs and brand rules against store constraints
+  export   write a verified, upload-ready folder per preset
 `;
 
 export const main = (argv: readonly string[]): Promise<number> => {
@@ -43,9 +49,13 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return runRender(rest);
     case 'check':
       return runCheck(rest);
+    case 'export':
+      return runExport(rest);
+    case 'presets':
+      return runPresets(rest);
     default:
       process.stderr.write(
-        `mediakit: unknown command "${command}". Available: init, preview, render, check.\n`,
+        `mediakit: unknown command "${command}". Available: init, presets, preview, render, check, export.\n`,
       );
       return Promise.resolve(1);
   }

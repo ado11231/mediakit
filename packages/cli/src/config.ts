@@ -65,7 +65,7 @@ export const resolveConfigPath = (cwd: string, explicit?: string): string => {
     return path;
   }
 
-  const path = CANDIDATES.map((name) => join(cwd, name)).find((p) => existsSync(p));
+  const path = findConfigPath(cwd);
   if (path === undefined) {
     throw new MediakitError(
       `No mediakit.config.ts found in ${cwd}.\nRun \`mediakit init\` to scaffold one, or pass --config <path>.`,
@@ -73,6 +73,15 @@ export const resolveConfigPath = (cwd: string, explicit?: string): string => {
   }
   return path;
 };
+
+/**
+ * The same search without the throw, for the one command that is useful before a project
+ * exists. `presets` falls back to the built-in registry rather than telling a newcomer to run
+ * `init` before they are allowed to see what mediakit can render. Catching the throw instead
+ * would also swallow a genuinely broken config, which must still fail loudly.
+ */
+export const findConfigPath = (cwd: string): string | undefined =>
+  CANDIDATES.map((name) => join(cwd, name)).find((p) => existsSync(p));
 
 export interface ImportConfigOptions {
   /**

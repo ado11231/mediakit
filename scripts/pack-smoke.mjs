@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   mkdtempSync,
   mkdirSync,
@@ -89,7 +90,16 @@ try {
   const bin = join(consumer, 'node_modules', '.bin', 'mediakit');
   assert(existsSync(bin), `the mediakit bin was not linked at ${bin} after install`);
 
-  // The exact first-run path from the README: one package installed, then init, render, check.
+  // The exact first-run path from the README: one package installed, then presets, init,
+  // render, check, export.
+  // presets runs before init on purpose: it is the one command that must work with no
+  // config present, and a stranger deciding whether to adopt mediakit runs it first.
+  const presets = run(bin, ['presets'], consumer);
+  assert(
+    /ios-6\.9\s+1320x2868/.test(presets),
+    'presets did not list the built-in listing sizes',
+  );
+
   run(bin, ['init'], consumer);
   const config = join(consumer, 'mediakit.config.ts');
   assert(existsSync(config), 'init did not scaffold mediakit.config.ts');
@@ -111,9 +121,33 @@ try {
   // spec here is the assertion.
   run(bin, ['check', 'marketing/example.spec.json'], consumer);
 
+  run(bin, ['export', 'marketing/example.spec.json'], consumer);
+  const bundle = join(consumer, 'export', 'example', 'ig-portrait');
+  const exported = readdirSync(bundle).sort();
+  assert(
+    exported.join(',') === 'example-01.png,manifest.json',
+    `export bundle should hold one ordered frame and a manifest, found: ${exported.join(', ')}`,
+  );
+
+  // The manifest is an artifact, so a clock-dependent field in it breaks reproducibility the
+  // same way a dated watermark would.
+  const manifest = JSON.parse(readFileSync(join(bundle, 'manifest.json'), 'utf8'));
+  assert(
+    manifest.sha256 === undefined &&
+      !/\d{4}-\d{2}-\d{2}/.test(readFileSync(join(bundle, 'manifest.json'), 'utf8')),
+    'the export manifest must carry no date',
+  );
+  assert(
+    createHash('sha256')
+      .update(readFileSync(join(bundle, 'example-01.png')))
+      .digest('hex') === manifest.frames[0].sha256,
+    'the export manifest sha256 does not match the bytes it names',
+  );
+
   console.log('pack-smoke: ok');
   console.log(`  installed from tarballs: ${Object.keys(tarballs).sort().join(', ')}`);
   console.log(`  rendered: marketing/example/frame-01.png (${bytes.length} bytes, PNG)`);
+  console.log(`  exported: export/example/ig-portrait/ (${exported.join(', ')})`);
 } catch (error) {
   console.error(
     `pack-smoke failed:\n${error instanceof Error ? error.message : String(error)}`,

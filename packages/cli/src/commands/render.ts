@@ -6,7 +6,8 @@ import { join, resolve, relative } from 'node:path';
 import { MediakitError, parseSpec, presetNames, type Registries } from '@mediakit/core';
 import { renderSpec } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
-import { buildRegistries, outputDir } from '../workspace.js';
+import { buildRegistries, displayPath, outputDir } from '../workspace.js';
+import { dim, ok } from '../style.js';
 
 const USAGE = `mediakit render <spec> [--preset <name>] [--out <dir>] [--config <path>]
 
@@ -102,6 +103,9 @@ export const runRender = async (
   const hash = (buffer: Buffer): string =>
     createHash('sha256').update(buffer).digest('hex').slice(0, 16);
 
+  let bytes = 0;
+  let count = 0;
+
   for (const preset of desired) {
     const frames = await renderSpec({
       spec,
@@ -116,9 +120,22 @@ export const runRender = async (
       const file = join(dir, `frame-${pad(frame.index)}.png`);
       await mkdir(dir, { recursive: true });
       await writeFile(file, frame.png);
-      process.stdout.write(`wrote ${relative(cwd, file)} (sha256:${hash(frame.png)}…)\n`);
+      bytes += frame.png.length;
+      count += 1;
+      // The per-frame hash line stays: it is what makes a changed PNG reviewable in a pull
+      // request. The summary below is what a person actually reads.
+      process.stdout.write(
+        `${ok('wrote')} ${displayPath(cwd, file)} ${dim(`(sha256:${hash(frame.png)}…)`)}\n`,
+      );
     }
   }
+
+  const mb = (bytes / 1_000_000).toFixed(2);
+  process.stdout.write(
+    `\n${ok('✓')} ${count} frame(s) across ${desired.length} preset(s), ${mb} MB.\n` +
+      `  ${dim(displayPath(cwd, outDir))}\n` +
+      `  ${dim(`Next: \`mediakit check ${specArg}\`, then \`mediakit export ${specArg}\`.`)}\n`,
+  );
 
   return 0;
 };

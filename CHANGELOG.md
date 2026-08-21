@@ -5,6 +5,50 @@ the person reading it is you, six months from now, when a project stops building
 
 ## Unreleased
 
+### Added
+
+- **`mediakit export <spec>`**, which writes the folder an upload form expects: one directory
+  per preset, frames named `<spec-id>-NN.png` so upload order follows the filename sort, and a
+  `manifest.json` carrying the dimensions, a SHA-256 per frame, and the constraints verified.
+
+  It renders rather than reading `marketing/`, so a stale PNG cannot be exported and the bytes
+  match `render`'s exactly. Every spec and asset rule runs before anything reaches disk, so a
+  bundle that exists is a bundle that passed. The manifest carries no timestamp and no version
+  string, because either would change the bundle's bytes while the spec did not.
+
+  Channel packs (`@mediakit/channels`) layer on as a `--channel` flag later. They are not a
+  prerequisite: presets already carry the constraints.
+
+- **`mediakit presets`**, listing every registered preset with its dimensions and constraints.
+  The registry already knew; there was no way to see it without reading source. It is the one
+  command that works with no config present, and a preset from your own config is labelled
+  `custom`, which is the only confirmation that a registration took effect short of rendering.
+
+- **A no-watermark test, so invariant 12 is enforced rather than claimed.** A single
+  `Background` block at a known colour is rendered at every registered preset, the IDAT is
+  inflated with `node:zlib`, and every pixel is asserted to equal that colour. Verified against
+  a deliberately injected 4x4 mark, which all 13 presets caught.
+
+  A golden-file test cannot cover this: a mark introduced before the goldens were written would
+  be baked into them and compare equal forever. The preset list comes from the registry, so
+  registering a preset without covering it is not possible.
+
+- **`render` and `export` close with a summary** naming the frame count, preset count, total
+  bytes, and directory, and `render` names the next command. Colour comes from `node:util`'s
+  `styleText` and is suppressed under `NO_COLOR` or a non-TTY stream.
+
+### Fixed
+
+- **Render and CLI tests could fail as timeouts under parallel load.** Two rendering tests had
+  no explicit timeout at all and relied on vitest's 5s default, against a rasterization that
+  takes 2 to 5 seconds when the machine is idle. Turbo runs each package's suite concurrently,
+  so a loaded machine turned correct code into a red CI run reporting "timeout".
+
+  The 34 inline per-test timeouts that were the previous answer are replaced by one shared
+  floor in `vitest.shared.ts`, because the number that passes on a developer machine is not the
+  number that passes on a loaded runner. A timeout here exists to stop a hang; the golden-file
+  byte comparison is what polices render output.
+
 ### Changed
 
 - **README images no longer link at example fixtures.** The store pair is one cropped
