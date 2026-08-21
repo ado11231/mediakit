@@ -96,7 +96,7 @@ describe('runCheck spec mode', () => {
     // Now check the same directory against ios-6.9 via asset mode.
     const code = await runCheck(['marketing/ex', '--preset', 'ios-6.9'], { cwd: dir });
     expect(code).toBe(1);
-  }, 60_000);
+  });
 
   it('exits 0 in asset mode for an opaque PNG at the right size', async () => {
     await writeFile(
@@ -115,7 +115,7 @@ describe('runCheck spec mode', () => {
 
     const code = await runCheck(['marketing/ex', '--preset', 'ig-portrait'], { cwd: dir });
     expect(code).toBe(0);
-  }, 60_000);
+  });
 
   it('finds the output a --preset render just wrote, rather than reporting it missing', async () => {
     await writeFile(
@@ -134,7 +134,7 @@ describe('runCheck spec mode', () => {
       await runRender(['marketing/ex.spec.json', '--preset', 'ios-6.9'], { cwd: dir }),
     ).toBe(0);
     expect(await runCheck(['marketing/ex.spec.json'], { cwd: dir })).toBe(0);
-  }, 120_000);
+  });
 
   it('honours a custom preset registered by the consumer config', async () => {
     await writeFile(

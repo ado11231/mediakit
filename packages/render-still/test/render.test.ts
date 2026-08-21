@@ -78,7 +78,7 @@ describe('rendering a spec', () => {
     ]);
 
     expect(frames).toHaveLength(4);
-  }, 30_000);
+  });
 
   /**
    * Background is absolutely positioned and fills the canvas, which is the satori subset risk
@@ -99,7 +99,7 @@ describe('rendering a spec', () => {
 
     expect(frame).toBeDefined();
     expect(size(frame?.png ?? Buffer.alloc(0))).toEqual({ width: 1080, height: 1350 });
-  }, 30_000);
+  });
 
   /**
    * DeviceFrame reads a screenshot from disk, inlines it as a data URI, and frames it. The
@@ -118,7 +118,7 @@ describe('rendering a spec', () => {
 
     expect(frame).toBeDefined();
     expect(size(frame?.png ?? Buffer.alloc(0))).toEqual({ width: 1080, height: 1350 });
-  }, 30_000);
+  });
 });
 
 describe('frame distinctness', () => {
@@ -136,7 +136,7 @@ describe('frame distinctness', () => {
 
     const hashes = frames.map((frame) => sha(frame.png));
     expect(new Set(hashes).size).toBe(frames.length);
-  }, 30_000);
+  });
 
   it('still renders a deliberately repeated frame identically', async () => {
     const frames = await render([
@@ -145,7 +145,7 @@ describe('frame distinctness', () => {
     ]);
 
     expect(sha(frames[0]?.png ?? Buffer.alloc(0))).toBe(sha(frames[1]?.png ?? Buffer.alloc(0)));
-  }, 30_000);
+  });
 });
 
 describe('determinism', () => {
@@ -159,7 +159,7 @@ describe('determinism', () => {
 
     expect(first.stdout.trim()).not.toBe('');
     expect(first.stdout).toBe(second.stdout);
-  }, 60_000);
+  });
 });
 
 describe('failure behaviour', () => {

@@ -46,7 +46,7 @@ describe('source-app extension API', () => {
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
     expect(pngSize(png)).toEqual({ width: 1080, height: 1350 });
-  }, 30_000);
+  });
 
   it('renders the README pair composite at the registered custom preset dimensions', async () => {
     const code = await runRender(['marketing/store-pair.spec.json', '--out', outDir], { cwd });
@@ -56,7 +56,7 @@ describe('source-app extension API', () => {
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
     expect(pngSize(png)).toEqual({ width: 1120, height: 720 });
-  }, 30_000);
+  });
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {
     const code = await runRender(['marketing/launch.spec.json', '--out', outDir, ...LIGHT], {
@@ -68,7 +68,7 @@ describe('source-app extension API', () => {
     const committed = await readFile(join(cwd, 'marketing', 'launch', 'frame-01.png'));
     const sha = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
     expect(sha(fresh)).toBe(sha(committed));
-  }, 30_000);
+  });
 });
 
 /**
@@ -104,7 +104,7 @@ describe('source-app store assets', () => {
     const play = await readFile(join(outDir, 'store', 'play-phone', 'frame-01.png'));
     expect(pngSize(ios)).toEqual({ width: 1320, height: 2868 });
     expect(pngSize(play)).toEqual({ width: 1080, height: 1920 });
-  }, 120_000);
+  });
 
   it('renders distinct bytes per frame', async () => {
     expect(await runRender(['marketing/store.spec.json', '--out', outDir], { cwd })).toBe(0);
@@ -113,7 +113,7 @@ describe('source-app store assets', () => {
     const one = sha(await readFile(join(dir, 'frame-01.png')));
     const two = sha(await readFile(join(dir, 'frame-02.png')));
     expect(one).not.toBe(two);
-  }, 120_000);
+  });
 
   it('emits a 24-bit PNG for presets whose channel rejects an alpha channel', async () => {
     expect(await runRender(['marketing/store.spec.json', '--out', outDir], { cwd })).toBe(0);
@@ -125,12 +125,12 @@ describe('source-app store assets', () => {
     // play-phone declares no noAlpha, so it keeps resvg's own encoding untouched.
     const play = await readFile(join(outDir, 'store', 'play-phone', 'frame-01.png'));
     expect(play.readUInt8(25)).toBe(6);
-  }, 120_000);
+  });
 
   it('passes check against the store constraints', async () => {
     expect(await runRender(['marketing/store.spec.json', '--out', outDir], { cwd })).toBe(0);
     expect(await runCheck(['marketing/store.spec.json', '--out', outDir], { cwd })).toBe(0);
-  }, 120_000);
+  });
 
   it('reproduces the committed store assets byte for byte', async () => {
     expect(await runRender(['marketing/store.spec.json', '--out', outDir], { cwd })).toBe(0);
@@ -142,5 +142,5 @@ describe('source-app store assets', () => {
         expect(sha(fresh), `${preset}/${frame}`).toBe(sha(committed));
       }
     }
-  }, 120_000);
+  });
 });

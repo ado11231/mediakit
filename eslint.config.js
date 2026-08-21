@@ -38,6 +38,10 @@ export default defineConfig([
   },
   {
     files: ['**/*.ts'],
+    // Vitest config is tool config, and the reason in the note above applies to it: it lives
+    // in no package tsconfig, so type-aware rules can only see it through a synthetic default
+    // project. The recommended and determinism rules still cover it.
+    ignores: ['**/vitest.config.ts', 'vitest.shared.ts'],
     extends: [tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {

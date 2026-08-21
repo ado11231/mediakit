@@ -85,7 +85,7 @@ describe('golden files', () => {
 
       expect(frame).toBeDefined();
       expect(sha(frame?.png ?? Buffer.alloc(0))).toBe(sha(expected));
-    }, 30_000);
+    });
   }
 
   /**

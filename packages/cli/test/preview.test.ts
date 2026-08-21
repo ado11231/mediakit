@@ -91,7 +91,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('GET /<preset>/frame-01.png returns a valid PNG at the preset dimensions', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
@@ -109,7 +109,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('GET /events opens an SSE stream that stays connected', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
@@ -128,7 +128,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('modifying the spec triggers a re-render', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
@@ -150,7 +150,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('--preset renders only the named preset', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
@@ -169,7 +169,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('multi-preset spec shows both presets in the HTML', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
@@ -188,7 +188,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   /**
    * mediakit's errors are deliberately multi-line: an unknown preset names the offender and
@@ -237,7 +237,7 @@ describe('runPreview', () => {
     } finally {
       stop(handle);
     }
-  }, 30_000);
+  });
 
   it('prints --help and exits 0', async () => {
     const code = await runPreview(['--help'], { cwd: dir });
@@ -265,5 +265,5 @@ describe('runPreview', () => {
         signal: new AbortController().signal,
       }),
     ).rejects.toBeInstanceOf(MediakitError);
-  }, 30_000);
+  });
 });
