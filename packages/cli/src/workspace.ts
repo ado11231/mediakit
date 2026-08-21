@@ -2,12 +2,19 @@ import { join, relative } from 'node:path';
 import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
 import {
   applyConfig,
+  checkGlyphs,
+  checkSpec,
   createDefaultRegistries,
+  glyphCoverage,
+  resolveTokens,
   type AssetSpec,
   type Constraint,
+  type Coverage,
   type MediakitConfig,
   type Registries,
+  type Violation,
 } from '@mediakit/core';
+import { loadFonts } from '@mediakit/render-still';
 
 /**
  * One construction shared by render, check, and preview. They each built their own before,
@@ -74,3 +81,37 @@ export const displayPath = (cwd: string, path: string): string => {
   if (rel === '') return '.';
   return rel.startsWith('..') ? path : rel;
 };
+
+/**
+ * Union of what every loaded font can draw, or `undefined` if any of them could not be
+ * parsed. satori falls back across the fonts it is given, so the union is what actually
+ * renders; one unparseable font makes the union an undercount, and an undercount would report
+ * a violation against text the font draws perfectly well. Reporting nothing is the only safe
+ * response to a parser limitation.
+ *
+ * Font files do not vary with the preset, so tokens resolve at any scale.
+ */
+const loadedCoverage = async (config: MediakitConfig): Promise<Coverage> => {
+  const fonts = await loadFonts(resolveTokens(config.tokens, 1));
+  const union = new Set<number>();
+  for (const font of fonts) {
+    const coverage = glyphCoverage(font.data);
+    if (coverage === undefined) return undefined;
+    for (const code of coverage) union.add(code);
+  }
+  return union;
+};
+
+/**
+ * Every spec-level rule in one call, so `check` and `export` cannot enforce different sets.
+ * They already diverged once over registries, which is why `buildRegistries` exists.
+ */
+export const checkSpecFully = async (
+  spec: AssetSpec,
+  registries: Registries,
+  config: MediakitConfig,
+  file: string,
+): Promise<Violation[]> => [
+  ...checkSpec(spec, registries, config.brandRules, file),
+  ...checkGlyphs(spec, await loadedCoverage(config), file),
+];

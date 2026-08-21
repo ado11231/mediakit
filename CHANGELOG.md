@@ -7,6 +7,25 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **Glyph coverage in `check`.** Every string in every block is checked codepoint by codepoint
+  against the `cmap` of the loaded fonts. A missing glyph is the same failure as a missing font
+  weight one level down: satori substitutes silently, so an emoji or a CJK character renders as
+  a blank or a tofu box, `check` passed, and the asset uploaded. The bundled Geist covers 726
+  codepoints, so `"Ship it 🎉"` was previously a silent tofu box.
+
+  Parsed with `node:buffer` alone, no new dependency: formats 0, 4, 6, and 12, unioned across
+  every Unicode subtable, with a codepoint mapped to glyph 0 counted as missing since `.notdef`
+  is the tofu box itself. A font this parser cannot read reports nothing at all, because a
+  parser limitation must never produce a violation against a font that is in fact complete.
+
+  It walks every prop rather than a list of text-bearing block types, which is the choice
+  `checkBrandRules` already makes: a custom block's text is checked without core knowing the
+  block by name. The cost is that a non-Latin character in a prop that is never drawn, a
+  `DeviceFrame` src path for instance, is reported too. That direction is the safe one.
+
+  `export` runs the same spec rules, so a bundle whose text cannot be drawn is refused before
+  anything reaches disk.
+
 - **`mediakit export <spec>`**, which writes the folder an upload form expects: one directory
   per preset, frames named `<spec-id>-NN.png` so upload order follows the filename sort, and a
   `manifest.json` carrying the dimensions, a SHA-256 per frame, and the constraints verified.

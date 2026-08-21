@@ -94,7 +94,7 @@ against a registry, and writes one PNG per frame.
 | `presets` | list every size, with its dimensions and store rules   |
 | `render`  | render a spec to PNGs, once per preset it names        |
 | `preview` | serve rendered output locally, re-rendering on edit    |
-| `check`   | validate specs and images against store rules          |
+| `check`   | validate specs, text, and images against store rules   |
 | `export`  | write an upload-ready folder, verified before it lands |
 
 `export` produces the folder you drag into App Store Connect or the Play Console: one directory
@@ -106,6 +106,10 @@ is written, so a bundle that exists is a bundle that passed.
 npx mediakit export marketing/store.spec.json
 # export/store/ios-6.9/store-01.png, store-02.png, manifest.json
 ```
+
+`check` also catches text your fonts cannot draw. An emoji or a CJK character with no glyph in
+the loaded font renders as a blank or a tofu box, and nothing else in the pipeline notices, so
+`check` reads the font's `cmap` and reports the exact codepoint.
 
 `presets` works before you have a config, so you can see what mediakit renders without setting
 anything up.

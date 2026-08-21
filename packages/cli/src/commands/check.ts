@@ -4,7 +4,6 @@ import { existsSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import {
   checkAsset,
-  checkSpec,
   MediakitError,
   parseSpec,
   presetNames,
@@ -12,7 +11,7 @@ import {
   type Violation,
 } from '@mediakit/core';
 import { importConfig, resolveConfigPath } from '../config.js';
-import { buildRegistries, outputDir } from '../workspace.js';
+import { buildRegistries, checkSpecFully, outputDir } from '../workspace.js';
 
 const USAGE = `mediakit check <spec>                   validate a spec's brand rules and per-preset frame counts
 mediakit check <file|dir> --preset <name>  validate rendered PNGs against a preset's rules
@@ -157,7 +156,7 @@ const runSpecCheck = async (
   }
   const spec = parseSpec(specJson, specRel);
 
-  const violations = checkSpec(spec, registries, config.brandRules, specRel);
+  const violations = await checkSpecFully(spec, registries, config, specRel);
 
   // Pixel checks against rendered output, if it exists. Skipped silently when nothing has been
   // rendered yet, so check-before-render still validates the spec.

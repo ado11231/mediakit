@@ -346,10 +346,13 @@ The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `che
 presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-**M2.5 is in progress.** The no-watermark guarantee has landed: invariant 12 is now enforced by
+**M2.5 is in progress.** Two of the four items have landed. Invariant 12 is now enforced by
 `packages/render-still/test/flat-field.test.ts`, verified against a deliberately injected 4x4
-mark that all 13 presets caught. Glyph coverage, the overflow lint, and the contrast rule are
-still outstanding, as is the App Store Connect draft upload.
+mark that all 13 presets caught. Glyph coverage lives in `core/src/check/glyphs.ts` and runs
+from `check` and `export`: a `cmap` parser over `node:buffer` with no new dependency, reporting
+nothing when a font cannot be parsed, because a parser limitation must never fail a complete
+font. The overflow lint and the contrast rule are still outstanding, as is the App Store Connect
+draft upload.
 
 Landed alongside it: `mediakit export`, which writes a verified upload-ready folder per preset,
 and `mediakit presets`, which lists the registry. `export` renders rather than reading

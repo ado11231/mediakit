@@ -5,7 +5,6 @@ import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
 import {
   checkAsset,
-  checkSpec,
   MediakitError,
   parseSpec,
   presetNames,
@@ -14,7 +13,12 @@ import {
 } from '@mediakit/core';
 import { renderSpec } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
-import { buildRegistries, describeConstraint, displayPath } from '../workspace.js';
+import {
+  buildRegistries,
+  checkSpecFully,
+  describeConstraint,
+  displayPath,
+} from '../workspace.js';
 import { bad, dim, ok } from '../style.js';
 
 const USAGE = `mediakit export <spec> [--preset <name>] [--out <dir>] [--config <path>]
@@ -129,7 +133,7 @@ export const runExport = async (
 
   // Spec-level rules first: they cost nothing and a frame-count violation makes every render
   // that follows wasted work.
-  const specViolations = checkSpec(spec, registries, config.brandRules, specRel);
+  const specViolations = await checkSpecFully(spec, registries, config, specRel);
   if (specViolations.length > 0) {
     report(specViolations);
     process.stderr.write(bad(`\nexport aborted: ${specViolations.length} violation(s).\n`));

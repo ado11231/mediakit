@@ -165,6 +165,32 @@ describe('runExport', () => {
     ]);
   });
 
+  /**
+   * export runs the same spec rules as check, so a glyph the font cannot draw stops a bundle
+   * before it is written. This is what makes "upload the folder as it is" true rather than
+   * hopeful.
+   */
+  it('refuses to write a bundle whose text the font cannot draw', async () => {
+    await writeFile(join(dir, 'mediakit.config.js'), MINIMAL_CONFIG, 'utf8');
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    await writeFile(
+      join(dir, 'marketing', 'tofu.spec.json'),
+      JSON.stringify({
+        id: 'tofu',
+        preset: 'ig-portrait',
+        frames: [
+          {
+            layout: 'centered',
+            blocks: [{ type: 'Headline', props: { text: '日本語 🎉', align: 'center' } }],
+          },
+        ],
+      }),
+      'utf8',
+    );
+    expect(await runExport(['marketing/tofu.spec.json'], { cwd: dir })).toBe(1);
+    expect(existsSync(join(dir, 'export'))).toBe(false);
+  });
+
   it('rejects a --preset the spec does not name', async () => {
     const specPath = await setup('launch', 'ig-portrait', 1);
     const code = await runExport([specPath, '--preset', 'story'], { cwd: dir });

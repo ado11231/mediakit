@@ -747,6 +747,17 @@ should be built from `import.meta.dirname` for the same reason.
 `check` is the cheapest on-ramp in the product. It works standalone, so someone with hand-made
 screenshots can adopt it without adopting the renderer.
 
+`check` also verifies **glyph coverage**, reading the `cmap` of every loaded font and comparing
+it against every string the spec carries. This is the missing-font-weight failure one level
+down: satori substitutes silently, so a codepoint no loaded font draws renders blank or as a
+tofu box, and nothing else in the pipeline reports it. A codepoint mapped to glyph 0 counts as
+missing, since `.notdef` is the tofu box. A font the parser cannot read reports nothing rather
+than reporting everything, because a parser limitation must never fail a font that is complete.
+
+It ships as a `check` rule rather than a render-time throw for the same reason the overflow lint
+does: it cannot break an existing consumer's build on upgrade. `export` runs the spec rules, so
+it is enforced there too.
+
 `presets` is the only command that works before a project exists. The registry already knows
 every size and constraint, and there was previously no way for a consumer to see them without
 reading source. A preset registered by the consumer's own config is labelled `custom`, which is

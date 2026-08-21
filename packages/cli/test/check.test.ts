@@ -39,6 +39,34 @@ describe('runCheck spec mode', () => {
     expect(code).toBe(0);
   });
 
+  /**
+   * The failure this rule exists for: satori draws a tofu box, the render succeeds, the
+   * dimensions validate, and the asset uploads. `check` is the only place it can be caught.
+   */
+  it('exits 1 on a codepoint the loaded font cannot draw', async () => {
+    await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    await writeFile(
+      join(dir, 'marketing', 'launch.spec.json'),
+      spec('launch', 'ig-portrait', [{ layout: 'centered', blocks: [headline('Ship it 🎉')] }]),
+      'utf8',
+    );
+    expect(await runCheck(['marketing/launch.spec.json'], { cwd: dir })).toBe(1);
+  });
+
+  it('passes accents and typographic punctuation the bundled font does cover', async () => {
+    await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
+    await mkdir(join(dir, 'marketing'), { recursive: true });
+    await writeFile(
+      join(dir, 'marketing', 'launch.spec.json'),
+      spec('launch', 'ig-portrait', [
+        { layout: 'centered', blocks: [headline('Café — “quotes” and a bullet •')] },
+      ]),
+      'utf8',
+    );
+    expect(await runCheck(['marketing/launch.spec.json'], { cwd: dir })).toBe(0);
+  });
+
   it('exits 1 and reports an exclamation when noExclamations is on', async () => {
     await writeFile(join(dir, 'mediakit.config.js'), CONFIG, 'utf8');
     await mkdir(join(dir, 'marketing'), { recursive: true });
