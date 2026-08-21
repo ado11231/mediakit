@@ -731,6 +731,7 @@ Chrome. Different text shapers and rasterizers cannot agree at the pixel level.
 ```
 mediakit init                     scaffold mediakit.config.ts plus an example spec
 mediakit presets                  list registered presets, dimensions, and constraints
+mediakit schema  [--format md]    print the spec vocabulary, for an LLM or a human
 mediakit preview                  local dev server, live reload on spec or token change
 mediakit render <spec> [--preset] render a spec's presets, or one named preset
 mediakit check                    validate specs, brand rules, and store constraints
@@ -758,7 +759,22 @@ It ships as a `check` rule rather than a render-time throw for the same reason t
 does: it cannot break an existing consumer's build on upgrade. `export` runs the spec rules, so
 it is enforced there too.
 
-`presets` is the only command that works before a project exists. The registry already knows
+`schema` is invariant 5 made usable. It walks the registries and emits either JSON Schema, for
+a structured-output API, or the same vocabulary as prose, for a prompt or a person. A block,
+layout, preset, or colour token registered in `mediakit.config.ts` appears on the next run with
+no further work, which is the only way the extension API can be said to work: the reference
+implementation kept a hand-edited `REGISTRY_CATALOG`, so registering a block taught the
+generator nothing.
+
+The generated enums are not a contradiction of invariant 3. That invariant governs the Zod spec
+schema, which stays open so a consumer can add a surface without editing core. This is generated
+output describing what is registered at one moment, and naming the alternatives is the point.
+
+Slots are expressed as one frame variant per layout rather than a single frame shape with every
+slot name unioned, because `assertSlot` throws in both directions and a schema accepting `left`
+on a `centered` frame would describe a spec that does not render.
+
+`presets` is the only other command that works before a project exists. The registry already knows
 every size and constraint, and there was previously no way for a consumer to see them without
 reading source. A preset registered by the consumer's own config is labelled `custom`, which is
 the only confirmation available that a registration took effect short of rendering.

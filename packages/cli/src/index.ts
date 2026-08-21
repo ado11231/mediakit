@@ -4,6 +4,7 @@ import { runRender } from './commands/render.js';
 import { runCheck } from './commands/check.js';
 import { runExport } from './commands/export.js';
 import { runPresets } from './commands/presets.js';
+import { runSchema } from './commands/schema.js';
 import { runPreview } from './commands/preview.js';
 
 export {
@@ -20,6 +21,7 @@ export { runRender };
 export { runCheck };
 export { runExport };
 export { runPresets };
+export { runSchema };
 export { runPreview };
 
 const USAGE = `mediakit <command> [args]
@@ -31,6 +33,7 @@ commands:
   render   render a spec to one or more presets, writing PNGs to disk
   check    validate specs and brand rules against store constraints
   export   write a verified, upload-ready folder per preset
+  schema   print the spec vocabulary as JSON Schema or prose
 `;
 
 export const main = (argv: readonly string[]): Promise<number> => {
@@ -53,9 +56,11 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return runExport(rest);
     case 'presets':
       return runPresets(rest);
+    case 'schema':
+      return runSchema(rest);
     default:
       process.stderr.write(
-        `mediakit: unknown command "${command}". Available: init, presets, preview, render, check, export.\n`,
+        `mediakit: unknown command "${command}". Available: init, presets, schema, preview, render, check, export.\n`,
       );
       return Promise.resolve(1);
   }

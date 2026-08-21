@@ -7,6 +7,25 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **`mediakit schema`**, printing the spec vocabulary derived from the project's registries:
+  every preset with its constraints, every layout with its slots, every block with its props,
+  and the registered colour tokens. `--format json` emits JSON Schema for a structured-output
+  API; `--format md` emits the same vocabulary as prose for a prompt or a person, from one
+  registry walk so the two cannot describe different products.
+
+  This is invariant 5, which had no implementation. The reference kept a hand-edited
+  `REGISTRY_CATALOG`, so registering a custom block taught the generator nothing. A block,
+  layout, preset, or colour token registered in a config now reaches the output on the next run
+  with no further work, and a test asserts exactly that.
+
+  Slots are one frame variant per layout rather than every slot name unioned, since `assertSlot`
+  throws in both directions. Verified with a real JSON Schema validator: all five of the
+  example's specs validate, and unknown block types, unknown presets, unknown colour tokens,
+  missing required props, an uppercase id, a slot on a slotless layout, and a wrong slot name on
+  `split` are each rejected. Uses zod 4's native `toJSONSchema`, so no new dependency; a schema
+  with no JSON Schema form still appears, without its prop detail, rather than failing the
+  command.
+
 - **Glyph coverage in `check`.** Every string in every block is checked codepoint by codepoint
   against the `cmap` of the loaded fonts. A missing glyph is the same failure as a missing font
   weight one level down: satori substitutes silently, so an emoji or a CJK character renders as

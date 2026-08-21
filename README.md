@@ -92,6 +92,7 @@ against a registry, and writes one PNG per frame.
 | --------- | ------------------------------------------------------ |
 | `init`    | write a config and an example spec                     |
 | `presets` | list every size, with its dimensions and store rules   |
+| `schema`  | print the spec vocabulary, for an LLM or a human       |
 | `render`  | render a spec to PNGs, once per preset it names        |
 | `preview` | serve rendered output locally, re-rendering on edit    |
 | `check`   | validate specs, text, and images against store rules   |
@@ -110,6 +111,11 @@ npx mediakit export marketing/store.spec.json
 `check` also catches text your fonts cannot draw. An emoji or a CJK character with no glyph in
 the loaded font renders as a blank or a tofu box, and nothing else in the pipeline notices, so
 `check` reads the font's `cmap` and reports the exact codepoint.
+
+`schema` prints what a valid spec may contain, built from your own registrations. Hand
+`mediakit schema` to a model as a JSON Schema for structured output, or `mediakit schema
+--format md` into a prompt, and it can author specs using your custom blocks without you
+maintaining a catalog by hand.
 
 `presets` works before you have a config, so you can see what mediakit renders without setting
 anything up.

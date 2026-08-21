@@ -4,17 +4,19 @@ import {
   applyConfig,
   checkGlyphs,
   checkSpec,
+  describeConstraint,
   createDefaultRegistries,
   glyphCoverage,
   resolveTokens,
   type AssetSpec,
-  type Constraint,
   type Coverage,
   type MediakitConfig,
   type Registries,
   type Violation,
 } from '@mediakit/core';
 import { loadFonts } from '@mediakit/render-still';
+
+export { describeConstraint };
 
 /**
  * One construction shared by render, check, and preview. They each built their own before,
@@ -49,27 +51,6 @@ export const outputDir = (
   preset: string,
   presets: readonly string[],
 ): string => (presets.length === 1 ? join(outDir, spec.id) : join(outDir, spec.id, preset));
-
-/**
- * One-line human rendering of a channel constraint, shared by `presets` (which lists them)
- * and `export` (which records the ones it verified into the bundle manifest). Kept next to
- * the other shared CLI helpers so the two cannot drift into describing the same rule
- * differently.
- */
-export const describeConstraint = (constraint: Constraint): string => {
-  switch (constraint.kind) {
-    case 'noAlpha':
-      return 'no alpha channel';
-    case 'frameCount':
-      return `${constraint.min}-${constraint.max} frames`;
-    case 'aspectRatio':
-      return `at most ${constraint.maxRatio}:1`;
-    case 'altSizes':
-      return `also accepts ${constraint.sizes.map(([w, h]) => `${w}x${h}`).join(', ')}`;
-    case 'sizeRange':
-      return `${constraint.min}-${constraint.max}px per side`;
-  }
-};
 
 /**
  * Paths are printed relative to cwd because that is what a person can paste back into the

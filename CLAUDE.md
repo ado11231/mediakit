@@ -354,6 +354,12 @@ nothing when a font cannot be parsed, because a parser limitation must never fai
 font. The overflow lint and the contrast rule are still outstanding, as is the App Store Connect
 draft upload.
 
+**Invariant 5 now has an implementation.** `mediakit schema` walks the registries and emits
+JSON Schema or prose (`core/src/schema/vocabulary.ts`). Do not reintroduce a hardcoded catalog
+in any form; a test asserts a config-registered block reaches the output. The generated enums
+are not a violation of invariant 3, which governs the Zod spec schema rather than generated
+output describing what happens to be registered.
+
 Landed alongside it: `mediakit export`, which writes a verified upload-ready folder per preset,
 and `mediakit presets`, which lists the registry. `export` renders rather than reading
 `marketing/`, so a stale PNG cannot be exported, and it writes nothing unless every constraint
