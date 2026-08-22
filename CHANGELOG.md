@@ -7,6 +7,33 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **A legibility warning in `check`.** A store gallery shows a 1320x2868 screenshot at roughly
+  a fifth of full size, so type authored for an app viewport disappears there. The render
+  succeeds, the dimensions validate, `check` passed, and it uploaded, which is the exact shape
+  of failure this project exists to prevent.
+
+  The threshold is a fraction of canvas width (3.5%) rather than an absolute size, because a
+  canvas is only ever viewed scaled and the ratio is what survives that. It is scoped to
+  presets that declare channel constraints, and the message names the type token, the resolved
+  pixel size, and the `scale` that would fix it.
+
+  It reports at a new **warning** severity: the display width of a store gallery is not
+  published, so failing a build on it would claim more certainty than exists, and sharpening a
+  heuristic is not a reason to break an existing consumer's pipeline. `check --strict` and
+  `export --strict` promote warnings to errors.
+
+- **`mediakit doctor`**, checking the four things that account for most first-run failures:
+  Node version, config resolution, whether every declared font file is on disk, and whether the
+  loaded weights cover the type scale. It also prints glyph coverage, and the type scale
+  resolved as a percentage of canvas width for every listing preset, which is the number
+  nothing else in the CLI showed.
+
+### Changed
+
+- **`Violation` gained an optional `severity`.** Absent means an error, so every existing rule
+  behaves as before. **Migration:** code that treats any violation as fatal should filter on
+  `severity !== 'warning'`.
+
 - **`mediakit init --from <file>`**, extracting a palette from a CSS file (`:root` or Tailwind
   v4's `@theme`) or a TS/JS token module, and finding font files on disk to enumerate weights.
 

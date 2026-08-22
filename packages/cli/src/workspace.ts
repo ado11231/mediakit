@@ -3,6 +3,7 @@ import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/block
 import {
   applyConfig,
   checkGlyphs,
+  checkLegibility,
   checkSpec,
   describeConstraint,
   createDefaultRegistries,
@@ -95,4 +96,7 @@ export const checkSpecFully = async (
 ): Promise<Violation[]> => [
   ...checkSpec(spec, registries, config.brandRules, file),
   ...checkGlyphs(spec, await loadedCoverage(config), file),
+  ...checkLegibility(spec, registries, config.tokens, file),
 ];
+
+export const isError = (violation: Violation): boolean => violation.severity !== 'warning';

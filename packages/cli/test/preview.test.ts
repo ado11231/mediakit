@@ -53,7 +53,10 @@ describe('runPreview', () => {
         handle.port = port;
       },
     });
-    const waited = await Promise.race([code.then((c) => c), waitForPort(handle, 10000)]);
+    // Generous on purpose. Turbo runs every package's suite at once and several of them
+    // rasterize multi-megapixel canvases, so a server that binds instantly on an idle machine
+    // can take many seconds here. This wait exists to catch a hang, not to time startup.
+    const waited = await Promise.race([code.then((c) => c), waitForPort(handle, 60_000)]);
     if (typeof waited === 'number') throw new Error(`preview exited early with ${waited}`);
     return handle;
   };

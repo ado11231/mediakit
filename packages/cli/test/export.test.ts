@@ -198,6 +198,20 @@ describe('runExport', () => {
     expect(existsSync(join(dir, 'export'))).toBe(false);
   });
 
+  /**
+   * A warning is a heuristic, not a verified requirement. Refusing a bundle over one would
+   * make export unusable on a project that has looked at the warning and decided.
+   */
+  it('writes the bundle despite a warning, and refuses it under --strict', async () => {
+    const specPath = await setup('store', 'ios-6.9', 1);
+    expect(await runExport([specPath], { cwd: dir })).toBe(0);
+    expect(existsSync(join(dir, 'export', 'store', 'ios-6.9', 'store-01.png'))).toBe(true);
+
+    await rm(join(dir, 'export'), { recursive: true, force: true });
+    expect(await runExport([specPath, '--strict'], { cwd: dir })).toBe(1);
+    expect(existsSync(join(dir, 'export'))).toBe(false);
+  });
+
   it('honours --out', async () => {
     const specPath = await setup('launch', 'ig-portrait', 1);
     expect(await runExport([specPath, '--out', 'upload'], { cwd: dir })).toBe(0);

@@ -354,6 +354,19 @@ nothing when a font cannot be parsed, because a parser limitation must never fai
 font. The overflow lint and the contrast rule are still outstanding, as is the App Store Connect
 draft upload.
 
+**A `check` rule may report at warning severity.** `Violation.severity` absent means an error;
+`'warning'` means a rule that is well founded but not verifiable against a published number, and
+`--strict` promotes it. The legibility rule is the first: a store gallery's display width is not
+published, so failing a build on it would claim certainty that does not exist. Do not promote a
+heuristic to an error without a citable number, and do not add an error-level rule that breaks an
+existing consumer on upgrade.
+
+**The default `scale` of 2.5 is too small for listing canvases.** `mediakit doctor` shows it:
+`body` lands at 3.0% of canvas width on `ios-6.9` and 1.9% on `ipad-13`, against a legibility
+floor of about 3.5%. The example's own committed store assets carry this. Raising the listing
+presets' default is the real fix and is a breaking change to every consumer's output, so it needs
+deciding rather than doing quietly.
+
 **`init --from` is the only inference in the product (invariant 11), and it stays that way.**
 Its rules were shaped by real palettes, not reasoning: theme darkness is the median luminance
 rather than the lightest colour, `accent` is the most saturated unclaimed colour rather than a

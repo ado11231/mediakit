@@ -5,6 +5,7 @@ import { runCheck } from './commands/check.js';
 import { runExport } from './commands/export.js';
 import { runPresets } from './commands/presets.js';
 import { runSchema } from './commands/schema.js';
+import { runDoctor } from './commands/doctor.js';
 import { runPreview } from './commands/preview.js';
 
 export {
@@ -22,6 +23,7 @@ export { runCheck };
 export { runExport };
 export { runPresets };
 export { runSchema };
+export { runDoctor };
 export { runPreview };
 
 const USAGE = `mediakit <command> [args]
@@ -34,6 +36,7 @@ commands:
   check    validate specs and brand rules against store constraints
   export   write a verified, upload-ready folder per preset
   schema   print the spec vocabulary as JSON Schema or prose
+  doctor   check Node, config, fonts, and the resolved type scale
 `;
 
 export const main = (argv: readonly string[]): Promise<number> => {
@@ -58,9 +61,11 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return runPresets(rest);
     case 'schema':
       return runSchema(rest);
+    case 'doctor':
+      return runDoctor(rest);
     default:
       process.stderr.write(
-        `mediakit: unknown command "${command}". Available: init, presets, schema, preview, render, check, export.\n`,
+        `mediakit: unknown command "${command}". Available: init, presets, schema, doctor, preview, render, check, export.\n`,
       );
       return Promise.resolve(1);
   }

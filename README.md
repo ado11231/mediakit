@@ -97,6 +97,7 @@ against a registry, and writes one PNG per frame.
 | `init`    | write a config and an example spec                     |
 | `presets` | list every size, with its dimensions and store rules   |
 | `schema`  | print the spec vocabulary, for an LLM or a human       |
+| `doctor`  | check Node, config, fonts, and the resolved type scale |
 | `render`  | render a spec to PNGs, once per preset it names        |
 | `preview` | serve rendered output locally, re-rendering on edit    |
 | `check`   | validate specs, text, and images against store rules   |

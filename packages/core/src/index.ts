@@ -71,6 +71,7 @@ export type { BrandRules, MediakitConfig } from './config.js';
 export { checkAsset, checkSpec, parsePng } from './check/index.js';
 export type { Violation } from './check/index.js';
 export { checkGlyphs, glyphCoverage } from './check/glyphs.js';
+export { checkLegibility } from './check/legibility.js';
 export { describeConstraint } from './schema/describe.js';
 export { specJsonSchema, vocabularyMarkdown } from './schema/vocabulary.js';
 export type { VocabularyOptions } from './schema/vocabulary.js';

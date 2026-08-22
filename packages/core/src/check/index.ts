@@ -10,6 +10,13 @@ export interface Violation {
   readonly file?: string;
   readonly frameIndex?: number;
   readonly message: string;
+  /**
+   * Absent means an error, which is what every rule that verifies a published requirement
+   * reports. A warning is for a rule that is well founded but not verifiable against a
+   * published number, where failing a build would claim more certainty than exists.
+   * `check --strict` promotes warnings to errors.
+   */
+  readonly severity?: 'error' | 'warning';
 }
 
 const location = (file: string, frameIndex?: number): SpecLocation =>

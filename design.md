@@ -731,6 +731,7 @@ Chrome. Different text shapers and rasterizers cannot agree at the pixel level.
 ```
 mediakit init                     scaffold mediakit.config.ts plus an example spec
 mediakit presets                  list registered presets, dimensions, and constraints
+mediakit doctor                   Node, config, fonts, and the resolved type scale
 mediakit schema  [--format md]    print the spec vocabulary, for an LLM or a human
 mediakit preview                  local dev server, live reload on spec or token change
 mediakit render <spec> [--preset] render a spec's presets, or one named preset
@@ -747,6 +748,19 @@ should be built from `import.meta.dirname` for the same reason.
 
 `check` is the cheapest on-ramp in the product. It works standalone, so someone with hand-made
 screenshots can adopt it without adopting the renderer.
+
+`check` warns on **legibility**: a store gallery shows a listing screenshot at a fraction of
+full size, so type sized for an app viewport disappears there while every existing rule passes.
+The threshold is a fraction of canvas width rather than an absolute size, since a canvas is only
+ever viewed scaled and the ratio is what survives. It reports at warning severity because the
+gallery's display width is not published, and a rule nobody can verify should not fail a build;
+`--strict` promotes it on both `check` and `export`.
+
+`doctor` covers the four things that account for most first-run failures (Node version, config
+resolution, font files on disk, weight coverage) and prints the type scale resolved per listing
+preset as a percentage of canvas width. That table is the answer to the scale question rather
+than a rule about it: invariant 11 forbids inferring a scale at render time, so the honest
+alternative is showing the number and letting a person decide.
 
 `check` also verifies **glyph coverage**, reading the `cmap` of every loaded font and comparing
 it against every string the spec carries. This is the missing-font-weight failure one level

@@ -11,13 +11,15 @@ import {
   type Violation,
 } from '@mediakit/core';
 import { importConfig, resolveConfigPath } from '../config.js';
-import { buildRegistries, checkSpecFully, outputDir } from '../workspace.js';
+import { buildRegistries, checkSpecFully, isError, outputDir } from '../workspace.js';
+import { bad, dim, ok } from '../style.js';
 
 const USAGE = `mediakit check <spec>                   validate a spec's brand rules and per-preset frame counts
 mediakit check <file|dir> --preset <name>  validate rendered PNGs against a preset's rules
 
 Options:
   --preset <name>   asset mode: check PNGs against this preset, no spec needed
+  --strict          fail on warnings as well as violations
   --out <dir>       where rendered output lives (default: marketing)
   --config <path>   use this config instead of mediakit.config.ts in cwd
   -h, --help
@@ -38,8 +40,31 @@ interface CheckDeps {
 const report = (violations: readonly Violation[]): void => {
   for (const v of violations) {
     const where = [v.preset, v.file].filter(Boolean).join(' ');
-    process.stdout.write(`${where ? `${where}: ` : ''}${v.message}\n`);
+    const label = isError(v) ? '' : `${bad('warning')} `;
+    process.stdout.write(`${label}${where ? `${where}: ` : ''}${v.message}\n`);
   }
+};
+
+/**
+ * Warnings do not fail the build unless --strict. A warning is a rule that is well founded
+ * but not verifiable against a published number, and breaking an existing consumer's build on
+ * an upgrade that only sharpened a heuristic is not a trade worth making.
+ */
+const settle = (violations: readonly Violation[], strict: boolean): number => {
+  const errors = violations.filter((v) => strict || isError(v));
+  const warnings = violations.length - errors.length;
+
+  if (errors.length > 0) {
+    process.stderr.write(`mediakit: ${errors.length} violation(s).\n`);
+    return 1;
+  }
+  if (warnings > 0) {
+    process.stdout.write(
+      `${ok('mediakit:')} no violations, ${warnings} warning(s). ` +
+        `${dim('Pass --strict to fail on them.')}\n`,
+    );
+  }
+  return 0;
 };
 
 const listPngs = async (path: string): Promise<string[]> => {
@@ -62,6 +87,7 @@ export const runCheck = async (
   }
 
   const cwd = deps.cwd ?? process.cwd();
+  const strict = argv.includes('--strict');
   const positional = argv.filter((a) => !a.startsWith('-'));
   const target = positional[0];
   if (target === undefined) {
@@ -81,10 +107,10 @@ export const runCheck = async (
       process.stderr.write('mediakit: --preset requires a value.\n');
       return 1;
     }
-    return runAssetCheck(resolve(cwd, target), namedPreset, cwd, configFlag);
+    return runAssetCheck(resolve(cwd, target), namedPreset, cwd, configFlag, strict);
   }
 
-  return runSpecCheck(resolve(cwd, target), findValue(argv, '--out'), cwd, configFlag);
+  return runSpecCheck(resolve(cwd, target), findValue(argv, '--out'), cwd, configFlag, strict);
 };
 
 const runAssetCheck = async (
@@ -92,6 +118,7 @@ const runAssetCheck = async (
   presetName: string,
   cwd: string,
   configFlag: string | undefined,
+  strict: boolean,
 ): Promise<number> => {
   if (!existsSync(path)) {
     process.stderr.write(`mediakit: path not found: ${relative(cwd, path)}\n`);
@@ -122,10 +149,8 @@ const runAssetCheck = async (
   }
 
   report(violations);
-  if (violations.length > 0) {
-    process.stderr.write(`mediakit: ${violations.length} violation(s).\n`);
-    return 1;
-  }
+  const code = settle(violations, strict);
+  if (code !== 0) return code;
   process.stdout.write(`mediakit: ${files.length} file(s) OK for preset "${presetName}".\n`);
   return 0;
 };
@@ -135,6 +160,7 @@ const runSpecCheck = async (
   outFlag: string | undefined,
   cwd: string,
   configFlag: string | undefined,
+  strict: boolean,
 ): Promise<number> => {
   if (!existsSync(specPath)) {
     process.stderr.write(`mediakit: spec file not found: ${relative(cwd, specPath)}\n`);
@@ -187,10 +213,8 @@ const runSpecCheck = async (
   }
 
   report(violations);
-  if (violations.length > 0) {
-    process.stderr.write(`mediakit: ${violations.length} violation(s).\n`);
-    return 1;
-  }
+  const code = settle(violations, strict);
+  if (code !== 0) return code;
   process.stdout.write('mediakit: spec OK.\n');
   return 0;
 };

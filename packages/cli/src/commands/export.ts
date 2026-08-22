@@ -18,6 +18,7 @@ import {
   checkSpecFully,
   describeConstraint,
   displayPath,
+  isError,
 } from '../workspace.js';
 import { bad, dim, ok } from '../style.js';
 
@@ -32,6 +33,7 @@ Options:
   --preset <name>   export only this preset, which must be one the spec names
   --out <dir>       write under this directory instead of export/
   --config <path>   use this config instead of mediakit.config.ts in cwd
+  --strict          refuse to write the bundle on warnings as well as violations
   -h, --help
 `;
 
@@ -69,9 +71,19 @@ interface ExportDeps {
 const report = (violations: readonly Violation[]): void => {
   for (const v of violations) {
     const where = [v.preset, v.file].filter(Boolean).join(' ');
-    process.stderr.write(bad(`${where ? `${where}: ` : ''}${v.message}\n`));
+    const text = `${where ? `${where}: ` : ''}${v.message}\n`;
+    process.stderr.write(isError(v) ? bad(text) : `${bad('warning')} ${dim(text)}`);
   }
 };
+
+/**
+ * A warning describes a rule that is well founded but not verifiable against a published
+ * number. Refusing to write a bundle over one would make `export` unusable on a project that
+ * has looked at the warning and decided, so it is reported and the bundle is written.
+ * `--strict` is for a pipeline that wants the stricter contract.
+ */
+const fatal = (violations: readonly Violation[], strict: boolean): Violation[] =>
+  violations.filter((v) => strict || isError(v));
 
 export const runExport = async (
   argv: readonly string[],
@@ -88,6 +100,8 @@ export const runExport = async (
     process.stderr.write('mediakit: export needs a spec path.\n');
     return 1;
   }
+
+  const strict = argv.includes('--strict');
 
   for (const flag of ['--preset', '--out', '--config']) {
     if (argv.includes(flag) && findValue(argv, flag) === undefined) {
@@ -134,9 +148,10 @@ export const runExport = async (
   // Spec-level rules first: they cost nothing and a frame-count violation makes every render
   // that follows wasted work.
   const specViolations = await checkSpecFully(spec, registries, config, specRel);
-  if (specViolations.length > 0) {
-    report(specViolations);
-    process.stderr.write(bad(`\nexport aborted: ${specViolations.length} violation(s).\n`));
+  report(specViolations);
+  const specErrors = fatal(specViolations, strict);
+  if (specErrors.length > 0) {
+    process.stderr.write(bad(`\nexport aborted: ${specErrors.length} violation(s).\n`));
     return 1;
   }
 
@@ -194,10 +209,11 @@ export const runExport = async (
     });
   }
 
-  if (violations.length > 0) {
-    report(violations);
+  report(violations);
+  const errors = fatal(violations, strict);
+  if (errors.length > 0) {
     process.stderr.write(
-      bad(`\nexport aborted: ${violations.length} violation(s). Nothing written.\n`),
+      bad(`\nexport aborted: ${errors.length} violation(s). Nothing written.\n`),
     );
     return 1;
   }
