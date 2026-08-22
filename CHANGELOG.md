@@ -5,6 +5,26 @@ the person reading it is you, six months from now, when a project stops building
 
 ## Unreleased
 
+### Fixed
+
+- **`init --from` could emit a config with no `accent`, and could give two roles the same
+  colour.** Found by running the extractor across five real repos. A source carrying fewer
+  distinct colours than the contract has roles (the Next.js starter's two, `--background` and
+  `--foreground`, is the common case) produced `surface` equal to `ink`, a card the colour of
+  its text, and `inkMuted` equal to `canvas`, invisible.
+
+  Worse, `accent` came out absent entirely. It is a required field on `TokensInput`, so the
+  generated config was a type error in the consumer's project, and at render time it silently
+  became mediakit's own blue: somebody else's brand on your screenshot, which is precisely what
+  the token contract warns a neutral default cannot fake.
+
+  Two roles may no longer share a value. Where the source runs out, a role borrows from one
+  already filled and says so, which keeps the result in-theme and legible; leaving the key out
+  instead would hand it to mediakit's dark defaults and clash on a light palette. `accent` has
+  no stand-in and is always emitted, flagged. `bezel` now prefers a dark **neutral**, because
+  "darkest available" picked a saturated magenta out of a palette whose spare colours were
+  chart accents.
+
 ### Added
 
 - **A legibility warning in `check`.** A store gallery shows a 1320x2868 screenshot at roughly

@@ -1,3 +1,5 @@
+import { DEFAULT_COLOR } from '@mediakit/core';
+
 /**
  * Token extraction for `init`, and only for `init`.
  *
@@ -92,6 +94,16 @@ const PATTERNS: Readonly<Record<string, readonly RegExp[]>> = {
   bezel: [/^bezel$/],
 };
 
+/**
+ * Where a role borrows from when the source has no distinct colour left for it. `accent` is
+ * absent on purpose: no other role can stand in for a brand colour.
+ */
+const BORROW: Readonly<Record<string, string>> = {
+  surface: 'canvas',
+  inkMuted: 'ink',
+  bezel: 'ink',
+};
+
 /** Contract keys in the order a reader wants to check them. */
 export const CONTRACT_KEYS = Object.keys(PATTERNS);
 
@@ -173,13 +185,15 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
   const assignments: Assignment[] = [];
   const claimed = new Set<string>();
 
-  // canvas resolves first so accent and bezel can refuse to equal it. An accent the colour of
-  // the background is invisible, and a bezel the colour of the canvas renders a device as a
-  // phone-shaped hole with only its shadow to separate it, which CLAUDE.md records as the trap
-  // in the default token set.
-  const canvasValue = (): string | undefined =>
-    assignments.find((a) => a.key === 'canvas')?.value;
-  const notCanvas = (token: ColorToken): boolean => token.value !== canvasValue();
+  // Two roles must never share a value. A surface the colour of the ink is a card you cannot
+  // read, and an inkMuted the colour of the canvas is invisible; both happen when a source
+  // carries fewer distinct colours than the contract has roles, and both rendered before this
+  // was enforced. canvas resolves first so the rest can refuse to equal it.
+  const taken = new Set<string>();
+  const free = (token: ColorToken): boolean => !taken.has(token.value);
+  const valueOf = (key: string): string | undefined =>
+    assignments.find((a) => a.key === key)?.value;
+  const notCanvas = (token: ColorToken): boolean => token.value !== valueOf('canvas');
 
   const fallbacks: Readonly<Record<string, () => ColorToken | undefined>> = {
     // A theme's ground is its extreme: the darkest colour in a dark palette, the lightest in
@@ -187,17 +201,21 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
     // together.
     canvas: () => (dark ? darkest : lightest),
     ink: () => (dark ? lightest : darkest),
-    surface: () => byLuminance.at(dark ? 1 : -2),
-    inkMuted: () => byLuminance.at(Math.floor(byLuminance.length / 2)),
+    surface: () => (dark ? byLuminance.find(free) : [...byLuminance].reverse().find(free)),
+    inkMuted: () =>
+      byLuminance.filter(free).at(Math.floor(byLuminance.filter(free).length / 2)),
     accent: () =>
       [...hexish]
-        .filter((t) => !claimed.has(t.name) && notCanvas(t))
+        .filter((t) => !claimed.has(t.name) && notCanvas(t) && free(t))
         .sort((a, b) => saturation(b.value) - saturation(a.value))
         .at(0),
     // A device bezel is near-black whatever the theme. Left equal to canvas it renders as a
     // phone-shaped hole with only its shadow to separate it, which is the trap CLAUDE.md
     // records against the default.
-    bezel: () => byLuminance.find(notCanvas) ?? darkest,
+    // Neutral, not merely dark. "Darkest available" picks a saturated magenta out of a
+    // palette whose spare colours are chart accents, and a magenta bezel is worse than a
+    // borrowed one.
+    bezel: () => byLuminance.find((t) => notCanvas(t) && free(t) && saturation(t.value) < 0.25),
   };
 
   const rules: Readonly<Record<string, string>> = {
@@ -206,7 +224,7 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
     surface: 'second-most-extreme colour found',
     inkMuted: 'mid-luminance colour found',
     accent: 'most saturated colour found',
-    bezel: 'darkest colour that is not the canvas; a bezel must contrast it',
+    bezel: 'darkest neutral that is not the canvas; a bezel must contrast it',
   };
 
   const RESOLUTION_ORDER = [
@@ -225,18 +243,46 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
     if (named !== undefined) {
       assignments.push({ key, value: named.value, source: named.name, inferred: true });
       claimed.add(named.name);
+      taken.add(named.value);
       continue;
     }
 
     const guess = fallbacks[key]?.();
-    if (guess === undefined) continue;
-    assignments.push({
-      key,
-      value: guess.value,
-      source: `${rules[key] ?? 'fallback'} (${guess.name})`,
-      inferred: false,
-    });
-    claimed.add(guess.name);
+    if (guess !== undefined) {
+      assignments.push({
+        key,
+        value: guess.value,
+        source: `${rules[key] ?? 'fallback'} (${guess.name})`,
+        inferred: false,
+      });
+      claimed.add(guess.name);
+      taken.add(guess.value);
+      continue;
+    }
+
+    // The source carries fewer distinct colours than the contract has roles. Borrowing from a
+    // role already filled keeps the result in-theme and legible, where leaving the key out
+    // would hand it to mediakit's own defaults, which are dark and would clash on a light
+    // palette. `accent` has no stand-in: it is the one value a neutral default cannot fake,
+    // and omitting it would also break the token contract's required field.
+    const borrowed = BORROW[key];
+    const value = borrowed === undefined ? undefined : valueOf(borrowed);
+    assignments.push(
+      value === undefined
+        ? {
+            key,
+            value: DEFAULT_COLOR[key] ?? '#000000',
+            source: `no colour in the source could fill this; mediakit's default`,
+            inferred: false,
+          }
+        : {
+            key,
+            value,
+            source: `the source has no distinct colour left for this; reusing ${borrowed}`,
+            inferred: false,
+          },
+    );
+    taken.add(assignments.at(-1)?.value ?? '');
   }
 
   assignments.sort((a, b) => CONTRACT_KEYS.indexOf(a.key) - CONTRACT_KEYS.indexOf(b.key));

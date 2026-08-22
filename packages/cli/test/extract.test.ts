@@ -115,9 +115,27 @@ describe('mapToContract', () => {
     }
   });
 
+  /**
+   * The report exists so a reviewer can see what was left on the table and rewire it in one
+   * edit. It needs a palette with genuine spares: TAILWIND_V4 has fewer colours than the
+   * contract has roles, so every one of them is claimed.
+   */
   it('reports every colour no contract key claimed', () => {
-    const { unused } = mapToContract(parseCssTokens(TAILWIND_V4));
-    expect(unused.map((t) => t.name)).toContain('steel');
+    const rich = `:root {
+      --bg-base: #ffffff;
+      --bg-surface: #f6f6f6;
+      --accent: #2563A8;
+      --text-primary: #111111;
+      --text-secondary: #555555;
+      --success: #1F5E2E;
+      --destructive: #8F2A1E;
+      --chart-one: #aa00aa;
+      --chart-two: #00aaaa;
+    }`;
+    const { unused } = mapToContract(parseCssTokens(rich));
+    expect(unused.map((t) => t.name)).toEqual(
+      expect.arrayContaining(['chart-one', 'chart-two']),
+    );
   });
 
   it('labels a name match as inferred and a fallback as a guess', () => {
@@ -125,6 +143,68 @@ describe('mapToContract', () => {
     const muted = assignments.find((a) => a.key === 'inkMuted');
     expect(muted?.inferred).toBe(true);
     expect(assignments.filter((a) => !a.inferred).length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The Next.js starter palette: two colours for the whole contract. It is the degenerate case,
+ * and it is common, so the mapping has to stay honest and legible rather than produce a card
+ * the colour of the text.
+ */
+const TWO_COLOURS = `:root { --background: #ffffff; --foreground: #171717; }`;
+
+describe('mapToContract with fewer colours than roles', () => {
+  const assignments = mapToContract(parseCssTokens(TWO_COLOURS)).assignments;
+  const byKey = Object.fromEntries(assignments.map((a) => [a.key, a]));
+
+  /**
+   * `accent` is required by the token contract, so omitting it is a type error in the
+   * consumer's project, and at render time it silently becomes mediakit's own blue: somebody
+   * else's brand on your screenshot, which is exactly what the contract warns about.
+   */
+  it('always emits accent, flagged when nothing in the source could fill it', () => {
+    expect(byKey['accent']).toBeDefined();
+    expect(byKey['accent']?.inferred).toBe(false);
+    expect(byKey['accent']?.source).toContain("mediakit's default");
+  });
+
+  it('fills every contract key so the generated config type-checks', () => {
+    for (const key of ['accent', 'canvas', 'surface', 'ink', 'inkMuted', 'bezel']) {
+      expect(byKey[key], `missing ${key}`).toBeDefined();
+    }
+  });
+
+  /**
+   * A surface the colour of the ink is a card you cannot read, and an inkMuted the colour of
+   * the canvas is invisible. Both shipped before two roles were forbidden from sharing a value.
+   */
+  it('never gives a readable pair the same value', () => {
+    expect(byKey['surface']?.value).not.toBe(byKey['ink']?.value);
+    expect(byKey['inkMuted']?.value).not.toBe(byKey['canvas']?.value);
+  });
+
+  it('borrows from an already-filled role rather than leaving the key to a dark default', () => {
+    expect(byKey['surface']?.value).toBe(byKey['canvas']?.value);
+    expect(byKey['surface']?.source).toContain('reusing canvas');
+    expect(byKey['inkMuted']?.value).toBe(byKey['ink']?.value);
+  });
+});
+
+describe('mapToContract role distinctness', () => {
+  it('gives bezel a value distinct from both canvas and surface where one exists', () => {
+    const byKey = Object.fromEntries(
+      mapToContract(parseCssTokens(TAILWIND_V4)).assignments.map((a) => [a.key, a]),
+    );
+    expect(byKey['bezel']?.value).not.toBe(byKey['canvas']?.value);
+    expect(byKey['bezel']?.value).not.toBe(byKey['surface']?.value);
+  });
+
+  it('leaves a rich palette entirely name-matched', () => {
+    const assignments = mapToContract(parseCssTokens(ROOT_VARS)).assignments;
+    const named = assignments.filter((a) => a.inferred).map((a) => a.key);
+    expect(named).toEqual(
+      expect.arrayContaining(['accent', 'canvas', 'surface', 'ink', 'inkMuted']),
+    );
   });
 });
 
