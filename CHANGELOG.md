@@ -27,6 +27,29 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **An overflow warning on the render path.** satori clips and overflows without complaint. A
+  headline one word too long for a `split` column does not throw and does not shrink: yoga
+  clamps the box to the column while the glyphs paint straight past it, over whatever sits
+  beside them or off the canvas entirely. The render succeeds, the PNG validates, and the word
+  is cut in half in the store gallery.
+
+  The rule reads two artifacts from the same render, because neither can see the failure alone:
+  the SVG says where the glyphs were actually drawn, and satori's layout pass says which box
+  each line was measured into. `RenderedFrame` therefore now carries `textBoxes` beside its
+  `svg` and `png`. Nothing about the output changes; the layout callback observes and never
+  influences, and the golden files are byte-identical.
+
+  It is horizontal only, deliberately. Vertical bleed is a normal idiom (a device frame running
+  off the bottom edge, a list continuing past the fold of the screen it sits in), and flagging
+  it would make the rule noise. A line crossing the right edge of its own box, or the side of
+  the canvas, is a defect essentially every time.
+
+  Reported by `render`, where the author is looking, and by `export`, which is the last gate
+  before an upload. It cannot run in `check`, which does not render and so has no geometry to
+  read; it arrives through `checkFrame`, which parses the frame once and runs every rule that
+  reads a rendered frame. Warning severity, so it never breaks an existing build on upgrade;
+  `--strict` promotes it as it does the legibility rule.
+
 - **A legibility warning in `check`.** A store gallery shows a 1320x2868 screenshot at roughly
   a fifth of full size, so type authored for an app viewport disappears there. The render
   succeeds, the dimensions validate, `check` passed, and it uploaded, which is the exact shape

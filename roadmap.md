@@ -290,12 +290,18 @@ tofu, `check` passes, and it uploads. Parsing a TrueType `cmap` is roughly 100 l
 `node:fs` with no new dependency, and it turns every string in every spec into a validated one.
 This is the highest-value check on the list.
 
-**Overflow and clipping.** satori clips or overflows without complaint, and the `CLAUDE.md` note
-that display type does not fit a `split` column is currently a rule a human has to remember.
-`renderFrame` already returns the satori SVG next to the PNG (`render.ts:160`), so a linter that
-walks it for text boxes exceeding the canvas or their parent is a pure function over an artifact
-that already exists. No second render, no browser, no measurement pass. Ships as a `check` rule
-rather than a render-time throw, so it cannot break an existing consumer's build on upgrade.
+**Overflow and clipping. Landed.** satori clips or overflows without complaint, and the
+`CLAUDE.md` note that display type does not fit a `split` column was a rule a human had to
+remember. `core/src/check/overflow.ts` is a pure function over two artifacts a render already
+produces: the SVG says where the glyphs were drawn, and satori's layout pass says which box each
+line was measured into. No second render, no browser, no measurement pass. It reports as a
+warning rather than throwing, so it cannot break an existing consumer's build on upgrade.
+
+Two things the plan above got wrong, both found by building it. The SVG alone is not enough: a
+word too wide for its column does not widen the box, because yoga clamps the box and paints the
+glyphs past it, so the overflow is invisible in the geometry and invisible in the box, and only
+the two together show it. And it cannot ship in `check`, which does not render and therefore has
+no geometry to read; it reports from `render` and gates in `export`.
 
 **Contrast** is the fourth, and the cheapest: a WCAG ratio over resolved token pairs catches the
 "reads fine on my monitor" class before App Review does.

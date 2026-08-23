@@ -3,11 +3,18 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
-import { MediakitError, parseSpec, presetNames, type Registries } from '@mediakit/core';
+import {
+  checkFrame,
+  MediakitError,
+  parseSpec,
+  presetNames,
+  type Registries,
+  type Violation,
+} from '@mediakit/core';
 import { renderSpec } from '@mediakit/render-still';
 import { importConfig, resolveConfigPath } from '../config.js';
 import { buildRegistries, displayPath, outputDir } from '../workspace.js';
-import { dim, ok } from '../style.js';
+import { bad, dim, ok } from '../style.js';
 
 const USAGE = `mediakit render <spec> [--preset <name>] [--out <dir>] [--config <path>]
 
@@ -105,8 +112,10 @@ export const runRender = async (
 
   let bytes = 0;
   let count = 0;
+  const warnings: Violation[] = [];
 
   for (const preset of desired) {
+    const entry = registries.presets.get(preset, { file: specRel });
     const frames = await renderSpec({
       spec,
       registries,
@@ -116,6 +125,21 @@ export const runRender = async (
     });
 
     for (const frame of frames) {
+      // Overflow and contrast are the rules `check` cannot run: they need the geometry and the
+      // resolved colours of a render, and `check` deliberately does not render. Reported here,
+      // where the author is looking, and again by `export`, the last gate before an upload.
+      warnings.push(
+        ...checkFrame({
+          svg: frame.svg,
+          textBoxes: frame.textBoxes,
+          width: entry.width,
+          height: entry.height,
+          preset,
+          file: specRel,
+          frameIndex: frame.index,
+        }),
+      );
+
       const dir = outputDir(outDir, spec, preset, allPresets);
       const file = join(dir, `frame-${pad(frame.index)}.png`);
       await mkdir(dir, { recursive: true });
@@ -128,6 +152,10 @@ export const runRender = async (
         `${ok('wrote')} ${displayPath(cwd, file)} ${dim(`(sha256:${hash(frame.png)}…)`)}\n`,
       );
     }
+  }
+
+  for (const warning of warnings) {
+    process.stdout.write(`\n${bad('warning')} ${warning.preset}: ${warning.message}\n`);
   }
 
   const mb = (bytes / 1_000_000).toFixed(2);

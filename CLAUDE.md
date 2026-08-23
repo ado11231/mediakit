@@ -346,13 +346,30 @@ The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `che
 presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-**M2.5 is in progress.** Two of the four items have landed. Invariant 12 is now enforced by
+**M2.5 is in progress.** Three of the four items have landed. Invariant 12 is now enforced by
 `packages/render-still/test/flat-field.test.ts`, verified against a deliberately injected 4x4
 mark that all 13 presets caught. Glyph coverage lives in `core/src/check/glyphs.ts` and runs
 from `check` and `export`: a `cmap` parser over `node:buffer` with no new dependency, reporting
 nothing when a font cannot be parsed, because a parser limitation must never fail a complete
-font. The overflow lint and the contrast rule are still outstanding, as is the App Store Connect
-draft upload.
+font. The overflow lint lives in `core/src/check/overflow.ts`, reads a frame through
+`core/src/check/svg.ts`, and reaches the CLI through one entry point, `checkFrame`. The contrast
+rule is still outstanding, as is the App Store Connect draft upload.
+
+**The overflow lint needs both the SVG and the layout boxes, and neither alone will do.** The
+plan in `roadmap.md` assumed the SVG was enough. It is not: a word too wide for its column does
+not widen the box, because yoga clamps the box to the column and satori paints the glyphs past
+it, so the box says everything fits and the glyph outlines say otherwise. `RenderedFrame`
+therefore carries `textBoxes` (from satori's `onNodeDetected`) beside `svg` and `png`. That
+callback observes and never influences the render, so invariant 7 is untouched, and the golden
+files prove it.
+
+Two decisions inside that rule that a future editor will be tempted to undo. It is **horizontal
+only**: vertical bleed is a normal idiom, a device frame running off the bottom edge or a list
+continuing past the fold of the screen it sits in, and flagging those makes the rule noise that
+people learn to ignore. And it **cannot ship in `check`**, which does not render and so has no
+geometry to read; the natural-looking fix, having `check` render, is a real decision about what
+that command costs rather than a wiring detail. The contrast rule inherits both constraints,
+which is why `checkFrame` exists rather than two exported rules.
 
 **A `check` rule may report at warning severity.** `Violation.severity` absent means an error;
 `'warning'` means a rule that is well founded but not verifiable against a published number, and

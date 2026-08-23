@@ -1,5 +1,5 @@
 import { Resvg } from '@resvg/resvg-js';
-import satori, { type SatoriOptions } from 'satori';
+import satori, { type SatoriNode, type SatoriOptions } from 'satori';
 import {
   assertSlot,
   colorToken,
@@ -13,6 +13,7 @@ import {
   type RenderContext,
   type ResolvedTokens,
   type SpecLocation,
+  type TextBox,
   type TokensInput,
 } from '@mediakit/core';
 import { h } from '@mediakit/core';
@@ -33,6 +34,12 @@ export interface RenderedFrame {
   index: number;
   png: Buffer;
   svg: string;
+  /**
+   * Where satori laid out each piece of text, which the SVG alone does not say: glyphs are
+   * emitted as outlines, so the box a line was measured into is gone by the time the frame is
+   * a string. `checkOverflow` needs both to tell a line that fits from one that was clamped.
+   */
+  textBoxes: readonly TextBox[];
 }
 
 /**
@@ -49,6 +56,25 @@ const renderToSvg = satori as unknown as (
   element: Element,
   options: SatoriOptions,
 ) => Promise<string>;
+
+/**
+ * satori reports every element it lays out here, before drawing it. The callback observes and
+ * never influences the render, so it costs the output nothing: the same spec still produces the
+ * same bytes.
+ */
+const collectTextBoxes = (): {
+  boxes: TextBox[];
+  onNodeDetected: (node: SatoriNode) => void;
+} => {
+  const boxes: TextBox[] = [];
+  return {
+    boxes,
+    onNodeDetected: ({ left, top, width, height, textContent }) => {
+      if (typeof textContent !== 'string' || textContent.trim() === '') return;
+      boxes.push({ left, top, width, height, text: textContent });
+    },
+  };
+};
 
 const renderBlocks = (
   frame: FrameSpec,
@@ -139,9 +165,10 @@ const renderFrame = async (
   const { blocks, slots } = renderBlocks(frame, registries, context, location);
   const background = colorToken(tokens, frame.background ?? 'canvas', location);
 
+  const { boxes, onNodeDetected } = collectTextBoxes();
   const svg = await renderToSvg(
     canvas(preset, background, arrange({ blocks, slots }, context)),
-    { width: preset.width, height: preset.height, fonts: [...fonts] },
+    { width: preset.width, height: preset.height, fonts: [...fonts], onNodeDetected },
   );
 
   // Compositing on the frame's own background makes every pixel opaque without changing how
@@ -157,7 +184,7 @@ const renderFrame = async (
     ? encodeRgbPng(Buffer.from(rendered.pixels), rendered.width, rendered.height)
     : rendered.asPng();
 
-  return { index: frameIndex, png, svg };
+  return { index: frameIndex, png, svg, textBoxes: boxes };
 };
 
 export const renderSpec = async (options: RenderSpecOptions): Promise<RenderedFrame[]> => {

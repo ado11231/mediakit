@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
 import {
   checkAsset,
+  checkFrame,
   MediakitError,
   parseSpec,
   presetNames,
@@ -185,6 +186,20 @@ export const runExport = async (
 
     for (const file of files) {
       violations.push(...checkAsset(preset, presetName, file.png, displayPath(cwd, file.path)));
+    }
+
+    for (const frame of frames) {
+      violations.push(
+        ...checkFrame({
+          svg: frame.svg,
+          textBoxes: frame.textBoxes,
+          width: preset.width,
+          height: preset.height,
+          preset: presetName,
+          file: specRel,
+          frameIndex: frame.index,
+        }),
+      );
     }
 
     bundles.push({
