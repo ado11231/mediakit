@@ -27,6 +27,45 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **`init --from` now extracts the type scale, the spacing base, and a `scale`.** It read
+  colours and fonts and left everything else at mediakit's defaults, which meant a project with
+  its own palette still rendered in mediakit's type ratios. Those ratios are the part of a
+  design system a reader recognises before they recognise a hue.
+
+  Tailwind v4 hangs `--text-*--line-height`, `--text-*--letter-spacing`, and
+  `--text-*--font-weight` off each rung of its ladder, and those modifiers are what make this
+  worth parsing: they carry the pairing a designer chose rather than a bare list of sizes. A TS
+  token module is read too, for a nested style object or a flat ladder under a type-ish key.
+
+  A ladder is named by size and the token contract is named by role, so there is nothing to
+  name-match on. `body` anchors to a named rung, and every other role takes the rung nearest the
+  ratio mediakit's own scale uses: your rungs, mediakit's shape. A role with no rung near it is
+  marked `GUESS` with the target it was looking for.
+
+  **Every weight is snapped to one the loaded font actually ships.** satori substitutes a
+  missing weight silently, so a scale naming a weight the font does not have renders wrong with
+  no error at all, which is the worst outcome on the failure table.
+
+  Spacing is usually one number in v4, since the ladder became a base every utility multiplies.
+  mediakit's own ladder is that same grid at 1/2/3/4/6/8/10, so a project on the default
+  0.25rem extracts to exactly the defaults and nothing is written.
+
+- **`init` proposes a `scale`.** Invariant 11 has always named this as `init`'s job and it had
+  never been done: every project inherited a preset's default 2.5 and found out at `check` time
+  that its captions sit below the legibility floor. The arithmetic is the one `check` reports
+  after the fact, run where it can still be written into a file a human reviews.
+
+  Scoped to the preset being scaffolded, deliberately not to the widest registered one. The
+  floor is a fraction of a canvas's own width, so a 2064px tablet needs roughly twice the
+  multiplier a 1080px phone does; taking the largest handed a test project `scale: 6.1`. A
+  social canvas gets no proposal at all, the same scoping the legibility rule uses.
+
+  Presets carrying a width-proportional scale of their own remains the real fix, and it is a
+  breaking change to every consumer's output rather than something to settle inside `init`.
+
+- **`MIN_TEXT_FRACTION` is exported from `@mediakit/core`**, so the rule that reports the
+  legibility floor and the scaffolding that proposes a scale to clear it cannot drift apart.
+
 - **A contrast warning on the render path.** The "reads fine on my monitor" class: a muted grey
   on a dark page, or a brand colour on a page tinted with the same brand colour. Both look
   deliberate at desk brightness and disappear on a phone in daylight, and nothing else in the

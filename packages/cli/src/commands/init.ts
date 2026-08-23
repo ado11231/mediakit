@@ -3,7 +3,14 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DEFAULT_TYPE, MediakitError } from '@mediakit/core';
+import {
+  createDefaultRegistries,
+  DEFAULT_FONT,
+  DEFAULT_TYPE,
+  MediakitError,
+  MIN_TEXT_FRACTION,
+  resolveTokens,
+} from '@mediakit/core';
 import {
   flattenModuleTokens,
   groupFontFiles,
@@ -14,6 +21,17 @@ import {
   type FontCandidate,
 } from '../init/extract.js';
 import { generateConfig } from '../init/generate.js';
+import {
+  mapTypeScale,
+  parseCssSpacing,
+  parseCssTypeSteps,
+  parseModuleTypeSteps,
+  proposeScale,
+  type ScaleProposal,
+  type SpaceScale,
+  type TypeAssignment,
+  type TypeStep,
+} from '../init/type-scale.js';
 import { bad, dim, ok } from '../style.js';
 import { displayPath } from '../workspace.js';
 
@@ -101,12 +119,32 @@ const readTokens = async (path: string): Promise<ColorToken[]> => {
   );
 };
 
+/**
+ * The type ladder and spacing base out of the same source the palette came from. Returns
+ * nothing for a source that declares neither, which is the common case for a project whose
+ * design system is only colours, and which must stay a silent no-op rather than a warning.
+ */
+const readScales = async (
+  path: string,
+): Promise<{ steps: TypeStep[]; space: SpaceScale | undefined }> => {
+  const ext = extname(path).toLowerCase();
+  if (ext === '.css') {
+    const source = await readFile(path, 'utf8');
+    return { steps: parseCssTypeSteps(source), space: parseCssSpacing(source) };
+  }
+  const module: unknown = await import(pathToFileURL(path).href);
+  return { steps: parseModuleTypeSteps(module), space: undefined };
+};
+
 const report = (
   assignments: readonly Assignment[],
   unused: readonly ColorToken[],
   font: FontCandidate | undefined,
   source: string,
   total: number,
+  type: readonly TypeAssignment[],
+  space: SpaceScale | undefined,
+  scale: ScaleProposal | undefined,
 ): void => {
   process.stdout.write(`\nRead ${total} colour token(s) from ${dim(source)}.\n\n`);
 
@@ -144,6 +182,40 @@ const report = (
       ? `\n  ${dim('No font files found. The bundled Geist (400, 700) is used.')}\n`
       : `\n  ${ok('fonts')}     ${font.family} at ${font.files.map((f) => f.weight).join(', ')}\n`,
   );
+
+  if (type.length > 0) {
+    const keyWidth = Math.max(...type.map((t) => t.key.length));
+    process.stdout.write('\n');
+    for (const t of type) {
+      const label = t.inferred ? ok('inferred') : bad(' guessed');
+      process.stdout.write(
+        `  ${label}  type.${t.key.padEnd(keyWidth)}  ${String(t.style.fontSize).padStart(3)}px/${
+          t.style.fontWeight
+        } ${dim(t.inferred ? `from ${t.source}` : t.source)}\n`,
+      );
+    }
+  } else {
+    process.stdout.write(
+      `  ${dim("No type ladder found. mediakit's default scale is used.")}\n`,
+    );
+  }
+
+  if (space !== undefined) {
+    process.stdout.write(
+      `  ${ok('inferred')}  space     ${space.base}px base ${dim(`from ${space.source}`)}\n`,
+    );
+  }
+
+  if (scale !== undefined) {
+    process.stdout.write(
+      `\n  ${bad(' guessed')}  scale     ${scale.scale}      ${dim(scale.reason)}\n`,
+    );
+  } else if (type.length > 0) {
+    process.stdout.write(
+      `\n  ${dim('No scale written: the scaffolded preset has no store constraints, and a')}\n` +
+        `  ${dim('social canvas has its own conventions. Pass --preset ios-6.9 to scaffold for a listing.')}\n`,
+    );
+  }
 };
 
 export const runInit = async (argv: readonly string[]): Promise<number> => {
@@ -217,12 +289,59 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
       return [...required].every((weight) => weights.has(weight));
     });
 
+    // Weights the loaded font actually ships. satori substitutes a missing weight silently,
+    // so an extracted scale that names one the font does not have renders wrong with no error,
+    // and the extractor snaps to what exists rather than writing what the source asked for.
+    const available =
+      font === undefined
+        ? [...new Set(DEFAULT_FONT.files.map((f) => f.weight))]
+        : [...new Set(font.files.map((f) => f.weight))];
+
+    const { steps, space } = await readScales(fromPath);
+    const type = mapTypeScale(steps, available);
+
+    const resolved = resolveTokens(
+      {
+        color: { accent: '#000000' },
+        type: Object.fromEntries(type.map((t) => [t.key, t.style])),
+      },
+      1,
+    );
+    const presets = createDefaultRegistries().presets;
+    const scaffolded = presets.has(preset)
+      ? presets.get(preset, { file: 'mediakit.config.ts' })
+      : undefined;
+    const scale =
+      scaffolded === undefined
+        ? undefined
+        : proposeScale(
+            resolved.type,
+            {
+              name: preset,
+              width: scaffolded.width,
+              constrained: (scaffolded.constraints ?? []).length > 0,
+            },
+            MIN_TEXT_FRACTION,
+          );
+
     contents = generateConfig({
       assignments,
       font,
       source: displayPath(process.cwd(), fromPath),
+      type,
+      space,
+      scale,
     });
-    report(assignments, unused, font, displayPath(process.cwd(), fromPath), tokens.length);
+    report(
+      assignments,
+      unused,
+      font,
+      displayPath(process.cwd(), fromPath),
+      tokens.length,
+      type,
+      space,
+      scale,
+    );
   }
 
   await mkdir(specDir, { recursive: true });

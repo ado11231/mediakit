@@ -120,6 +120,51 @@ describe('runInit --from', () => {
     expect(config).toContain("ink:      '#1A1A17', // from text-primary");
   });
 
+  /**
+   * The type scale is worth more than the palette here: a project with its own colours and
+   * mediakit's default ratios still reads as mediakit, because the relationship between
+   * display and body is what a reader recognises first.
+   */
+  it('writes the extracted type scale with the rung each role came from', async () => {
+    const path = join(dir, 'theme.css');
+    await writeFile(
+      path,
+      `${css}\n@theme {\n  --text-base: 1rem;\n  --text-base--line-height: 1.5rem;\n  --text-4xl: 2.25rem;\n}`,
+      'utf8',
+    );
+    await runInit([dir, '--from', path]);
+
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+    expect(config).toContain('type: {');
+    expect(config).toContain(
+      'fontSize: 16, fontWeight: 400, lineHeight: 1.5 }, // from text-base',
+    );
+    expect(config).toContain('// from text-4xl');
+  });
+
+  it('leaves type alone when the source declares no ladder', async () => {
+    await runInit([dir, '--from', await writeCss()]);
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+    expect(config).not.toContain('type: {');
+  });
+
+  /**
+   * Invariant 11 has always named proposing a scale as `init`'s job. Without it every project
+   * inherits a preset's 2.5 and finds out at `check` time that its captions sit below the
+   * legibility floor on every listing canvas.
+   */
+  it('proposes a scale for a listing canvas, with the arithmetic beside it', async () => {
+    await runInit([dir, '--from', await writeCss(), '--preset', 'ios-6.9']);
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+    expect(config).toMatch(/scale: \d+(\.\d+)?, \/\/ GUESS: type\.caption/);
+  });
+
+  it('proposes no scale for a social canvas, which has no store constraints', async () => {
+    await runInit([dir, '--from', await writeCss(), '--preset', 'ig-portrait']);
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+    expect(config).not.toContain('scale:');
+  });
+
   it('marks a value it could not derive as a GUESS in the file', async () => {
     await runInit([dir, '--from', await writeCss()]);
     const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');

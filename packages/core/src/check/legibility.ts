@@ -25,7 +25,7 @@ import type { Violation } from './index.js';
  * not published, so this is a well-founded heuristic and not a rule anyone can verify; failing
  * a build on it would be claiming more certainty than exists. `check --strict` promotes it.
  */
-const MIN_TEXT_FRACTION = 0.035;
+export const MIN_TEXT_FRACTION = 0.035;
 
 export const checkLegibility = (
   spec: AssetSpec,
