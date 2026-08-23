@@ -5,14 +5,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { runCheck, runRender } from '@mediakit/cli';
+import { runCheck, runNew, runRender } from '@mediakit/cli';
+import { parseSpec } from '@mediakit/core';
 
 const cwd = fileURLToPath(new URL('../', import.meta.url));
+const root = cwd;
 
 /**
  * examples/source-app is a test, not a demo. If this stops rendering, the extension API
- * broke, since the spec exercises a custom block, a custom layout, and a custom preset
- * registered from outside @mediakit/core.
+ * broke, since the spec exercises a custom block, a custom layout, a custom preset, and a
+ * custom template registered from outside @mediakit/core.
  *
  * launch renders through `--config` rather than the config in cwd, so the flag is exercised by
  * a real consumer rather than only by the CLI's own unit tests. The light config it names is
@@ -104,6 +106,31 @@ describe('source-app store assets', () => {
     const play = await readFile(join(outDir, 'store', 'play-phone', 'frame-01.png'));
     expect(pngSize(ios)).toEqual({ width: 1320, height: 2868 });
     expect(pngSize(play)).toEqual({ width: 1080, height: 1920 });
+  });
+
+  /**
+   * The extension API, exercised from a consumer config: a custom block, a custom layout, a
+   * custom preset, and now a custom template. If this stops working, the extension API broke.
+   */
+  it('writes a spec from a template registered in this config', async () => {
+    const out = await mkdtemp(join(tmpdir(), 'example-template-'));
+    try {
+      const code = await runNew(['tiers', '--template', 'pricing-carousel', '--out', out], {
+        cwd: root,
+      });
+      expect(code).toBe(0);
+
+      const spec = parseSpec(
+        JSON.parse(await readFile(join(out, 'tiers.spec.json'), 'utf8')),
+        'tiers.spec.json',
+      );
+      expect(spec.preset).toBe('preview-card');
+      expect(spec.frames).toHaveLength(3);
+      expect(spec.frames[0]?.layout).toBe('pricing-split');
+      expect(JSON.stringify(spec)).toContain('PricingCard');
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
   });
 
   it('renders distinct bytes per frame', async () => {

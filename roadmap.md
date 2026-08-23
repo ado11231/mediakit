@@ -320,6 +320,26 @@ correct on a light palette and wrong on a dark one, and no block can tell which 
 generated set to App Store Connect as a draft once, and record the result here with a date, the
 way M0 and M2 were recorded. Do that before 1.0.
 
+### Templates, the step between `init` and a real deliverable
+
+Landed ahead of M3, because the gap it closes was in the way of everything else. `init`
+scaffolded a three-block example, which proves the pipeline works and is nothing like the thing
+anyone came for; a five-frame listing or a six-frame carousel was authored by hand, structure
+and all. Structure is the part nobody has an opinion about the first time: a person knows what
+the frames should say, not which layout arranges them.
+
+`mediakit new <id> --template <name>` writes a complete spec with placeholder copy. Templates
+are the fourth registry, open for the same reason the other three are, and `@mediakit/blocks`
+ships `listing`, `carousel`, and `screen`. `screen` is the interesting one: a fake app screen
+built from blocks, at device pixels, which is the half of a listing that cannot be automated any
+other way without running the app. Composing it costs exact fidelity and buys the thing a
+capture can never have, which is that it re-renders deterministically when a token changes.
+
+Capture, for people who want the real screen, stays outside core as a separate opt-in package
+with a browser or a simulator as a peer dependency, on the `render-video` precedent. Publishing
+to a channel stays outside mediakit entirely: it is a network call, and invariant 8 is worth
+more than the convenience.
+
 ### M3, the second-app gate and how it is measured
 
 The gate has always read "a second app works". The thing that makes it testable is noticing that

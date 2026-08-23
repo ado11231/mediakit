@@ -32,7 +32,7 @@ positioning or licensing depends on.
 
 3. **Nothing in the spec schema may be a closed set.** Every field that names a capability is
    an open `string` resolved against a registry at render time: `preset`, `layout`, `type`,
-   `background`, `slot`. A `z.enum` or a TypeScript union in the spec schema means the only
+   `background`, `slot`. `template` joins them at the scaffolding end, resolved by `new`. A `z.enum` or a TypeScript union in the spec schema means the only
    way to add a size, an arrangement, or a content type is to edit core and cut a release,
    which is the difference between a tool that scales to a new marketing surface and one that
    has to be forked.
@@ -297,8 +297,8 @@ bearing for determinism.
   slides it was not writing. Nothing but hashing the output could have caught it. Distinctness
   is a property of the test, not of the renderer, since a spec may legitimately repeat a frame.
 - **`examples/source-app` is a test, not a demo.** If it stops building, the extension API broke.
-- **The example exercises all three registries from outside core:** a custom block, a custom
-  layout, and a custom preset. Extensibility that is not mechanically tested decays, and it
+- **The example exercises all four registries from outside core:** a custom block, a custom
+  layout, a custom preset, and a custom template. Extensibility that is not mechanically tested decays, and it
   decays silently: a layout registry only ever used by built-in layouts will grow assumptions
   that hold for core and fail for a consumer, and nothing will report it. One of each is the
   cheapest guard, and it is the same code a stranger writes.
@@ -347,7 +347,8 @@ presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
 **M2.5 is in progress.** All four checks have landed; the App Store Connect draft upload is
-what remains. Invariant 12 is now enforced by
+what remains. Landed alongside them, ahead of M3: `init --from` extracts the type scale and
+proposes a `scale`, and `mediakit new` writes specs from templates. Invariant 12 is now enforced by
 `packages/render-still/test/flat-field.test.ts`, verified against a deliberately injected 4x4
 mark that all 13 presets caught. Glyph coverage lives in `core/src/check/glyphs.ts` and runs
 from `check` and `export`: a `cmap` parser over `node:buffer` with no new dependency, reporting
@@ -389,6 +390,23 @@ scaffolds warns on its own eyebrow, and the example's teal (`#0D9488`) is 3.74:1
 palette decision with its own blast radius, and `CTA` is the reason it is not a one-line fix:
 its default `color: 'canvas'` is right for a light palette and wrong for a dark one, and the
 block cannot know which it is in.
+
+**Templates are the fourth registry, and they write a file rather than resolving at render
+time.** `mediakit new <id> --template listing` emits a complete spec with placeholder copy, so
+the only thing a newcomer types is the strings. The tempting alternative, a copy file resolved
+into a spec at render time, is a second and hidden source of truth: a generated spec that gets
+committed and diffed is the "assets as code" promise, and invariant 11's argument against clever
+renders applies to it exactly.
+
+Two things inside the built-in templates that look like details and are not. `listing` sizes its
+`DeviceFrame` against the tightest canvas the spec fans out across, never against the screen's
+intrinsic pixels: a 6.9 inch screen render is 1320x2868, larger than a `play-phone` canvas
+outright, and left intrinsic it pushes the headline off the frame so **every frame renders to
+identical bytes**. The specs were structurally distinct the whole time, so only hashing the
+output caught it, which is the distinctness rule in the testing section earning its place a
+second time. And `carousel` writes its page numbers out per frame rather than deriving them from
+`frameIndex`: a block that numbered itself would silently renumber every committed PNG the
+moment a frame was inserted. Carousel continuity is M4 and needs deciding, not defaulting.
 
 **A `check` rule may report at warning severity.** `Violation.severity` absent means an error;
 `'warning'` means a rule that is well founded but not verifiable against a published number, and

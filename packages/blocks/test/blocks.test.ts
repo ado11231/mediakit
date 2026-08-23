@@ -4,6 +4,7 @@ import {
   type RenderContext,
   type Element,
   type BlockEntry,
+  createDefaultRegistries,
   createFrameRegistry,
   h,
 } from '@mediakit/core';
@@ -18,7 +19,12 @@ import { Eyebrow } from '../src/blocks/eyebrow.js';
 import { Headline } from '../src/blocks/headline.js';
 import { Stat } from '../src/blocks/stat.js';
 import { Subhead } from '../src/blocks/subhead.js';
-import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '../src/defaults.js';
+import {
+  BUILTIN_BLOCKS,
+  BUILTIN_FRAMES,
+  BUILTIN_LAYOUTS,
+  BUILTIN_TEMPLATES,
+} from '../src/defaults.js';
 
 const preset: Preset = { width: 1080, height: 1350, renderer: 'still', scale: 2.5 };
 
@@ -264,10 +270,11 @@ describe('the default vocabulary', () => {
     ]);
   });
 
-  it('ships all four layouts, including the two the reference never rendered', () => {
+  it('ships the five layouts, including the two the reference never rendered', () => {
     expect(Object.keys(BUILTIN_LAYOUTS).sort()).toEqual([
       'centered',
       'fullBleed',
+      'screen',
       'split',
       'stack',
     ]);
@@ -277,11 +284,34 @@ describe('the default vocabulary', () => {
     expect(Object.keys(BUILTIN_FRAMES).sort()).toEqual(['none', 'phone', 'phone-notch']);
   });
 
+  it('ships listing, carousel, and screen as the default templates', () => {
+    expect(Object.keys(BUILTIN_TEMPLATES).sort()).toEqual(['carousel', 'listing', 'screen']);
+  });
+
+  /**
+   * A template that proposes a preset nothing registers sends `new` straight into an
+   * unknownRegistryKey throw on a flag the author never passed.
+   */
+  it('every template proposes presets that are registered', () => {
+    const registered = new Set(createDefaultRegistries().presets.names());
+    for (const template of Object.values(BUILTIN_TEMPLATES)) {
+      for (const preset of template.presets) expect(registered).toContain(preset);
+    }
+  });
+
+  it('every template proposes a frame count inside its own range', () => {
+    for (const template of Object.values(BUILTIN_TEMPLATES)) {
+      expect(template.frames.default).toBeGreaterThanOrEqual(template.frames.min);
+      expect(template.frames.default).toBeLessThanOrEqual(template.frames.max);
+    }
+  });
+
   it('gives split two slots and leaves the others slotless', () => {
     expect(BUILTIN_LAYOUTS.split?.slots).toEqual(['left', 'right']);
     expect(BUILTIN_LAYOUTS.centered?.slots).toEqual([]);
     expect(BUILTIN_LAYOUTS.stack?.slots).toEqual([]);
     expect(BUILTIN_LAYOUTS.fullBleed?.slots).toEqual([]);
+    expect(BUILTIN_LAYOUTS.screen?.slots).toEqual([]);
   });
 
   it('distributes stack vertically, which is the reference bug it exists to avoid', () => {

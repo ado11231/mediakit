@@ -1,4 +1,9 @@
-import type { BlockEntry, FrameDefinition, LayoutDefinition } from '@mediakit/core';
+import type {
+  BlockEntry,
+  FrameDefinition,
+  LayoutDefinition,
+  TemplateDefinition,
+} from '@mediakit/core';
 import { Background } from './blocks/background.js';
 import { Body } from './blocks/body.js';
 import { BulletList } from './blocks/bullet-list.js';
@@ -13,9 +18,13 @@ import { none } from './frames/none.js';
 import { phoneNotch } from './frames/phone-notch.js';
 import { phone } from './frames/phone.js';
 import { centered } from './layouts/centered.js';
+import { screen as screenLayout } from './layouts/screen.js';
 import { fullBleed } from './layouts/full-bleed.js';
 import { split } from './layouts/split.js';
 import { stack } from './layouts/stack.js';
+import { carousel } from './templates/carousel.js';
+import { listing } from './templates/listing.js';
+import { screen as screenTemplate } from './templates/screen.js';
 
 /**
  * A separate entry point rather than a package index, so that importing three blocks
@@ -44,10 +53,21 @@ export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
   stack,
   split,
   fullBleed,
+  screen: screenLayout,
 };
 
 export const BUILTIN_FRAMES: Readonly<Record<string, FrameDefinition>> = {
   none,
   phone,
   'phone-notch': phoneNotch,
+};
+
+/**
+ * Recipes that write a spec, which `mediakit new` resolves by name. Generic only, for the same
+ * reason the blocks are: a template naming a domain concept is a template for one app.
+ */
+export const BUILTIN_TEMPLATES: Readonly<Record<string, TemplateDefinition>> = {
+  listing,
+  carousel,
+  screen: screenTemplate,
 };

@@ -3,6 +3,7 @@ import {
   defineBlock,
   defineConfig,
   defineLayout,
+  defineTemplate,
   h,
   radiusToken,
   spaceToken,
@@ -315,6 +316,51 @@ const pair = defineLayout({
   },
 });
 
+/**
+ * The fourth registry, exercised from outside core for the same reason the other three are: a
+ * registry only ever used by its own built-ins grows assumptions that hold for core and fail
+ * for a consumer, and nothing reports it.
+ *
+ * This is also the shape a real project's template takes. The built-in `carousel` knows nothing
+ * about pricing tiers or a card slot; this one writes the exact spec this app ships, so adding
+ * a tier is editing three strings rather than composing a frame.
+ */
+const pricingCarousel = defineTemplate({
+  description: 'The pricing carousel this app ships: one tier per frame',
+  presets: ['preview-card'],
+  frames: { min: 1, max: 6, default: 3 },
+  build: ({ id, presets, frames }) => ({
+    id,
+    preset: presets[0] as string,
+    frames: Array.from({ length: frames }, (_, index) => ({
+      layout: 'pricing-split',
+      background: 'field',
+      blocks: [
+        { type: 'Eyebrow', props: { text: 'Pricing', color: 'accent' }, slot: 'headline' },
+        {
+          type: 'Headline',
+          props: { text: 'What this tier is for', size: 'title' },
+          slot: 'headline',
+        },
+        { type: 'Body', props: { text: 'One line on who picks it.' }, slot: 'headline' },
+        { type: 'CTA', props: { text: 'Get started' }, slot: 'headline' },
+        {
+          type: 'PricingCard',
+          props: { tier: 'Tier', price: '$0', feature: 'What they get' },
+          slot: 'card',
+        },
+        {
+          type: 'Caption',
+          props: {
+            text: `${String(index + 1).padStart(2, '0')} / ${String(frames).padStart(2, '0')}`,
+          },
+          slot: 'footer',
+        },
+      ],
+    })),
+  }),
+});
+
 const typeStyle = (style: ReturnType<typeof typeToken>, family: string, color: string) => ({
   ...style,
   fontFamily: family,
@@ -346,7 +392,8 @@ export default defineConfig({
     },
   },
   blocks: { PricingCard: card },
-  layouts: { 'pricing-split': pricingSplit, pair, screen },
+  templates: { 'pricing-carousel': pricingCarousel },
+  layouts: { 'pricing-split': pricingSplit, pair, 'app-screen': screen },
   presets: {
     'preview-card': {
       width: 1080,

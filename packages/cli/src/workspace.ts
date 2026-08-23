@@ -1,5 +1,10 @@
 import { join, relative } from 'node:path';
-import { BUILTIN_BLOCKS, BUILTIN_FRAMES, BUILTIN_LAYOUTS } from '@mediakit/blocks/defaults';
+import {
+  BUILTIN_BLOCKS,
+  BUILTIN_FRAMES,
+  BUILTIN_LAYOUTS,
+  BUILTIN_TEMPLATES,
+} from '@mediakit/blocks/defaults';
 import {
   applyConfig,
   checkGlyphs,
@@ -33,6 +38,7 @@ export const buildRegistries = (config: MediakitConfig): Registries => {
     blocks: BUILTIN_BLOCKS,
     layouts: BUILTIN_LAYOUTS,
     frames: BUILTIN_FRAMES,
+    templates: BUILTIN_TEMPLATES,
   });
   applyConfig(registries, config);
   return registries;

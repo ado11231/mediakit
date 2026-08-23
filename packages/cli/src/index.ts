@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { runInit } from './commands/init.js';
+import { runNew } from './commands/new.js';
 import { runRender } from './commands/render.js';
 import { runCheck } from './commands/check.js';
 import { runExport } from './commands/export.js';
@@ -18,6 +19,7 @@ export {
 export type { ImportConfigOptions } from './config.js';
 
 export { runInit };
+export { runNew };
 export { runRender };
 export { runCheck };
 export { runExport };
@@ -30,6 +32,7 @@ const USAGE = `mediakit <command> [args]
 
 commands:
   init     scaffold mediakit.config.ts and an example spec
+  new      write a complete spec from a template, leaving only the copy to edit
   presets  list every registered preset with its dimensions and constraints
   preview  serve a spec's rendered PNGs over HTTP with live reload
   render   render a spec to one or more presets, writing PNGs to disk
@@ -49,6 +52,8 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return Promise.resolve(0);
     case 'init':
       return runInit(rest);
+    case 'new':
+      return runNew(rest);
     case 'preview':
       return runPreview(rest);
     case 'render':
@@ -65,7 +70,7 @@ export const main = (argv: readonly string[]): Promise<number> => {
       return runDoctor(rest);
     default:
       process.stderr.write(
-        `mediakit: unknown command "${command}". Available: init, presets, schema, doctor, preview, render, check, export.\n`,
+        `mediakit: unknown command "${command}". Available: init, new, presets, schema, doctor, preview, render, check, export.\n`,
       );
       return Promise.resolve(1);
   }

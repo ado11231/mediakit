@@ -3,14 +3,34 @@
   "preset": "app-screen",
   "frames": [
     {
-      "layout": "screen",
+      "layout": "app-screen",
       "blocks": [
-        { "type": "Background", "props": { "color": "surface" } },
-        { "type": "Eyebrow", "props": { "text": "Today", "color": "accent" } },
-        { "type": "Headline", "props": { "text": "6 jobs scheduled", "size": "title" } },
+        {
+          "type": "Background",
+          "props": {
+            "color": "surface"
+          }
+        },
+        {
+          "type": "Eyebrow",
+          "props": {
+            "text": "Today",
+            "color": "accent"
+          }
+        },
+        {
+          "type": "Headline",
+          "props": {
+            "text": "6 jobs scheduled",
+            "size": "title"
+          }
+        },
         {
           "type": "Stat",
-          "props": { "value": "$1,840", "label": "Invoiced this week" }
+          "props": {
+            "value": "$1,840",
+            "label": "Invoiced this week"
+          }
         },
         {
           "type": "BulletList",
@@ -26,7 +46,12 @@
             ]
           }
         },
-        { "type": "CTA", "props": { "text": "Add a job" } }
+        {
+          "type": "CTA",
+          "props": {
+            "text": "Add a job"
+          }
+        }
       ]
     }
   ]

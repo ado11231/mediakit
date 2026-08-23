@@ -27,6 +27,35 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **`mediakit new`, which writes a complete spec from a template.** `init` scaffolded a
+  three-block example that proves the pipeline works and is nothing like the thing anyone came
+  for. A five-frame listing was authored by hand, structure and all, and structure is the part
+  nobody has an opinion about the first time: a person knows what the frames should say, not
+  which layout arranges them. `new` writes the structure and leaves every string a placeholder.
+
+  Templates are a fourth registry, open like the other three, so a project whose carousel always
+  opens with a title card registers that shape once. `@mediakit/blocks` ships three:
+
+  - `listing` frames a screen for the App Store and Play
+  - `carousel` writes a numbered social carousel
+  - `screen` writes a fake app screen from blocks, at device pixels, to frame in a listing
+
+  A template writes a file rather than resolving at render time. A generated spec that gets
+  committed and diffed is the "assets as code" promise; a copy file assembled into a spec
+  invisibly at render time is a second, hidden source of truth.
+
+  `screen` is the half of a listing that cannot be automated any other way without running the
+  app. Composing it from blocks costs exact fidelity and buys what a capture cannot have: it
+  re-renders deterministically when a token changes. Capture stays outside core, as a separate
+  opt-in package, on the `render-video` precedent.
+
+  **`Registries` gained a `templates` registry and `MediakitConfig` a `templates` field.**
+  **Migration:** nothing to change; both are additive and default to empty.
+
+- **A `screen` layout in `@mediakit/blocks`**, a top-anchored column with status-bar headroom.
+  `stack` anchors to the end, which is right for a poster and wrong for an app: an app screen
+  fills downward from the status bar, and a stacked one reads as a poster of an app.
+
 - **`init --from` now extracts the type scale, the spacing base, and a `scale`.** It read
   colours and fonts and left everything else at mediakit's defaults, which meant a project with
   its own palette still rendered in mediakit's type ratios. Those ratios are the part of a

@@ -41,7 +41,11 @@
       "types": "./dist/defaults.d.ts",
       "default": "./dist/defaults.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./template/*": {
+      "types": "./dist/templates/*.d.ts",
+      "default": "./dist/templates/*.js"
+    }
   },
   "files": [
     "dist"

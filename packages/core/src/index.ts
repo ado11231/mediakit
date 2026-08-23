@@ -68,6 +68,14 @@ export type {
 export { applyConfig, defineConfig } from './config.js';
 export type { BrandRules, MediakitConfig } from './config.js';
 
+export { createTemplateRegistry, defineTemplate } from './registry/template.js';
+export type {
+  TemplateCanvas,
+  TemplateContext,
+  TemplateDefinition,
+  TemplateScreen,
+} from './registry/template.js';
+
 export { checkAsset, checkSpec, parsePng } from './check/index.js';
 export type { Violation } from './check/index.js';
 export { checkGlyphs, glyphCoverage } from './check/glyphs.js';

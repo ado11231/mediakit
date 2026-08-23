@@ -8,6 +8,7 @@ import {
   WEB_PRESETS,
   type Preset,
 } from './preset.js';
+import { createTemplateRegistry, type TemplateDefinition } from './template.js';
 import type { Registry } from './registry.js';
 
 export interface Registries {
@@ -15,6 +16,7 @@ export interface Registries {
   layouts: Registry<LayoutDefinition>;
   presets: Registry<Preset>;
   frames: Registry<FrameDefinition>;
+  templates: Registry<TemplateDefinition>;
 }
 
 export const createRegistries = (): Registries => ({
@@ -22,6 +24,7 @@ export const createRegistries = (): Registries => ({
   layouts: createLayoutRegistry(),
   presets: createPresetRegistry(),
   frames: createFrameRegistry(),
+  templates: createTemplateRegistry(),
 });
 
 /**

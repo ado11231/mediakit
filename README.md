@@ -49,6 +49,19 @@ Already have a design system? `mediakit init --from app/globals.css` reads your 
 fonts and writes the config for you, marking every value it inferred with the token it came
 from and every value it guessed with `GUESS`. Review it, then render.
 
+`mediakit new` writes a complete spec so the only thing left to type is the copy. Structure is
+the part nobody has an opinion about the first time.
+
+```bash
+npx mediakit new app-screen --template screen     # a fake app screen, from blocks
+npx mediakit render marketing/app-screen.spec.json
+npx mediakit new store --template listing --screen marketing/app-screen/frame-01.png
+```
+
+`listing` frames a screen for the App Store and Play, `carousel` writes a numbered social
+carousel, and `screen` writes the app screen the listing frames. Registering a template in
+`mediakit.config.ts` puts your own shape beside them.
+
 `mediakit init` writes the two files a repo needs:
 
 - `mediakit.config.ts` at the project root. It holds tokens and any custom blocks, layouts,
@@ -95,6 +108,7 @@ against a registry, and writes one PNG per frame.
 |           |                                                        |
 | --------- | ------------------------------------------------------ |
 | `init`    | write a config and an example spec                     |
+| `new`     | write a complete spec from a template, copy left blank |
 | `presets` | list every size, with its dimensions and store rules   |
 | `schema`  | print the spec vocabulary, for an LLM or a human       |
 | `doctor`  | check Node, config, fonts, and the resolved type scale |

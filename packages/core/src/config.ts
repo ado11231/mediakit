@@ -2,6 +2,7 @@ import type { BlockEntry } from './registry/block.js';
 import type { FrameDefinition } from './registry/frame.js';
 import type { LayoutDefinition } from './registry/layout.js';
 import type { Preset } from './registry/preset.js';
+import type { TemplateDefinition } from './registry/template.js';
 import type { Registries } from './registry/registries.js';
 import type { TokensInput } from './tokens/contract.js';
 
@@ -22,6 +23,7 @@ export interface MediakitConfig {
   layouts?: Readonly<Record<string, LayoutDefinition>>;
   presets?: Readonly<Record<string, Preset>>;
   frames?: Readonly<Record<string, FrameDefinition>>;
+  templates?: Readonly<Record<string, TemplateDefinition>>;
   brandRules?: BrandRules;
   /** Where rendered assets are written. Relative to the config file. */
   outDir?: string;
@@ -40,5 +42,6 @@ export const applyConfig = (registries: Registries, config: MediakitConfig): Reg
   if (config.layouts !== undefined) registries.layouts.registerAll(config.layouts);
   if (config.blocks !== undefined) registries.blocks.registerAll(config.blocks);
   if (config.frames !== undefined) registries.frames.registerAll(config.frames);
+  if (config.templates !== undefined) registries.templates.registerAll(config.templates);
   return registries;
 };
