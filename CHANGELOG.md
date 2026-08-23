@@ -27,6 +27,24 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Added
 
+- **A contrast warning on the render path.** The "reads fine on my monitor" class: a muted grey
+  on a dark page, or a brand colour on a page tinted with the same brand colour. Both look
+  deliberate at desk brightness and disappear on a phone in daylight, and nothing else in the
+  pipeline can see it, because the render succeeded and the type is the size it was asked to be.
+
+  Both colours are read back out of the rendered frame rather than out of the tokens, because
+  the token pair a rule would guess at is frequently not the pair a reader sees: a `CTA` paints
+  its own pill and a card paints its own surface, so what is behind a line of text is whatever
+  was painted last under it, not the frame's `canvas`. Where the answer is not one flat colour
+  (a gradient, a photo, a translucent layer) the rule says nothing rather than measuring against
+  a colour that is nowhere near the text.
+
+  WCAG 2.1 AA at 4.5:1, applied at the strict threshold to text of every size. The standard
+  relaxes to 3:1 for large text, where large is defined by the size the reader sees, and a store
+  gallery's display width is not published: claiming the exemption would claim a number this
+  project has already said it does not have. Warning severity, so the conservative threshold
+  costs a line of output rather than a build.
+
 - **An overflow warning on the render path.** satori clips and overflows without complaint. A
   headline one word too long for a `split` column does not throw and does not shrink: yoga
   clamps the box to the column while the glyphs paint straight past it, over whatever sits
@@ -45,10 +63,11 @@ the person reading it is you, six months from now, when a project stops building
   the canvas, is a defect essentially every time.
 
   Reported by `render`, where the author is looking, and by `export`, which is the last gate
-  before an upload. It cannot run in `check`, which does not render and so has no geometry to
-  read; it arrives through `checkFrame`, which parses the frame once and runs every rule that
-  reads a rendered frame. Warning severity, so it never breaks an existing build on upgrade;
-  `--strict` promotes it as it does the legibility rule.
+  before an upload. Neither it nor the contrast rule can run in `check`, which does not render
+  and so has no geometry and no resolved colours to read. Both arrive through one entry point,
+  `checkFrame`, which parses the frame once and runs every rule that reads a rendered frame.
+  Warning severity, so neither breaks an existing build on upgrade; `--strict` promotes them as
+  it does the legibility rule.
 
 - **A legibility warning in `check`.** A store gallery shows a 1320x2868 screenshot at roughly
   a fifth of full size, so type authored for an app viewport disappears there. The render

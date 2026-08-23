@@ -303,8 +303,18 @@ glyphs past it, so the overflow is invisible in the geometry and invisible in th
 the two together show it. And it cannot ship in `check`, which does not render and therefore has
 no geometry to read; it reports from `render` and gates in `export`.
 
-**Contrast** is the fourth, and the cheapest: a WCAG ratio over resolved token pairs catches the
-"reads fine on my monitor" class before App Review does.
+**Contrast. Landed,** and not over resolved token pairs, which is what this line used to say.
+The pair a token-level rule compares is frequently not the pair a reader sees: a `CTA` paints
+its own pill and a card paints its own surface, so both colours are read back out of the
+rendered frame instead. WCAG 2.1 AA at 4.5:1 for text of every size, since the large-text
+exemption is defined by the size the reader sees and a store gallery's display width is not
+published.
+
+It found two low-contrast pairs on its first run, both in mediakit's own palettes: the default
+accent on the default canvas (3.74:1, so the scaffolded spec warns on its own eyebrow), and the
+example's teal on white (3.74:1) and on its card surface (3.39:1). Both are real. Neither is
+fixed, because `CTA` shows why it is not a one-line change: its default `color: 'canvas'` is
+correct on a light palette and wrong on a dark one, and no block can tell which it is in.
 
 **The unautomatable gate.** None of this proves a listing is accepted. Upload the example's
 generated set to App Store Connect as a draft once, and record the result here with a date, the

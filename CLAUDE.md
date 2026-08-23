@@ -346,14 +346,15 @@ The M2 surface is landed: listing presets (`ios-6.9`, `ipad-13`, `play-*`), `che
 presets produce byte-identical PNGs on macOS arm64 and Linux x64, so the golden-file test
 compares on every platform. CI runs on Linux via `.github/workflows/ci.yml`.
 
-**M2.5 is in progress.** Three of the four items have landed. Invariant 12 is now enforced by
+**M2.5 is in progress.** All four checks have landed; the App Store Connect draft upload is
+what remains. Invariant 12 is now enforced by
 `packages/render-still/test/flat-field.test.ts`, verified against a deliberately injected 4x4
 mark that all 13 presets caught. Glyph coverage lives in `core/src/check/glyphs.ts` and runs
 from `check` and `export`: a `cmap` parser over `node:buffer` with no new dependency, reporting
 nothing when a font cannot be parsed, because a parser limitation must never fail a complete
-font. The overflow lint lives in `core/src/check/overflow.ts`, reads a frame through
-`core/src/check/svg.ts`, and reaches the CLI through one entry point, `checkFrame`. The contrast
-rule is still outstanding, as is the App Store Connect draft upload.
+font. The overflow lint and the contrast rule live in `core/src/check/overflow.ts` and
+`core/src/check/contrast.ts`, read a frame through `core/src/check/svg.ts`, and reach the CLI
+through one entry point, `checkFrame`.
 
 **The overflow lint needs both the SVG and the layout boxes, and neither alone will do.** The
 plan in `roadmap.md` assumed the SVG was enough. It is not: a word too wide for its column does
@@ -370,6 +371,24 @@ people learn to ignore. And it **cannot ship in `check`**, which does not render
 geometry to read; the natural-looking fix, having `check` render, is a real decision about what
 that command costs rather than a wiring detail. The contrast rule inherits both constraints,
 which is why `checkFrame` exists rather than two exported rules.
+
+**Contrast reads both colours out of the render, never out of the tokens.** The pair a
+token-level rule would compare is frequently not the pair a reader sees: a `CTA` paints its own
+pill and a card paints its own surface, so the colour behind a line of text is whatever was
+painted last under it. `readFrame` therefore records every painted rectangle in paint order,
+**including ones whose fill it cannot resolve** (a gradient, a photo, a translucent layer),
+because an unresolvable shape still hides what is under it. Dropping those instead is the
+tempting simplification and it is wrong in the dangerous direction: the rule would fall through
+to the page colour and report a ratio against a colour that is nowhere near the text. A test
+covers exactly that case, text on a gradient.
+
+**Both known low-contrast pairs are in mediakit's own palettes, and neither has been changed.**
+`DEFAULT_COLOR.accent` (`#2563EB`) on `DEFAULT_COLOR.canvas` is 3.74:1, so the spec `init`
+scaffolds warns on its own eyebrow, and the example's teal (`#0D9488`) is 3.74:1 on white and
+3.39:1 on its card surface. Both are true findings rather than rule noise. Changing either is a
+palette decision with its own blast radius, and `CTA` is the reason it is not a one-line fix:
+its default `color: 'canvas'` is right for a light palette and wrong for a dark one, and the
+block cannot know which it is in.
 
 **A `check` rule may report at warning severity.** `Violation.severity` absent means an error;
 `'warning'` means a rule that is well founded but not verifiable against a published number, and
