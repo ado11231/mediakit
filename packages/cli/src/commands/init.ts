@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { extname, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   createDefaultRegistries,
@@ -94,6 +94,25 @@ const findValue = (argv: readonly string[], flag: string): string | undefined =>
 
 /** Where a project conventionally keeps font files, checked only when --fonts is absent. */
 const FONT_DIRS = ['assets/fonts', 'public/fonts', 'src/fonts', 'fonts', 'src/assets/fonts'];
+
+/**
+ * Font paths are written relative to the config's own directory, because the config is a
+ * committed, reviewed, checked-out file. An absolute path renders on the machine that ran
+ * `init` and throws ENOENT on every other checkout, which is the one failure a scaffolder
+ * must never create. `generateConfig` turns these back into absolute paths at load time via
+ * `import.meta.dirname`, so mediakit still resolves fonts explicitly rather than through
+ * `node_modules`.
+ *
+ * Separators are normalised to `/` so the generated file is identical on every platform,
+ * which is what lets a config be compared against a committed expectation.
+ */
+const portableFontPaths = (font: FontCandidate, configDir: string): FontCandidate => ({
+  ...font,
+  files: font.files.map((file) => ({
+    ...file,
+    path: relative(configDir, file.path).split(sep).join('/'),
+  })),
+});
 
 const fontFilesIn = async (dir: string): Promise<string[]> => {
   if (!existsSync(dir)) return [];
@@ -326,8 +345,12 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
 
     contents = generateConfig({
       assignments,
-      font,
-      source: displayPath(process.cwd(), fromPath),
+      font: font === undefined ? undefined : portableFontPaths(font, target),
+      // Anchored on the config's directory rather than on cwd, unlike the terminal report
+      // below. The two have different readers: the report is read once, beside the command
+      // that produced it, and this is read later by someone reviewing the committed file, who
+      // needs a path that still means something from wherever they checked the project out.
+      source: displayPath(target, fromPath),
       type,
       space,
       scale,

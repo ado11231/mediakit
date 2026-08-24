@@ -1,3 +1,5 @@
+import { isAbsolute } from 'node:path';
+
 import type { Assignment, FontCandidate } from './extract.js';
 import type { ScaleProposal, SpaceScale, TypeAssignment } from './type-scale.js';
 
@@ -37,8 +39,10 @@ const fontPreamble = (font: FontCandidate | undefined, relative: boolean): strin
     )
     .join('\n');
   return `
-// Font paths are absolute by design: mediakit never resolves fonts from node_modules and never
-// fetches them, because a render that depends on a network response is not reproducible.
+// Font paths are resolved from this file's own directory, so the config survives being
+// committed and checked out somewhere else. They stay explicit either way: mediakit never
+// resolves fonts from node_modules and never fetches them, because a render that depends on a
+// network response is not reproducible.
 const sans = {
   family: '${font.family}',
   files: [
@@ -110,7 +114,7 @@ export interface GenerateOptions {
 
 export const generateConfig = (options: GenerateOptions): string => {
   const { assignments, font, source, type, space, scale } = options;
-  const usesHere = font !== undefined && font.files.some((f) => !f.path.startsWith('/'));
+  const usesHere = font !== undefined && font.files.some((f) => !isAbsolute(f.path));
 
   return `import { defineConfig } from 'mediakit';${
     usesHere ? "\nimport { join } from 'node:path';\n\nconst here = import.meta.dirname;" : ''

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, mkdir, cp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -201,6 +201,56 @@ describe('runInit --from', () => {
     expect(config).toContain('weight: 400');
     expect(config).toContain('weight: 500');
     expect(config).toContain('weight: 700');
+  });
+
+  /**
+   * The config is a committed, reviewed, checked-out file, so nothing machine-specific may
+   * reach it. An absolute font path renders on the machine that ran `init` and throws ENOENT
+   * on every other checkout: the config is valid, the render is impossible, and the only
+   * symptom is a missing file nobody moved.
+   *
+   * This is asserted across a directory boundary rather than inside the one `init` wrote to,
+   * for the same reason the golden files are compared across processes. Read back in place,
+   * an absolute path looks perfectly correct.
+   */
+  it('writes font paths that resolve from wherever the config is checked out', async () => {
+    const fonts = join(dir, 'fonts');
+    await mkdir(fonts, { recursive: true });
+    for (const name of ['Acme-Regular.ttf', 'Acme-Bold.ttf']) {
+      await writeFile(join(fonts, name), '', 'utf8');
+    }
+
+    await runInit([dir, '--from', await writeCss(), '--fonts', fonts]);
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+
+    expect(config).toContain('const here = import.meta.dirname;');
+    expect(config).not.toContain(dir);
+
+    const elsewhere = await mkdtemp(join(tmpdir(), 'mediakit-init-moved-'));
+    try {
+      await cp(dir, elsewhere, { recursive: true });
+      const paths = [...config.matchAll(/join\(here, '([^']+)'\)/g)].map((m) => m[1]);
+      expect(paths).toEqual(['fonts/Acme-Regular.ttf', 'fonts/Acme-Bold.ttf']);
+      for (const path of paths) {
+        expect(existsSync(join(elsewhere, path as string))).toBe(true);
+      }
+    } finally {
+      await rm(elsewhere, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * The provenance comment is anchored on the config's directory, not on cwd. Its reader is
+   * someone reviewing the committed file later, who needs a path that still means something
+   * from wherever they checked the project out. The terminal report keeps the cwd anchor,
+   * because it is read once, beside the command that produced it.
+   */
+  it('records where the palette came from relative to the config, not to cwd', async () => {
+    const from = await writeCss();
+    await runInit([dir, '--from', from]);
+    const config = await readFile(join(dir, 'mediakit.config.ts'), 'utf8');
+    expect(config).toContain('// Colours extracted from tokens.css by `mediakit init --from`.');
+    expect(config).not.toContain(dir);
   });
 
   it('scaffolds the example spec at --preset', async () => {
