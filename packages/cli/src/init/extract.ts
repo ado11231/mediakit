@@ -145,10 +145,36 @@ const saturation = (hex: string): number => {
   return max === 0 ? 0 : (max - min) / max;
 };
 
-const match = (tokens: readonly ColorToken[], key: string): ColorToken | undefined => {
+/**
+ * WCAG contrast, over the same luminance the rest of this file uses. Local rather than
+ * imported from `core`'s contrast rule: that one reads colours back out of a rendered frame
+ * and reports violations, and widening its public API to serve a scaffolding heuristic would
+ * tie two things together that have no reason to move at the same time.
+ */
+/** WCAG 2.1 AA for text, the same floor `check`'s contrast rule reports against. */
+const LEGIBLE = 4.5;
+
+const contrast = (a: string, b: string): number => {
+  const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (high + 0.05) / (low + 0.05);
+};
+
+/**
+ * `available` is what keeps two roles off the same token. Without it a name match ignores
+ * whether an earlier role already claimed the colour, and a nested `semantic.text.primary`
+ * satisfies both `ink` (as `text.primary`) and `accent` (as `primary`, on the last segment),
+ * so an app's text colour becomes its brand colour and the real brand token is discarded.
+ */
+const match = (
+  tokens: readonly ColorToken[],
+  key: string,
+  available: (token: ColorToken) => boolean = () => true,
+): ColorToken | undefined => {
   for (const pattern of PATTERNS[key] ?? []) {
     const hit = tokens.find(
-      (token) => pattern.test(token.name) || pattern.test(token.name.split('.').at(-1) ?? ''),
+      (token) =>
+        available(token) &&
+        (pattern.test(token.name) || pattern.test(token.name.split('.').at(-1) ?? '')),
     );
     if (hit !== undefined) return hit;
   }
@@ -180,9 +206,18 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
   // so "is the lightest colour light" answers yes for both themes; the middle of the ramp is
   // where a dark and a light system actually differ.
   const median = byLuminance.at(Math.floor(byLuminance.length / 2));
-  const dark = median !== undefined && luminance(median.value) < 0.5;
 
-  const assignments: Assignment[] = [];
+  // A canvas found by name is direct evidence of the theme and beats reading it off the shape
+  // of the ramp. The median rule was tuned on palettes with a full ramp; a source carrying
+  // three colours has no ramp to read, and a light project whose only spare colours are dark
+  // gets called dark, after which `ink` picks the lightest colour and lands on the canvas.
+  const namedCanvas = match(tokens, 'canvas');
+  const dark =
+    namedCanvas !== undefined && HEX.test(namedCanvas.value)
+      ? luminance(namedCanvas.value) < 0.5
+      : median !== undefined && luminance(median.value) < 0.5;
+
+  const resolved = new Map<string, Assignment>();
   const claimed = new Set<string>();
 
   // Two roles must never share a value. A surface the colour of the ink is a card you cannot
@@ -190,23 +225,50 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
   // carries fewer distinct colours than the contract has roles, and both rendered before this
   // was enforced. canvas resolves first so the rest can refuse to equal it.
   const taken = new Set<string>();
-  const free = (token: ColorToken): boolean => !taken.has(token.value);
-  const valueOf = (key: string): string | undefined =>
-    assignments.find((a) => a.key === key)?.value;
+  const free = (token: ColorToken): boolean =>
+    !taken.has(token.value) && !claimed.has(token.name);
+  const valueOf = (key: string): string | undefined => resolved.get(key)?.value;
   const notCanvas = (token: ColorToken): boolean => token.value !== valueOf('canvas');
+  const notInk = (token: ColorToken): boolean => token.value !== valueOf('ink');
 
-  const fallbacks: Readonly<Record<string, () => ColorToken | undefined>> = {
+  /** A fallback may name the rule that ran, for roles whose fallback has more than one. */
+  type Guess = ColorToken & { rule?: string };
+
+  const fallbacks: Readonly<Record<string, () => Guess | undefined>> = {
     // A theme's ground is its extreme: the darkest colour in a dark palette, the lightest in
     // a light one. Its ink is the opposite extreme, which is also what makes them legible
     // together.
     canvas: () => (dark ? darkest : lightest),
-    ink: () => (dark ? lightest : darkest),
-    surface: () => (dark ? byLuminance.find(free) : [...byLuminance].reverse().find(free)),
-    inkMuted: () =>
-      byLuminance.filter(free).at(Math.floor(byLuminance.filter(free).length / 2)),
+    // Legibility outranks distinctness for this one role, so where nothing is left it reuses
+    // the colour that reads best on the canvas rather than taking mediakit's default. The
+    // default ink is near-white, which on a light palette is not a clash but a blank asset:
+    // it renders, `check` passes, and the text is invisible.
+    ink: () => {
+      const spare = byLuminance.filter((t) => free(t) && notCanvas(t)).at(dark ? -1 : 0);
+      if (spare !== undefined) return spare;
+
+      const ground = valueOf('canvas') ?? '#000000';
+      const readable = [...hexish]
+        .filter(notCanvas)
+        .sort((a, b) => contrast(b.value, ground) - contrast(a.value, ground))
+        .at(0);
+      // A reviewer checking a colour needs the rule that actually picked it, and this role has
+      // two. Reporting the luminance rule here would name a rule that did not run.
+      return readable === undefined
+        ? undefined
+        : { ...readable, rule: 'most readable colour on the canvas' };
+    },
+    surface: () => {
+      const spare = byLuminance.filter((t) => free(t) && notInk(t));
+      return dark ? spare.at(0) : spare.at(-1);
+    },
+    inkMuted: () => {
+      const spare = byLuminance.filter((t) => free(t) && notCanvas(t));
+      return spare.at(Math.floor(spare.length / 2));
+    },
     accent: () =>
       [...hexish]
-        .filter((t) => !claimed.has(t.name) && notCanvas(t) && free(t))
+        .filter((t) => free(t) && notCanvas(t) && notInk(t))
         .sort((a, b) => saturation(b.value) - saturation(a.value))
         .at(0),
     // A device bezel is near-black whatever the theme. Left equal to canvas it renders as a
@@ -238,26 +300,30 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
     'bezel',
   ];
 
+  // Two passes, because a name match is evidence and a fallback is arithmetic. Resolving each
+  // role completely in turn lets one role's luminance guess consume a token the next role
+  // names outright: a source declaring `--muted` loses it to `surface`'s "lightest colour
+  // left" before `inkMuted` is ever asked, and then `inkMuted` has nothing to name.
   for (const key of RESOLUTION_ORDER) {
-    const named = match(tokens, key);
-    if (named !== undefined) {
-      assignments.push({ key, value: named.value, source: named.name, inferred: true });
-      claimed.add(named.name);
-      taken.add(named.value);
-      continue;
-    }
+    const named = match(tokens, key, free);
+    if (named === undefined) continue;
+    resolved.set(key, { key, value: named.value, source: named.name, inferred: true });
+    claimed.add(named.name);
+    taken.add(named.value);
+  }
 
+  const fill = (key: string): void => {
     const guess = fallbacks[key]?.();
     if (guess !== undefined) {
-      assignments.push({
+      resolved.set(key, {
         key,
         value: guess.value,
-        source: `${rules[key] ?? 'fallback'} (${guess.name})`,
+        source: `${guess.rule ?? rules[key] ?? 'fallback'} (${guess.name})`,
         inferred: false,
       });
       claimed.add(guess.name);
       taken.add(guess.value);
-      continue;
+      return;
     }
 
     // The source carries fewer distinct colours than the contract has roles. Borrowing from a
@@ -267,7 +333,8 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
     // and omitting it would also break the token contract's required field.
     const borrowed = BORROW[key];
     const value = borrowed === undefined ? undefined : valueOf(borrowed);
-    assignments.push(
+    resolved.set(
+      key,
       value === undefined
         ? {
             key,
@@ -282,10 +349,55 @@ export const mapToContract = (tokens: readonly ColorToken[]): Mapping => {
             inferred: false,
           },
     );
-    taken.add(assignments.at(-1)?.value ?? '');
-  }
+    taken.add(valueOf(key) ?? '');
+  };
 
-  assignments.sort((a, b) => CONTRACT_KEYS.indexOf(a.key) - CONTRACT_KEYS.indexOf(b.key));
+  /**
+   * ink and canvas must be readable against each other, however they were filled.
+   *
+   * Every other distinctness rule here is about quality. This one decides whether the asset
+   * has any content at all, and there is more than one road to failing it: canvas's fallback
+   * taking the colour ink was named for, a two-colour source carrying no ground at all, or a
+   * theme guess that went the wrong way. Guarding each fallback separately fixes the road that
+   * was walked and leaves the others open, which is what happened the first time.
+   *
+   * Only a guessed value may be replaced. A low-contrast pair the source named itself is a
+   * true finding about that design system, not something a scaffolder should quietly overrule,
+   * and `check`'s contrast rule reports it against the render.
+   */
+  const repairGround = (): void => {
+    const ink = resolved.get('ink');
+    const canvas = resolved.get('canvas');
+    if (ink === undefined || canvas === undefined) return;
+    if (contrast(ink.value, canvas.value) >= LEGIBLE) return;
+
+    const target = !canvas.inferred ? canvas : !ink.inferred ? ink : undefined;
+    if (target === undefined) return;
+
+    const against = target.key === 'canvas' ? ink.value : canvas.value;
+    const white = contrast('#FFFFFF', against) >= contrast('#000000', against);
+    const value = white ? '#FFFFFF' : '#000000';
+
+    resolved.set(target.key, {
+      ...target,
+      value,
+      source:
+        `nothing in the source reads against ${target.key === 'canvas' ? 'ink' : 'canvas'}; ` +
+        `neutral ${white ? 'white' : 'black'}`,
+    });
+    taken.add(value);
+  };
+
+  // canvas and ink settle first so the repair runs before anything borrows from either. A
+  // borrow copies a value, so repairing afterwards would leave `surface` holding the colour
+  // canvas used to be, which is the ink.
+  for (const key of ['canvas', 'ink']) if (!resolved.has(key)) fill(key);
+  repairGround();
+  for (const key of RESOLUTION_ORDER) if (!resolved.has(key)) fill(key);
+
+  const assignments = [...resolved.values()].sort(
+    (a, b) => CONTRACT_KEYS.indexOf(a.key) - CONTRACT_KEYS.indexOf(b.key),
+  );
   return { assignments, unused: tokens.filter((t) => !claimed.has(t.name)) };
 };
 

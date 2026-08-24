@@ -234,3 +234,140 @@ describe('groupFontFiles', () => {
     expect(family?.files.map((f) => f.weight)).toEqual([600, 700]);
   });
 });
+
+/**
+ * Every case here was found by the M3 conformance harness on its first run, against fixtures
+ * shaped like other people's repos rather than like this one's tests. Each produced a config
+ * that loaded, rendered, and passed `check`, and each was wrong in a way only a reader of the
+ * finished image would notice, which is the failure class the milestone exists to catch.
+ */
+describe('mapToContract, regressions from the conformance fixtures', () => {
+  /**
+   * An Expo palette keeps its text colour at `semantic.text.primary`. `accent`'s patterns are
+   * ordered with `^primary$` ahead of `brand`, and `^primary$` is tested against the last
+   * dotted segment, so the text colour outbid the actual brand token. `ink` then matched the
+   * same token, and the app's brand colour was dropped on the floor: on this dark palette the
+   * eyebrow, the CTA, and every stat rendered in the same near-white as the body text.
+   */
+  it('does not let a nested text.primary outbid the brand token for accent', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'color.brand.500', value: '#38BDF8' },
+        { name: 'color.semantic.background', value: '#0B1220' },
+        { name: 'color.semantic.text.primary', value: '#F8FAFC' },
+        { name: 'color.semantic.text.secondary', value: '#94A3B8' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['ink']?.value).toBe('#F8FAFC');
+    expect(byKey['accent']?.value).toBe('#38BDF8');
+    expect(byKey['accent']?.inferred).toBe(true);
+  });
+
+  /**
+   * Three colours, a white background named `--bg`, and no colour any `ink` pattern matches.
+   * The median-luminance rule read the palette as dark, `ink` took the lightest colour, and
+   * that colour was the canvas: white text on a white page. It rendered, `check` passed, and
+   * the asset was blank. A named canvas is direct evidence of the theme and now settles it.
+   */
+  it('never puts ink on the canvas colour, however few colours the source has', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'primary', value: '#1D4ED8' },
+        { name: 'bg', value: '#ffffff' },
+        { name: 'muted', value: '#6b7280' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['canvas']?.value).toBe('#ffffff');
+    expect(byKey['ink']?.value).not.toBe(byKey['canvas']?.value);
+  });
+
+  /**
+   * `--muted` is unambiguous, but `surface` resolved first and its fallback took the lightest
+   * colour left, which was that one. Name matches now all resolve before any fallback runs,
+   * because a name is evidence and a luminance pick is arithmetic over what is left.
+   */
+  it('lets a named token reach its role rather than losing it to an earlier fallback', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'primary', value: '#1D4ED8' },
+        { name: 'bg', value: '#ffffff' },
+        { name: 'muted', value: '#6b7280' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['inkMuted']?.value).toBe('#6b7280');
+    expect(byKey['inkMuted']?.inferred).toBe(true);
+  });
+
+  /** A reviewer cannot check a value against a rule that did not run. */
+  it('names the rule that actually chose ink when the luminance pick had nothing left', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'primary', value: '#1D4ED8' },
+        { name: 'bg', value: '#ffffff' },
+        { name: 'muted', value: '#6b7280' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['ink']?.source).toContain('most readable colour on the canvas');
+  });
+
+  /**
+   * A Tailwind v3 config extends a handful of colours and leaves the rest to Tailwind's own
+   * palette, so the extractable source is often two entries: a brand and a text colour. `ink`
+   * matched by name, and `canvas`, which resolves first among the fallbacks, took the darkest
+   * colour available, which was that same one. Dark text on a dark page: the blank asset again,
+   * reached from the canvas side rather than the ink side.
+   *
+   * Guarding one fallback fixes the road that was walked. ink and canvas are now required to be
+   * readable against each other however they were filled, which is the property that actually
+   * matters and covers the roads nobody has walked yet.
+   */
+  it('keeps ink and canvas readable when only one of the pair is named', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'default.theme.extend.colors.brand', value: '#7C3AED' },
+        { name: 'default.theme.extend.colors.ink', value: '#111827' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['ink']?.value).toBe('#111827');
+    expect(byKey['canvas']?.value).toBe('#FFFFFF');
+    expect(byKey['canvas']?.source).toContain('nothing in the source reads against ink');
+    expect(byKey['accent']?.value).toBe('#7C3AED');
+  });
+
+  /**
+   * A borrow copies a value, so the repair has to happen before anything borrows. Repairing
+   * afterwards leaves `surface` holding the colour `canvas` used to be, which is the ink.
+   */
+  it('borrows from the repaired ground rather than from the colour it replaced', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'default.theme.extend.colors.brand', value: '#7C3AED' },
+        { name: 'default.theme.extend.colors.ink', value: '#111827' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['surface']?.value).toBe(byKey['canvas']?.value);
+    expect(byKey['surface']?.value).not.toBe(byKey['ink']?.value);
+  });
+
+  /**
+   * A low-contrast pair the source named itself is a true finding about that design system.
+   * A scaffolder overruling it would hide it; `check`'s contrast rule reports it on the render.
+   */
+  it('does not overrule a low-contrast pair the source named on both sides', () => {
+    const byKey = Object.fromEntries(
+      mapToContract([
+        { name: 'background', value: '#333333' },
+        { name: 'foreground', value: '#3A3A3A' },
+      ]).assignments.map((a) => [a.key, a]),
+    );
+
+    expect(byKey['canvas']?.value).toBe('#333333');
+    expect(byKey['ink']?.value).toBe('#3A3A3A');
+  });
+});
