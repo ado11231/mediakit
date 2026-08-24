@@ -621,6 +621,59 @@ Two further findings worth keeping:
 - **Bundling two font weights constrains the default type scale.** `DEFAULT_TYPE` may only name 400
   and 700, since satori substitutes a missing weight silently. A test holds the two together.
 
+## M3 progress, 23 August 2026
+
+**The gate is built and it works.** `pnpm conformance` runs three fixture consumers under
+`test/consumers/`, each shaped like a different ecosystem rather than a different product:
+Tailwind v4 `@theme`, an Expo TypeScript token module, and a three-colour project with no type
+ladder, no spacing scale, and no font files. Each is copied to a temporary directory, has
+`mediakit` linked into it, and is put through `init`, `render`, and `check`. It is offline,
+takes seconds, and runs on every pull request.
+
+The assertion that carries the weight is a **byte-for-byte comparison of the generated
+`mediakit.config.ts` against a committed expectation**. Extraction is a pile of heuristics tuned
+against real palettes, and nothing else stops a change to one heuristic from silently moving the
+output for a repo nobody was thinking about. `--update` rewrites the expectations; the diff is
+the review.
+
+**It found three bugs on its first run**, all of the class this milestone exists to catch: the
+config loaded, the frame rendered, `check` passed, and the result was wrong in a way only a
+reader of the finished image would see.
+
+- A three-colour source with a background named `--bg` scaffolded **white text on a white
+  canvas**. Theme darkness came from the median luminance, and three colours have no ramp to
+  take a median of, so a light project was read as dark and `ink` took the lightest colour,
+  which was the canvas.
+- An Expo palette's **brand colour was discarded in favour of its text colour**.
+  `semantic.text.primary` satisfied `accent`'s `^primary$` pattern on its last dotted segment,
+  which is ordered ahead of `brand`, and `ink` then matched the same token. On a dark palette
+  the eyebrow, the CTA, and every stat rendered in the same near-white as the body text.
+- A role's luminance fallback **consumed a token the next role named outright**: `--muted` went
+  to `surface` before `inkMuted` was ever asked.
+
+All three are fixed, with regression tests in `packages/cli/test/extract.test.ts` written from
+the fixtures rather than from imagination. Name matches now resolve in a pass of their own,
+before any fallback runs, and a name match skips a colour an earlier role claimed.
+
+**A fourth bug was found while building the harness, and it blocked the harness itself.**
+`init --from --fonts` wrote absolute font paths, so the config rendered on the machine that
+generated it and threw `ENOENT` on every other checkout. `generate.ts` had carried a portable
+branch since it was written, selected by `!path.startsWith('/')`, which is never true of a path
+`init` produced: the branch had never run. Fixed, and asserted across a directory boundary,
+because read back in place an absolute path looks perfectly correct.
+
+**Two numbers per fixture, as the gate always said.** Hand edits after `init` are mechanised as
+the count of `GUESS` markers, since those are exactly the values a human must decide, and time
+to first render is printed to the terminal and never to a file. Today: 4, 3, and 6 edits, at
+roughly one to three seconds each. The 6 is `minimal-vite` and is correct, since three colours
+cannot fill eight roles.
+
+**What is not done.** Tier 2, the pinned public repos, is still unwritten: it needs the network
+and belongs in a script run by hand before a release, not in CI. The non-Latin fixture is
+deferred, because the font is the point of it and choosing one is a licensing decision of its
+own. Neither blocks the gate; both are the difference between "three ecosystems work" and "the
+five in the table above work".
+
 ## Immediate next action
 
 **M2 is complete.** The full M2 surface is landed and verified:
@@ -673,3 +726,20 @@ is that all four of its items protect the claim the launch is made on, and one o
 coverage) is the same class of bug as the RGBA failure M2 caught: it passes every existing test,
 renders, validates, and uploads wrong. `pack-smoke` proves the surface installs for a stranger;
 nothing yet proves it renders correctly for a stranger's design system, which is M3.
+
+---
+
+**Updated 23 August 2026. Two things stand between here and publish, and only one is code.**
+
+1. **The M3 gate is met for three ecosystems** (see M3 progress above). `pnpm conformance` runs
+   in CI. Tier 2 and the non-Latin fixture are still open, and neither is a publish blocker.
+2. **M2.5's last item is not code and cannot be automated.** Upload the example's generated set
+   to App Store Connect as a draft, and record the result here with a date, the way M0, M1, and
+   M2 were recorded. Everything mediakit claims about store assets is currently verified against
+   published constraints rather than against an actual submission, and that gap should close
+   before strangers rely on it.
+
+**Then publish**, following `RELEASING.md`. The steps that need a human are the ones that always
+did: `npm login`, deciding whether the `@mediakit` org is claimable, and running `npm publish`.
+Re-verify every name first. The last availability check was 31 July 2026, npm has no reservation
+mechanism, and `mediakit` is a common enough word to be at genuine risk.

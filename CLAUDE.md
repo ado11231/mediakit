@@ -442,6 +442,46 @@ and `mediakit presets`, which lists the registry. `export` renders rather than r
 passes. Its `manifest.json` deliberately carries no timestamp and no version string, since
 either would change a bundle's bytes while the spec did not.
 
+**M3's gate is landed: `pnpm conformance`, three fixture consumers under `test/consumers/`.**
+Because invariant 11 confines inference to `init`, "a second app works" is exactly "extraction
+works on a design system nobody here wrote", which makes the harness and the milestone the same
+work. It copies a fixture to a temporary directory, links `mediakit` into it, and runs `init`,
+`render`, and `check`, comparing the generated config **byte for byte** against a committed
+expectation. Offline, seconds, every pull request. `pack-smoke` proves the packages install;
+this proves what they produce is right, and the two are not substitutes.
+
+Do not hand-edit a file under `test/consumers/*/expected/`. It is generated; `--update` rewrites
+it and the diff is the review. `test/consumers` is ignored by both eslint and prettier on
+purpose: the fixtures are shaped like other people's repos, and holding a stranger's token module
+to this repo's conventions would defeat the point of having it.
+
+**The harness found three bugs on its first run, and all three had rendered, validated, and
+passed `check`.** They are worth knowing because each was invisible to every test that existed:
+
+- A three-colour source with a background named `--bg` scaffolded **white text on a white
+  canvas**. Theme darkness came from the median luminance, and three colours have no ramp to take
+  a median of. A canvas identified **by name** is direct evidence of the theme and now settles
+  it, and `ink` falls back to the most readable colour on the canvas rather than to
+  `DEFAULT_COLOR.ink`, which is near-white and on a light palette produces a blank asset.
+- A nested `semantic.text.primary` **claimed `accent` ahead of the real brand token**, because
+  `accent`'s patterns put `^primary$` before `brand` and `^primary$` is tested against the last
+  dotted segment. A name match now skips a colour an earlier role claimed.
+- A role's luminance fallback **consumed a token the next role named outright**. Name matches now
+  all resolve in a pass of their own, before any fallback runs: a name is evidence, a luminance
+  pick is arithmetic over what is left.
+
+The general shape, which is the same lesson the RGBA bug taught at M2: a heuristic verified only
+against fixtures its own author wrote is a test of the author's imagination. These were found by
+palettes shaped like other people's.
+
+**`init` writes font paths relative to the config, never absolute.** They resolve through
+`import.meta.dirname`, and the provenance comment is anchored the same way. An absolute path
+renders on the machine that ran `init` and throws `ENOENT` on every other checkout, and the
+symptom is a missing file nobody moved. `generate.ts` had carried the portable branch since it
+was written, gated on `!path.startsWith('/')`, which is never true of a path `init` produced, so
+it had never once run. It is now `isAbsolute`, and the test moves the tree before asserting,
+because read back in place an absolute path looks perfectly correct.
+
 Five things a future editor should know rather than rediscover:
 
 - **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the

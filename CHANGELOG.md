@@ -7,6 +7,54 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Fixed
 
+- **`init --from --fonts` wrote a config that only worked on the machine that ran it.** Every
+  discovered font path was absolute, so the config rendered where it was generated and threw
+  `ENOENT` on every other checkout: a teammate's clone, a CI runner, a second machine. The
+  generator had a portable branch all along, selected by `!path.startsWith('/')`, which is never
+  true for a path `init` produced, so it had never once run.
+
+  Font paths are now written relative to the config's own directory and resolved from
+  `import.meta.dirname`. They stay explicit either way, since mediakit still never resolves a
+  font through `node_modules` and never fetches one. The provenance comment naming the extracted
+  source is anchored the same way, for the same reason.
+
+  _Migration:_ a config generated before this change carries absolute font paths. Re-run
+  `mediakit init --from ... --force`, or replace each `path:` with
+  `join(here, '<relative path>')` and add `const here = import.meta.dirname;`.
+
+- **`init --from` could scaffold white text on a white canvas, and could throw away a project's
+  brand colour.** All three faults below produced a config that loaded, rendered, and passed
+  `check`, and were visible only to someone looking at the finished image. All three were found
+  by the M3 conformance fixtures on their first run.
+
+  A source with three colours and a background named `--bg` was read as a dark theme, because
+  theme darkness came from the median luminance and three colours have no ramp to take a median
+  of. `ink` then took the lightest colour, which was the canvas. A canvas identified by name is
+  direct evidence of the theme and now settles it, and where nothing distinct is left, `ink`
+  falls back to the most readable colour on the canvas rather than to mediakit's own near-white
+  default, which on a light palette is not a clash but a blank asset.
+
+  A nested `semantic.text.primary`, which is how React Native projects name their text colour,
+  claimed `accent` before the real `brand` token was considered: `accent`'s patterns put
+  `^primary$` ahead of `brand`, and `^primary$` is tested against the last dotted segment. A name
+  match now skips colours an earlier role already claimed, so `accent` reaches the brand token
+  and no longer duplicates `ink`.
+
+  A role's luminance fallback could consume a token the next role named outright, so a source
+  declaring `--muted` lost it to `surface` before `inkMuted` was asked for it. Every name match
+  now resolves before any fallback runs: a name is evidence, and a luminance pick is arithmetic
+  over what is left.
+
+  A fourth road to the same blank asset was found afterwards, from the other side: with only a
+  brand and a text colour extractable, which is the usual yield from a Tailwind v3 config,
+  `ink` matched by name and `canvas` then took the darkest colour available, which was that
+  same one. `ink` and `canvas` are now required to be readable against each other however they
+  were filled, rather than each fallback being guarded separately, since guarding a fallback
+  fixes the road that was walked and leaves the rest open. Where no source colour reads against
+  the one already fixed, the guessed side becomes neutral white or black and says so. A
+  low-contrast pair the source named on **both** sides is left alone: that is a true finding
+  about the design system, and `check`'s contrast rule reports it against the render.
+
 - **`init --from` could emit a config with no `accent`, and could give two roles the same
   colour.** Found by running the extractor across five real repos. A source carrying fewer
   distinct colours than the contract has roles (the Next.js starter's two, `--background` and
@@ -26,6 +74,17 @@ the person reading it is you, six months from now, when a project stops building
   chart accents.
 
 ### Added
+
+- **`pnpm conformance`, the M3 gate.** Invariant 11 confines every piece of inference to `init`,
+  so "a second app works" is exactly "extraction works on a design system nobody in this repo
+  wrote". Three fixtures under `test/consumers/` are shaped like different ecosystems (Tailwind
+  v4 `@theme`, an Expo token module, a three-colour project with nothing else), and the harness
+  runs `init`, `render`, and `check` against each, comparing the generated config byte for byte
+  against a committed expectation.
+
+  Offline and deterministic, so it runs on every pull request. It reports the number of values a
+  human still has to decide per fixture, which is a number to watch move rather than a threshold.
+  `pack-smoke` proves the published packages install; this proves what they produce is right.
 
 - **`mediakit new`, which writes a complete spec from a template.** `init` scaffolded a
   three-block example that proves the pipeline works and is nothing like the thing anyone came
