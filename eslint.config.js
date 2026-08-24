@@ -9,7 +9,17 @@ import tseslint from 'typescript-eslint';
  * worth having here are about the render path, and the render path is all TypeScript.
  */
 export default defineConfig([
-  globalIgnores(['**/dist/**', '**/node_modules/**', 'spike/**', 'reference/**']),
+  // `test/consumers` holds the M3 conformance fixtures, which are deliberately shaped like
+  // other people's repos. Holding a stranger's token module to this repo's conventions would
+  // defeat the point of having it, and their expected configs are generated output compared
+  // byte for byte.
+  globalIgnores([
+    '**/dist/**',
+    '**/node_modules/**',
+    'spike/**',
+    'reference/**',
+    'test/consumers/**',
+  ]),
   js.configs.recommended,
   {
     languageOptions: {

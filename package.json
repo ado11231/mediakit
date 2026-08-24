@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "budget": "node scripts/install-budget.mjs",
     "pack-smoke": "node scripts/pack-smoke.mjs",
+    "conformance": "node scripts/conformance.mjs",
     "render-readme-assets": "node scripts/render-readme-assets.mjs"
   },
   "devDependencies": {

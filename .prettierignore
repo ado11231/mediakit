@@ -6,3 +6,8 @@ pnpm-lock.yaml
 **/test/golden/**
 **/marketing/**
 dist
+
+# The M3 conformance fixtures are inputs shaped like other people's repos, and their expected
+# configs are compared byte for byte against what `init` generates. Reflowing either would
+# grade the run against something `init` cannot produce.
+test/consumers

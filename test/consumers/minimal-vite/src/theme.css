@@ -1,0 +1,9 @@
+/*
+ * Three colours and nothing else. No type ladder, no spacing scale, no font files: the shape
+ * a small project actually has before anyone has written a design system.
+ */
+:root {
+  --primary: #1D4ED8;
+  --bg: #ffffff;
+  --muted: #6b7280;
+}
