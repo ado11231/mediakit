@@ -54,6 +54,21 @@ describe('runNew', () => {
     expect(spec.frames).toHaveLength(5);
   });
 
+  // Naming a spec after the template it came from is the most natural thing to type, and it
+  // used to fail: flag values were matched by string, so the id was discarded as if it were
+  // the value of --template, and the error asked for an id that had been supplied.
+  it('accepts an id that says the same thing as the template it names', async () => {
+    expect(await runNew(['listing', '--template', 'listing'], { cwd: dir })).toBe(0);
+
+    const spec = parseSpec(await read('listing'), 'listing.spec.json');
+    expect(spec.id).toBe('listing');
+  });
+
+  it('accepts an id that says the same thing as --preset', async () => {
+    expect(await runNew(['ig-square', '--preset', 'ig-square'], { cwd: dir })).toBe(0);
+    expect((await read('ig-square')) as { id: string }).toMatchObject({ id: 'ig-square' });
+  });
+
   it('honours --frames and --preset', async () => {
     await runNew(['deck', '--frames', '3', '--preset', 'ig-square'], { cwd: dir });
 

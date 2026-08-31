@@ -34,6 +34,7 @@ import {
 } from '../init/type-scale.js';
 import { bad, dim, ok } from '../style.js';
 import { displayPath } from '../workspace.js';
+import { positionals } from '../argv.js';
 
 const USAGE = `mediakit init [target] [--from <file>] [--fonts <dir>] [--preset <name>]
 
@@ -297,8 +298,7 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
   const fontsFlag = findValue(argv, '--fonts');
   const preset = findValue(argv, '--preset') ?? 'ig-portrait';
 
-  const flagValues = new Set([fromFlag, fontsFlag, preset].filter((v) => v !== undefined));
-  const targetArg = argv.find((a) => !a.startsWith('-') && !flagValues.has(a));
+  const targetArg = positionals(argv, ['--from', '--fonts', '--preset'])[0];
   const target = resolve(process.cwd(), targetArg ?? '.');
 
   // Either extension may already be present, and only one of them is the name a fresh run

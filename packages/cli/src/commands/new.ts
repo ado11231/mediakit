@@ -12,6 +12,7 @@ import {
 import { importConfig, resolveConfigPath } from '../config.js';
 import { buildRegistries, displayPath } from '../workspace.js';
 import { bad, dim, ok } from '../style.js';
+import { positionals } from '../argv.js';
 
 const USAGE = `mediakit new <id> [--template <name>] [--frames <n>] [--preset <name>]
 
@@ -28,6 +29,9 @@ Options:
   --force            overwrite an existing spec
   -h, --help
 `;
+
+/** Flags that consume the token after them, so a positional is never mistaken for one. */
+const VALUE_FLAGS = ['--template', '--frames', '--preset', '--screen', '--out', '--config'];
 
 const findValue = (argv: readonly string[], flag: string): string | undefined => {
   const i = argv.indexOf(flag);
@@ -60,7 +64,7 @@ export const runNew = async (argv: readonly string[], deps: NewDeps = {}): Promi
     return 0;
   }
 
-  for (const flag of ['--template', '--frames', '--preset', '--screen', '--out', '--config']) {
+  for (const flag of VALUE_FLAGS) {
     if (argv.includes(flag) && findValue(argv, flag) === undefined) {
       process.stderr.write(`mediakit: ${flag} requires a value.\n`);
       return 1;
@@ -72,12 +76,7 @@ export const runNew = async (argv: readonly string[], deps: NewDeps = {}): Promi
   const config: MediakitConfig = await importConfig(resolveConfigPath(cwd, configFlag));
   const registries = buildRegistries(config);
 
-  const flagValues = new Set(
-    ['--template', '--frames', '--preset', '--screen', '--out', '--config']
-      .map((flag) => findValue(argv, flag))
-      .filter((v) => v !== undefined),
-  );
-  const id = argv.find((a) => !a.startsWith('-') && !flagValues.has(a));
+  const id = positionals(argv, VALUE_FLAGS)[0];
   if (id === undefined) {
     process.stderr.write(
       `mediakit: new needs an id, which names the spec and its output directory.\n\n` +
