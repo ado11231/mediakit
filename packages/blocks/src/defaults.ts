@@ -48,11 +48,17 @@ export const BUILTIN_BLOCKS: Readonly<Record<string, BlockEntry>> = {
   DeviceFrame,
 };
 
+/**
+ * The key is the name specs use, so a multi-word layout is spelled out rather than left to
+ * object shorthand. Shorthand made the JS identifier the public vocabulary, which is how
+ * `fullBleed` shipped in camelCase while every preset, and every layout a consumer registers,
+ * is kebab-case.
+ */
 export const BUILTIN_LAYOUTS: Readonly<Record<string, LayoutDefinition>> = {
   centered,
   stack,
   split,
-  fullBleed,
+  'full-bleed': fullBleed,
   screen: screenLayout,
 };
 

@@ -404,7 +404,7 @@ interface LayoutContent {
 Both are supplied so a slotless layout reads `blocks` and a slotted one reads `slots`, with no
 reserved slot name that a consumer could collide with.
 
-`centered` `stack` `split` `fullBleed` ship as registered defaults, with no privileged status in
+`centered` `stack` `split` `full-bleed` ship as registered defaults, with no privileged status in
 core. A consumer's `feature-grid` and a built-in `split` are the same kind of thing.
 
 **Layouts declare their slots, and that is where `slot` is validated.** `split` declares

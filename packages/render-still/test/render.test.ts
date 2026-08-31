@@ -67,7 +67,7 @@ describe('rendering a spec', () => {
     const frames = await render([
       { layout: 'centered', blocks: [headline('Centered')] },
       { layout: 'stack', blocks: [headline('Stacked')] },
-      { layout: 'fullBleed', blocks: [headline('Full bleed')] },
+      { layout: 'full-bleed', blocks: [headline('Full bleed')] },
       {
         layout: 'split',
         blocks: [
@@ -83,13 +83,13 @@ describe('rendering a spec', () => {
   /**
    * Background is absolutely positioned and fills the canvas, which is the satori subset risk
    * the block unit tests cannot catch (they check the element, not that satori rasterises it).
-   * Pairing it with fullBleed and a Headline on top proves the layering paints: the gradient
+   * Pairing it with full-bleed and a Headline on top proves the layering paints: the gradient
    * sits behind, the headline in front, no throw, opaque output of the right size.
    */
   it('renders a Background gradient behind a Headline on a full-bleed frame', async () => {
     const [frame] = await render([
       {
-        layout: 'fullBleed',
+        layout: 'full-bleed',
         blocks: [
           { type: 'Background', props: { gradient: { from: 'accent', to: 'canvas' } } },
           { type: 'Headline', props: { text: 'On the gradient' } },

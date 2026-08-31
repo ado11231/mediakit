@@ -273,7 +273,7 @@ describe('the default vocabulary', () => {
   it('ships the five layouts, including the two the reference never rendered', () => {
     expect(Object.keys(BUILTIN_LAYOUTS).sort()).toEqual([
       'centered',
-      'fullBleed',
+      'full-bleed',
       'screen',
       'split',
       'stack',
@@ -310,7 +310,7 @@ describe('the default vocabulary', () => {
     expect(BUILTIN_LAYOUTS.split?.slots).toEqual(['left', 'right']);
     expect(BUILTIN_LAYOUTS.centered?.slots).toEqual([]);
     expect(BUILTIN_LAYOUTS.stack?.slots).toEqual([]);
-    expect(BUILTIN_LAYOUTS.fullBleed?.slots).toEqual([]);
+    expect(BUILTIN_LAYOUTS['full-bleed']?.slots).toEqual([]);
     expect(BUILTIN_LAYOUTS.screen?.slots).toEqual([]);
   });
 
