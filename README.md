@@ -7,36 +7,36 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat" alt="MIT license"></a>
 </p>
 
-<p align="center">Render App Store screenshots, carousels, and social images from a JSON spec.</p>
+<p align="center">App Store screenshots, carousels, and social images, rendered from a JSON spec.</p>
 
-## Screenshots
-
-<p align="center">
-  <img width="560" src="docs/assets/store-pair.png" alt="Two App Store screenshots side by side: an app screen in a phone frame under a headline">
-</p>
-
-`DeviceFrame` places an app screen inside a phone frame. `src` points at a capture, or at
-another spec's render if the screen is built from blocks.
-
-Use `chrome: "phone"` when the capture already contains a status bar. Use
-`chrome: "phone-notch"` when it does not, which draws one.
-
-The bezel is black by default. `bezel` names a colour token, so a white phone on one frame and
-a black one on the next is a per-block choice: `{ "chrome": "phone", "bezel": "ink" }`.
-
-## Carousels
+<br>
 
 <p align="center">
-  <img width="280" src="docs/assets/launch.gif" alt="A three-frame pricing carousel cycling through Solo, Pro, and Team cards">
+  <img width="240" src="docs/assets/store-card.png" alt="An App Store screenshot: an app screen in a phone frame under a headline">
+  &nbsp;&nbsp;
+  <img width="240" src="docs/assets/launch.gif" alt="A three frame pricing carousel cycling through Solo, Pro, and Team cards">
 </p>
 
-One spec with three frames renders `frame-01` through `frame-03`. The GIF above cycles the
-three rendered frames.
+<p align="center">
+  <sub>A store listing and a social carousel, both rendered in CI from specs in this repo.</sub>
+</p>
 
-The block, the layout, and the canvas size shown here are registered in a config file, not
-built in.
+<br>
 
-## Install
+Marketing images are usually built by hand in a design tool, which makes them slow to change and
+impossible to review. Rename a tier or pick a new brand colour and someone reopens twenty
+artboards, and nobody can tell from a pull request what changed.
+
+mediakit renders them from a JSON file plus the colours and fonts your app already uses. No
+browser, no design tool, no network. The same spec and tokens always produce the same bytes, so
+the images live in git beside your code, a change shows up as a diff, and editing one colour
+updates every asset that uses it. Before you upload, it checks the result against the store's
+published rules.
+
+## Quickstart
+
+Node 22 or newer and a `package.json` is the whole requirement. A font ships with it, so the
+first render needs no setup.
 
 ```bash
 npm i -D mediakit
@@ -44,51 +44,57 @@ npx mediakit init
 npx mediakit render marketing/example.spec.json
 ```
 
-Requires Node 22 or newer. mediakit makes no network calls at any point, including install.
-
-## Project setup
-
-Already have a design system? `mediakit init --from app/globals.css` reads your colours and
-fonts and writes the config for you, marking every value it inferred with the token it came
-from and every value it guessed with `GUESS`. Review it, then render.
-
-`mediakit new` writes a complete spec so the only thing left to type is the copy. Structure is
-the part nobody has an opinion about the first time.
+Run it twice and the bytes are identical. Already have a design system? `init --from` reads your
+colours and fonts and writes the config for you, marking what it inferred and what it guessed.
 
 ```bash
-npx mediakit new app-screen --template screen     # a fake app screen, from blocks
-npx mediakit render marketing/app-screen.spec.json
-npx mediakit new store --template listing --screen marketing/app-screen/frame-01.png
+npx mediakit init --from app/globals.css --fonts assets/fonts
 ```
 
-`listing` frames a screen for the App Store and Play, `carousel` writes a numbered social
-carousel, and `screen` writes the app screen the listing frames. Registering a template in
-`mediakit.config.ts` puts your own shape beside them.
+## Commands
 
-`mediakit init` writes the two files a repo needs:
+| command   | what it does                                           |
+| --------- | ------------------------------------------------------ |
+| `init`    | write a config and an example spec                     |
+| `new`     | write a complete spec from a template                  |
+| `render`  | render a spec to PNGs, once per preset it names        |
+| `preview` | serve rendered output locally, rendering again on edit |
+| `check`   | validate a spec, its text, and its images              |
+| `export`  | write an upload ready folder, verified before it lands |
+| `presets` | list every size, with its dimensions and store rules   |
+| `schema`  | print the spec vocabulary, for a model or a human      |
+| `doctor`  | check Node, config, fonts, and the resolved type scale |
 
-- `mediakit.config.ts` at the project root. It holds tokens and any custom blocks, layouts,
-  and presets. In a project that does not already declare `"type": "module"`, `init` writes
-  `mediakit.config.mts` instead, so Node does not have to guess the file's module system and
-  warn about it on every command. The CLI finds either, plus `.js` and `.mjs`, and
-  `--config <path>` selects a different file.
-- A spec: a JSON file describing one asset set. Specs conventionally live in `marketing/`.
+`--config <path>` points any command at a different config, and `--help` works on all of them.
 
-Paths inside a spec, such as a `DeviceFrame` `src`, resolve against the directory the command
-runs from. Font paths in a config resolve against the config file, through `import.meta.dirname`, which
-is what `init` writes. An absolute path renders on the machine that generated it and throws
-`ENOENT` on every other checkout.
-A font is bundled, so the first render needs no font setup.
+A listing frames a screen, so it takes two specs. `new` writes both, leaving only the copy.
 
-Output is written to `marketing/<spec-id>/frame-NN.png`, nested under the preset name when a
-spec lists more than one. Rendered PNGs are intended to be committed: renders are
-byte-identical, so a changed PNG in a pull request is a real change.
+```bash
+npx mediakit new appscreen --template screen
+npx mediakit render marketing/appscreen.spec.json
+npx mediakit new store --template listing --screen marketing/appscreen/frame-01.png
+npx mediakit render marketing/store.spec.json
+```
 
-## How it works
+Then ship it. `export` writes the folder you drag into App Store Connect or the Play Console:
+one directory per preset, filenames ordered so the upload order follows the sort, and a
+`manifest.json` with a SHA-256 per frame. Every rule runs before anything is written, so a
+bundle that exists is a bundle that passed.
 
-A spec names one or more presets (the canvas sizes) and a list of frames. A frame names a
-layout and the blocks that fill it. `render` reads the config for tokens, resolves every name
-against a registry, and writes one PNG per frame.
+```bash
+npx mediakit check marketing/store.spec.json
+npx mediakit export marketing/store.spec.json
+```
+
+`check` also runs against images you already have (`check ./screenshots --preset ios-6.9`), and
+catches text your font cannot draw. An emoji with no glyph renders as a blank box and uploads
+without complaint, so `check` reads the font and reports the exact codepoint.
+
+## Specs
+
+A spec names one or more presets, which are canvas sizes, and the frames to render. Each frame
+names a layout and the blocks that fill it. Every name is looked up in a registry, so a new size,
+arrangement, or content type is a registration rather than a fork.
 
 ```json
 {
@@ -98,70 +104,22 @@ against a registry, and writes one PNG per frame.
     {
       "layout": "centered",
       "blocks": [
-        { "type": "Background", "props": { "color": "surface" } },
         { "type": "Headline", "props": { "text": "Your whole day, one screen" } },
-        {
-          "type": "DeviceFrame",
-          "props": { "chrome": "phone-notch", "src": "captures/today.png" }
-        }
+        { "type": "DeviceFrame", "props": { "chrome": "phone-notch", "src": "today.png" } }
       ]
     }
   ]
 }
 ```
 
-## Commands
+Output lands in `marketing/<spec-id>/frame-NN.png`, nested under the preset name when a spec
+lists more than one. Commit those PNGs, because a changed image in a pull request is then a real
+change.
 
-|           |                                                        |
-| --------- | ------------------------------------------------------ |
-| `init`    | write a config and an example spec                     |
-| `new`     | write a complete spec from a template, copy left blank |
-| `presets` | list every size, with its dimensions and store rules   |
-| `schema`  | print the spec vocabulary, for an LLM or a human       |
-| `doctor`  | check Node, config, fonts, and the resolved type scale |
-| `render`  | render a spec to PNGs, once per preset it names        |
-| `preview` | serve rendered output locally, re-rendering on edit    |
-| `check`   | validate specs, text, and images against store rules   |
-| `export`  | write an upload-ready folder, verified before it lands |
-
-`export` produces the folder you drag into App Store Connect or the Play Console: one directory
-per preset, frames named so the upload order follows the filename sort, and a `manifest.json`
-with a SHA-256 per frame and the constraints that were checked. Every rule runs before anything
-is written, so a bundle that exists is a bundle that passed.
-
-```bash
-npx mediakit export marketing/store.spec.json
-# export/store/ios-6.9/store-01.png, store-02.png, manifest.json
-```
-
-`check` also catches text your fonts cannot draw. An emoji or a CJK character with no glyph in
-the loaded font renders as a blank or a tofu box, and nothing else in the pipeline notices, so
-`check` reads the font's `cmap` and reports the exact codepoint.
-
-`schema` prints what a valid spec may contain, built from your own registrations. Hand
-`mediakit schema` to a model as a JSON Schema for structured output, or `mediakit schema
---format md` into a prompt, and it can author specs using your custom blocks without you
-maintaining a catalog by hand.
-
-`presets` works before you have a config, so you can see what mediakit renders without setting
-anything up.
-
-`check` also runs against images you already have:
-
-```bash
-npx mediakit check ./screenshots --preset ios-6.9
-```
-
-`--config <path>` points any command at a different config file.
-
-## Sizes
-
-App Store and Play: `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`
-Social: `ig-portrait` `ig-square` `story` `li-portrait`
-Web: `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee`
-
-Each is checked against that channel's published rules: exact pixels, frame counts, alpha
-channel. Additional sizes are registered in the config.
+`DeviceFrame` puts a screen inside a phone. Use `chrome: "phone"` when your capture already has a
+status bar and `chrome: "phone-notch"` when it does not, which draws one. The bezel is black by
+default and `bezel` names a colour token, so a white phone on one frame and a black one on the
+next is a per frame choice.
 
 ## Config
 
@@ -174,23 +132,29 @@ export default defineConfig({
 });
 ```
 
-Only `color.accent` is required. Blocks read tokens, so changing a token changes every frame
-that uses it.
+Only `color.accent` is required. Blocks read tokens, so changing one changes every frame that
+uses it. `init` writes `mediakit.config.ts`, or `.mts` in a project that does not declare
+`"type": "module"`.
 
-## Determinism
+## Sizes
 
-Two renders of the same spec produce byte-identical PNGs, on macOS and Linux. Every preset
-has a test asserting it.
+|            |                                                                      |
+| ---------- | -------------------------------------------------------------------- |
+| App stores | `ios-6.9` `ios-6.5` `ipad-13` `play-phone` `play-feature`            |
+| Social     | `ig-portrait` `ig-square` `story` `li-portrait`                      |
+| Web        | `github-social` `producthunt-gallery` `cws-screenshot` `cws-marquee` |
 
-## Docs
+Each is checked against that channel's published rules: exact pixels, frame counts, alpha
+channel. `mediakit presets` lists them and works before you have a config. Your own sizes go in
+the config.
 
-| file           |                                                 |
-| -------------- | ----------------------------------------------- |
-| `design.md`    | how it works, why, what is next, how to release |
-| `CHANGELOG.md` | breaking changes, each with a migration line    |
+## Notes
 
-Pre-1.0, so breaking changes ship as minor versions.
+Two renders of the same spec produce identical bytes on macOS and Linux, every preset has a test
+asserting it, and nothing is ever composited into an image the spec did not ask for. mediakit
+makes no network request at any point, install included. Windows is untested.
 
-## License
+`design.md` covers how it works and why. `CHANGELOG.md` lists breaking changes with a migration
+line for each. Pre-1.0, so those ship as minor versions.
 
-MIT. Video rendering is a separate opt-in package; nothing here pulls it in.
+MIT. Video rendering is a separate package you opt into, and nothing here pulls it in.
