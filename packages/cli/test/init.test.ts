@@ -11,6 +11,10 @@ describe('runInit', () => {
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'mediakit-init-'));
+    // These suites assert what the config contains, not what it is called. Declaring ESM
+    // pins the `.ts` name so the extension choice is exercised by its own suite below
+    // rather than incidentally by every other assertion here.
+    await writeFile(join(dir, 'package.json'), '{ "type": "module" }', 'utf8');
   });
 
   afterEach(async () => {
@@ -84,6 +88,7 @@ describe('runInit --from', () => {
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'mediakit-init-from-'));
+    await writeFile(join(dir, 'package.json'), '{ "type": "module" }', 'utf8');
   });
 
   afterEach(async () => {
@@ -273,5 +278,63 @@ describe('runInit --from', () => {
     const path = join(dir, 'tokens.yaml');
     await writeFile(path, 'accent: "#fff"', 'utf8');
     await expect(runInit([dir, '--from', path])).rejects.toThrow(/expected a .css file/);
+  });
+});
+
+describe('runInit config extension', () => {
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'mediakit-init-ext-'));
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('writes .ts when the project already declares ESM', async () => {
+    await writeFile(join(dir, 'package.json'), '{ "type": "module" }', 'utf8');
+    expect(await runInit([dir])).toBe(0);
+    expect(existsSync(join(dir, 'mediakit.config.ts'))).toBe(true);
+    expect(existsSync(join(dir, 'mediakit.config.mts'))).toBe(false);
+  });
+
+  // The `npm init -y` default. A `.ts` config here makes Node guess the module system and
+  // print MODULE_TYPELESS_PACKAGE_JSON on every mediakit command, so the extension carries
+  // the answer instead.
+  it('writes .mts when the project declares no module type', async () => {
+    await writeFile(join(dir, 'package.json'), '{ "name": "app" }', 'utf8');
+    expect(await runInit([dir])).toBe(0);
+    expect(existsSync(join(dir, 'mediakit.config.mts'))).toBe(true);
+    expect(existsSync(join(dir, 'mediakit.config.ts'))).toBe(false);
+  });
+
+  it('writes .mts when the project declares CommonJS', async () => {
+    await writeFile(join(dir, 'package.json'), '{ "type": "commonjs" }', 'utf8');
+    expect(await runInit([dir])).toBe(0);
+    expect(existsSync(join(dir, 'mediakit.config.mts'))).toBe(true);
+  });
+
+  it('falls back to .mts when the manifest cannot be parsed', async () => {
+    await writeFile(join(dir, 'package.json'), '{ not json', 'utf8');
+    expect(await runInit([dir])).toBe(0);
+    expect(existsSync(join(dir, 'mediakit.config.mts'))).toBe(true);
+  });
+
+  // The loader prefers `.ts`, so writing the fresh config under a newly chosen name would
+  // leave the stale one loading and make --force look like it did nothing.
+  it('regenerates an existing config under its own name rather than beside it', async () => {
+    await writeFile(join(dir, 'package.json'), '{ "name": "app" }', 'utf8');
+    await writeFile(join(dir, 'mediakit.config.ts'), 'export default { stale: true };', 'utf8');
+
+    expect(await runInit([dir, '--force'])).toBe(0);
+    expect(existsSync(join(dir, 'mediakit.config.mts'))).toBe(false);
+    expect(await readFile(join(dir, 'mediakit.config.ts'), 'utf8')).not.toContain('stale');
+  });
+
+  it('refuses an existing config under the other extension without --force', async () => {
+    await writeFile(join(dir, 'package.json'), '{ "type": "module" }', 'utf8');
+    await writeFile(join(dir, 'mediakit.config.mts'), 'export default {};', 'utf8');
+    expect(await runInit([dir])).toBe(1);
   });
 });

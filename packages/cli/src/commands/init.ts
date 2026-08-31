@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { extname, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   createDefaultRegistries,
@@ -37,15 +37,16 @@ import { displayPath } from '../workspace.js';
 
 const USAGE = `mediakit init [target] [--from <file>] [--fonts <dir>] [--preset <name>]
 
-Create mediakit.config.ts and an example spec that renders on first run with
-no API key, no network call, and no manual file copy.
+Create a config and an example spec that renders on first run with no API key,
+no network call, and no manual file copy. The config is written as
+mediakit.config.ts when the project already declares ESM, and .mts otherwise.
 
 Options:
   --from <file>    extract colours from a CSS file (:root or @theme) or a
                    TS/JS token module, and report what was inferred vs guessed
   --fonts <dir>    scan this directory for .ttf/.otf files and enumerate weights
   --preset <name>  scaffold the example spec at this preset (default ig-portrait)
-  --force          overwrite an existing mediakit.config.ts
+  --force          overwrite an existing config
   -h, --help
 
 \`init\` is the only command that infers anything (invariant 11). It runs once,
@@ -61,6 +62,42 @@ export default defineConfig({
 });
 `;
 
+const CONFIG_NAMES = ['mediakit.config.ts', 'mediakit.config.mts'] as const;
+
+/**
+ * Node reads a `.ts` file's module system from the nearest package.json `type` field. With no
+ * such field, the common shape of a project created by `npm init -y`, it guesses by parsing,
+ * prints MODULE_TYPELESS_PACKAGE_JSON, and reparses. That warning lands on every subsequent
+ * mediakit command, including in the middle of `doctor`'s table, and the first thing a stranger
+ * sees should not be a Node diagnostic about a file mediakit chose the name of.
+ *
+ * `.mts` carries the answer in the extension, so there is no lookup and no warning, whatever the
+ * consumer's package.json says. `.ts` stays the default where the project already declares ESM,
+ * because it is the name the docs use and the one editors are least surprised by.
+ */
+const configFileName = async (target: string): Promise<string> => {
+  for (let dir = target; ;) {
+    const manifest = join(dir, 'package.json');
+    if (existsSync(manifest)) {
+      try {
+        const parsed: unknown = JSON.parse(await readFile(manifest, 'utf8'));
+        const type =
+          typeof parsed === 'object' && parsed !== null
+            ? (parsed as { type?: unknown }).type
+            : undefined;
+        return type === 'module' ? CONFIG_NAMES[0] : CONFIG_NAMES[1];
+      } catch {
+        // An unreadable or malformed manifest is not init's problem to report, and `.mts`
+        // is correct under either module system, so it is the safe answer to fall to.
+        return CONFIG_NAMES[1];
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return CONFIG_NAMES[1];
+    dir = parent;
+  }
+};
+
 const exampleSpec = (preset: string): string =>
   `${JSON.stringify(
     {
@@ -70,15 +107,12 @@ const exampleSpec = (preset: string): string =>
         {
           layout: 'centered',
           blocks: [
-            // \`inkMuted\` rather than the block's default \`accent\`: on the default
+            // `inkMuted` rather than the block's default `accent`: on the default
             // palette accent is 3.74:1 on canvas, so scaffolding the default would
             // make a stranger's very first render warn under mediakit's own contrast
             // rule. The rule is right and the palette is a separate decision; what
-            // \`init\` writes does not have to wait on it.
-            {
-              type: 'Eyebrow',
-              props: { text: 'Built with mediakit', color: 'inkMuted' },
-            },
+            // `init` writes does not have to wait on it.
+            { type: 'Eyebrow', props: { text: 'Built with mediakit', color: 'inkMuted' } },
             { type: 'Headline', props: { text: 'Your first asset', align: 'center' } },
             {
               type: 'Body',
@@ -267,16 +301,23 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
   const targetArg = argv.find((a) => !a.startsWith('-') && !flagValues.has(a));
   const target = resolve(process.cwd(), targetArg ?? '.');
 
-  const configPath = join(target, 'mediakit.config.ts');
-  const specDir = join(target, 'marketing');
-  const specPath = join(specDir, 'example.spec.json');
-
-  if (existsSync(configPath) && !force) {
+  // Either extension may already be present, and only one of them is the name a fresh run
+  // would pick, so looking only at that name would miss a config that is already there.
+  const existing = CONFIG_NAMES.find((name) => existsSync(join(target, name)));
+  if (existing !== undefined && !force) {
     process.stderr.write(
-      `mediakit: ${configPath} already exists. Pass --force to overwrite.\n`,
+      `mediakit: ${join(target, existing)} already exists. Pass --force to overwrite.\n`,
     );
     return 1;
   }
+
+  // --force regenerates the config that is there, under the name it already has. Picking the
+  // extension afresh would leave the old file beside the new one, and the loader prefers `.ts`,
+  // so the stale config would be the one that loads and the overwrite would appear to do nothing.
+  const configName = existing ?? (await configFileName(target));
+  const configPath = join(target, configName);
+  const specDir = join(target, 'marketing');
+  const specPath = join(specDir, 'example.spec.json');
 
   let contents = DEFAULT_CONFIG;
 
@@ -336,7 +377,7 @@ export const runInit = async (argv: readonly string[]): Promise<number> => {
     );
     const presets = createDefaultRegistries().presets;
     const scaffolded = presets.has(preset)
-      ? presets.get(preset, { file: 'mediakit.config.ts' })
+      ? presets.get(preset, { file: configName })
       : undefined;
     const scale =
       scaffolded === undefined
