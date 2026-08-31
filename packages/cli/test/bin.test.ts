@@ -71,3 +71,54 @@ describe('bin exit codes', () => {
     expect(run(['--help'], dir).status).toBe(0);
   });
 });
+
+describe('bin top-level surface', () => {
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'mediakit-bin-surface-'));
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('prints the version, which is the only thing a bug report can quote', () => {
+    const result = run(['--version'], dir);
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(run(['-v'], dir).stdout).toBe(result.stdout);
+  });
+
+  // The help text and the unknown-command message used to be separate hand-written lists,
+  // and they drifted into printing the same nine commands in two different orders.
+  it('lists the same commands, in the same order, in help and in the error', () => {
+    const help = run(['--help'], dir);
+    expect(help.status).toBe(0);
+
+    const listed = help.stdout
+      .split('\n')
+      .map((line) => /^ {2}(\S+)\s{2,}\S/.exec(line)?.[1])
+      .filter((name): name is string => name !== undefined);
+
+    const failed = run(['frobnicate'], dir);
+    expect(failed.status).toBe(1);
+
+    const offered = /Commands: (.+)\./.exec(failed.stderr)?.[1]?.split(', ') ?? [];
+    expect(offered).toEqual(listed);
+    expect(listed.length).toBeGreaterThan(0);
+  });
+
+  it('every listed command answers --help without a config present', () => {
+    const listed = run(['--help'], dir)
+      .stdout.split('\n')
+      .map((line) => /^ {2}(\S+)\s{2,}\S/.exec(line)?.[1])
+      .filter((name): name is string => name !== undefined);
+
+    for (const name of listed) {
+      const result = run([name, '--help'], dir);
+      expect(result.status, `${name} --help exited ${String(result.status)}`).toBe(0);
+      expect(result.stdout, `${name} --help printed nothing`).toContain(name);
+    }
+  });
+});
