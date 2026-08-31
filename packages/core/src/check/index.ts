@@ -135,6 +135,73 @@ const checkFrameCount = (
 };
 
 /**
+ * Every name a frame resolves against a registry: its layout, each block's type, and each
+ * slot the frame's layout must declare.
+ *
+ * `render` throws on all three, and well: it names the offending frame and lists what is
+ * registered. But `check` reported "spec OK" for a spec that could not render at all, which
+ * is worse than saying nothing, because `check` is what a build gates on. The reasoning
+ * already written above `checkFrameCount` for presets is the same reasoning; it had simply
+ * never been extended past presets.
+ *
+ * Reported rather than thrown, because `check` collects the full picture instead of stopping
+ * at the first problem.
+ */
+const checkVocabulary = (
+  spec: AssetSpec,
+  registries: Registries,
+  file: string,
+): Violation[] => {
+  const violations: Violation[] = [];
+
+  // An empty registry means the caller never populated one, not that every name in the spec
+  // is wrong. Blocks and layouts live in @mediakit/blocks, which core cannot import, so
+  // `createDefaultRegistries` carries presets alone and a library consumer may hold a partial
+  // set. The CLI always registers the built-ins, so this never skips anything in a real run.
+  const checkLayouts = registries.layouts.names().length > 0;
+  const checkBlocks = registries.blocks.names().length > 0;
+
+  for (const [frameIndex, frame] of spec.frames.entries()) {
+    const known = !checkLayouts || registries.layouts.has(frame.layout);
+    if (!known) {
+      violations.push({
+        file,
+        frameIndex,
+        message: `unknown layout: "${frame.layout}" is not registered. Registered layouts: ${registries.layouts.names().join(', ')}`,
+      });
+    }
+
+    // Slots are only meaningful once the layout resolves; against an unknown layout every
+    // slot would be reported too, burying the one error that matters.
+    const slots =
+      checkLayouts && known ? registries.layouts.get(frame.layout, { file }).slots : undefined;
+
+    for (const block of frame.blocks) {
+      if (checkBlocks && !registries.blocks.has(block.type)) {
+        violations.push({
+          file,
+          frameIndex,
+          message: `unknown block: "${block.type}" is not registered. Registered blocks: ${registries.blocks.names().join(', ')}`,
+        });
+      }
+
+      if (block.slot !== undefined && slots !== undefined && !slots.includes(block.slot)) {
+        violations.push({
+          file,
+          frameIndex,
+          message:
+            slots.length === 0
+              ? `unknown slot: layout "${frame.layout}" declares no slots, but a block sets slot "${block.slot}"`
+              : `unknown slot: layout "${frame.layout}" does not declare "${block.slot}". Declared slots: ${slots.join(', ')}`,
+        });
+      }
+    }
+  }
+
+  return violations;
+};
+
+/**
  * Spec-level checks: brand rules across every block's text props, and frame-count caps per
  * preset the spec names. Reports every violation together rather than stopping at the first,
  * because `check` is the one command whose value is the full picture before an upload.
@@ -147,6 +214,7 @@ export const checkSpec = (
 ): Violation[] => [
   ...checkBrandRules(spec, brandRules, file),
   ...checkFrameCount(spec, registries, file),
+  ...checkVocabulary(spec, registries, file),
 ];
 
 interface PngInfo {

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import {
   checkAsset,
   checkSpec,
@@ -8,6 +9,10 @@ import {
   defineConfig,
   parsePng,
   parseSpec,
+  defineBlock,
+  defineLayout,
+  type AssetSpec,
+  type Registries,
 } from '../src/index.js';
 
 const file = 'launch.spec.json';
@@ -295,5 +300,87 @@ describe('checkSpec with a full config', () => {
     ]);
     const violations = checkSpec(s, registries, config.brandRules, file);
     expect(violations.some((v) => /maxHeadline/.test(v.message))).toBe(true);
+  });
+});
+
+describe('checkSpec vocabulary', () => {
+  const spec = (frame: Record<string, unknown>): AssetSpec =>
+    parseSpec({ id: 'x', preset: 'ig-portrait', frames: [frame] }, 'x.spec.json');
+
+  // Core cannot import @mediakit/blocks, so the vocabulary a real run resolves against is
+  // stood up here. An empty registry is the "caller built nothing" case, covered separately.
+  const registries = (): Registries => {
+    const r = createDefaultRegistries();
+    r.blocks.register('Headline', defineBlock({ schema: z.object({ text: z.string() }) }));
+    r.layouts.register('centered', defineLayout({ slots: [] }));
+    r.layouts.register('split', defineLayout({ slots: ['left', 'right'] }));
+    return r;
+  };
+
+  // render throws on all of these. check used to report "spec OK", which is worse than
+  // silence: a build gating on check let a spec through that could not render.
+  it('reports an unknown block type and lists the registered ones', () => {
+    const found = checkSpec(
+      spec({ layout: 'centered', blocks: [{ type: 'Headlin', props: {} }] }),
+      registries(),
+      undefined,
+      'x.spec.json',
+    );
+    const v = found.find((f) => f.message.includes('unknown block'));
+    expect(v?.message).toContain('"Headlin"');
+    expect(v?.message).toContain('Headline');
+    expect(v?.frameIndex).toBe(0);
+  });
+
+  it('reports an unknown layout and lists the registered ones', () => {
+    const found = checkSpec(
+      spec({ layout: 'centred', blocks: [] }),
+      registries(),
+      undefined,
+      'x.spec.json',
+    );
+    const v = found.find((f) => f.message.includes('unknown layout'));
+    expect(v?.message).toContain('"centred"');
+    expect(v?.message).toContain('centered');
+  });
+
+  it('reports a slot the layout does not declare', () => {
+    const found = checkSpec(
+      spec({
+        layout: 'centered',
+        blocks: [{ type: 'Headline', props: { text: 'x' }, slot: 'left' }],
+      }),
+      registries(),
+      undefined,
+      'x.spec.json',
+    );
+    expect(found.find((f) => f.message.includes('unknown slot'))?.message).toContain(
+      'declares no slots',
+    );
+  });
+
+  // An unknown layout has no slots to compare against, so reporting every slot as well would
+  // bury the one error worth reading.
+  it('does not also report slots when the layout itself is unknown', () => {
+    const found = checkSpec(
+      spec({
+        layout: 'centred',
+        blocks: [{ type: 'Headline', props: { text: 'x' }, slot: 'left' }],
+      }),
+      registries(),
+      undefined,
+      'x.spec.json',
+    );
+    expect(found.filter((f) => f.message.includes('unknown slot'))).toHaveLength(0);
+  });
+
+  it('says nothing about a spec whose names all resolve', () => {
+    const found = checkSpec(
+      spec({ layout: 'centered', blocks: [{ type: 'Headline', props: { text: 'x' } }] }),
+      registries(),
+      undefined,
+      'x.spec.json',
+    );
+    expect(found).toHaveLength(0);
   });
 });
