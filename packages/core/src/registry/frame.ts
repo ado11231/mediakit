@@ -11,7 +11,7 @@ import type { RenderContext } from '../render/context.js';
  * The renderer receives the already-rendered screen content (an `<img>` of the supplied
  * screenshot) and returns the framed element. It owns the safe-area inset, which is the split
  * the M0 spike confirmed: the reference left it to the screen component and the notch clipped
- * the eyebrow. See roadmap.md "What the never-before-rendered slides showed".
+ * the eyebrow.
  */
 export type FrameRenderer = (child: Element, context: RenderContext) => Element;
 

@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-Rules for working in this repo. `README.md` is the pitch, `design.md` is the architecture,
-`roadmap.md` is the plan. This file is what the code must obey.
+Rules for working in this repo. `README.md` is the pitch and `design.md` is the architecture,
+the roadmap, and the release process. This file is what the code must obey.
 
 ---
 
@@ -286,7 +286,7 @@ bearing for determinism.
   guarantee, and it has to be enforced mechanically rather than asserted in a README.
 - **Golden files compare satori output to satori output.** Never to Chrome or Remotion, since
   different rasterizers cannot agree at the pixel level and a test comparing them will be
-  permanently red. See the M0 pass criteria in `roadmap.md`.
+  permanently red.
 - **Every entry in the failure table above gets a test** asserting both that it throws and that
   the message names the offending file.
 - **Every store constraint in `check` gets a failing-case test.** The value of `check` is
@@ -358,7 +358,7 @@ font. The overflow lint and the contrast rule live in `core/src/check/overflow.t
 through one entry point, `checkFrame`.
 
 **The overflow lint needs both the SVG and the layout boxes, and neither alone will do.** The
-plan in `roadmap.md` assumed the SVG was enough. It is not: a word too wide for its column does
+plan assumed the SVG was enough. It is not: a word too wide for its column does
 not widen the box, because yoga clamps the box to the column and satori paints the glyphs past
 it, so the box says everything fits and the glyph outlines say otherwise. `RenderedFrame`
 therefore carries `textBoxes` (from satori's `onNodeDetected`) beside `svg` and `png`. That

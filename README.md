@@ -184,11 +184,10 @@ has a test asserting it.
 
 ## Docs
 
-| file           |                                              |
-| -------------- | -------------------------------------------- |
-| `design.md`    | how it works and why it is built this way    |
-| `roadmap.md`   | what is done, what is next                   |
-| `CHANGELOG.md` | breaking changes, each with a migration line |
+| file           |                                                 |
+| -------------- | ----------------------------------------------- |
+| `design.md`    | how it works, why, what is next, how to release |
+| `CHANGELOG.md` | breaking changes, each with a migration line    |
 
 Pre-1.0, so breaking changes ship as minor versions.
 
