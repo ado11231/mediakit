@@ -20,7 +20,7 @@ const { GIFEncoder, quantize, applyPalette } = gifenc;
  *
  * Order matters, because several specs consume another's output. A store spec frames a
  * rendered app screen through its DeviceFrame src, so both app-screen renders have to come
- * first. `store-pair` then composites those two store frames, so it runs last. Rendering uses
+ * first. `store-card` then crops one of them into the README hero, so it runs last. Rendering uses
  * the source app's own installed bin so the custom block, layout, and preset registered in its
  * config are in scope.
  *
@@ -50,10 +50,10 @@ const requireFromRenderStill = createRequire(
 const { Resvg } = requireFromRenderStill('@resvg/resvg-js');
 
 const LIGHT = 'configs/light.config.ts';
-const CAROUSEL_WIDTH = 560;
+const CAROUSEL_WIDTH = 460;
 const CAROUSEL_HOLD_MS = 1600;
-const CAROUSEL_FADE_STEPS = 8;
-const CAROUSEL_FADE_STEP_MS = 40;
+const CAROUSEL_FADE_STEPS = 4;
+const CAROUSEL_FADE_STEP_MS = 60;
 
 const SPECS = [
   { spec: 'marketing/app-screen.spec.json' },
@@ -61,7 +61,7 @@ const SPECS = [
   { spec: 'marketing/store.spec.json' },
   { spec: 'marketing/store-light.spec.json', config: LIGHT },
   { spec: 'marketing/launch.spec.json', config: LIGHT },
-  { spec: 'marketing/store-pair.spec.json' },
+  { spec: 'marketing/store-card.spec.json' },
 ];
 
 const run = (cmd, args, cwd) =>
@@ -117,8 +117,8 @@ const carouselGif = (framesDir) => {
 const publishDocsAssets = () => {
   mkdirSync(docsAssets, { recursive: true });
   copyFileSync(
-    join(app, 'marketing', 'store-pair', 'frame-01.png'),
-    join(docsAssets, 'store-pair.png'),
+    join(app, 'marketing', 'store-card', 'frame-01.png'),
+    join(docsAssets, 'store-card.png'),
   );
 
   writeFileSync(join(docsAssets, 'launch.gif'), carouselGif(join(app, 'marketing', 'launch')));

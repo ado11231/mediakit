@@ -1,6 +1,6 @@
 {
-  "id": "store-pair",
-  "preset": "readme-pair",
+  "id": "store-card",
+  "preset": "readme-card",
   "frames": [
     {
       "layout": "pair",
@@ -15,16 +15,6 @@
             "height": 1156
           },
           "slot": "left"
-        },
-        {
-          "type": "DeviceFrame",
-          "props": {
-            "chrome": "none",
-            "src": "marketing/store/ios-6.9/frame-01.png",
-            "width": 532,
-            "height": 1156
-          },
-          "slot": "right"
         }
       ]
     }

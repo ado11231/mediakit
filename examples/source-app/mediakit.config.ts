@@ -402,14 +402,15 @@ export default defineConfig({
       scale: 2.5,
     },
     /**
-     * 2x the README's 560px pair image. Sized here rather than downscaled later so the
-     * composite the README embeds is itself a spec output, not a post-processed screenshot.
-     * Height is padding plus two cropped listing cards (top 55%) plus labels. Scale 2 so
-     * Caption type reads at the README display size; this canvas has no display type.
+     * The README's hero, at 2x its display width. Sized here rather than downscaled later so
+     * the image the README embeds is itself a spec output, not a post-processed screenshot.
+     * Holds one cropped listing card (top 55%) plus padding, at the same 4:5 proportions as
+     * the carousel GIF beside it, so the two sit at equal height. Scale 2 so Caption type
+     * reads at the README display size; this canvas has no display type.
      */
-    'readme-pair': {
-      width: 1120,
-      height: 720,
+    'readme-card': {
+      width: 600,
+      height: 750,
       renderer: 'still',
       scale: 2,
     },

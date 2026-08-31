@@ -50,14 +50,14 @@ describe('source-app extension API', () => {
     expect(pngSize(png)).toEqual({ width: 1080, height: 1350 });
   });
 
-  it('renders the README pair composite at the registered custom preset dimensions', async () => {
-    const code = await runRender(['marketing/store-pair.spec.json', '--out', outDir], { cwd });
+  it('renders the README hero at the registered custom preset dimensions', async () => {
+    const code = await runRender(['marketing/store-card.spec.json', '--out', outDir], { cwd });
     expect(code).toBe(0);
 
-    const path = join(outDir, 'store-pair', 'frame-01.png');
+    const path = join(outDir, 'store-card', 'frame-01.png');
     expect(existsSync(path)).toBe(true);
     const png = await readFile(path);
-    expect(pngSize(png)).toEqual({ width: 1120, height: 720 });
+    expect(pngSize(png)).toEqual({ width: 600, height: 750 });
   });
 
   it('reproduces the committed PNG byte for byte (the example-level determinism gate)', async () => {
