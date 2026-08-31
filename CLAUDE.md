@@ -482,6 +482,37 @@ was written, gated on `!path.startsWith('/')`, which is never true of a path `in
 it had never once run. It is now `isAbsolute`, and the test moves the tree before asserting,
 because read back in place an absolute path looks perfectly correct.
 
+**`init` picks the config's extension from the consumer's `package.json`, and `--force` never
+changes it.** Node reads a `.ts` file's module system from the nearest `package.json` `type`
+field; with none, the shape `npm init -y` produces, it guesses, prints
+`MODULE_TYPELESS_PACKAGE_JSON`, and reparses, on every command, including in the middle of
+`doctor`'s table. `.mts` carries the answer in the extension, so `init` writes that unless the
+project already declares ESM. The tempting simplification, always writing `.ts` because it is
+the name in the docs, is what shipped the warning. And a `--force` that re-picked the extension
+would leave the stale config beside the new one; the loader prefers `.ts`, so the old file would
+be the one that loads and the overwrite would appear to have done nothing.
+
+This is not inference in the render path. It runs in `init`, is visible in the file it names,
+and `render` only ever asks which of the candidate names exists.
+
+**Nothing mediakit scaffolds may trip mediakit's own rules.** `Eyebrow` defaults to `accent`,
+which is 3.74:1 on the default canvas, so `init`'s spec and the `screen` and `carousel`
+templates all warned under the contrast rule on a stranger's very first render. The scaffolding
+now names colours that pass; `DEFAULT_COLOR` is untouched, because changing it silently
+restyles every consumer who never set a token, and that decision still stands open. The rule
+was right the whole time, which is the point: the fix belongs in what mediakit writes, not in
+the rule that caught it. `pack-smoke` now fails on any warning in a first render, so this
+cannot quietly come back.
+
+**`pack-smoke` walks two consumer shapes, and the second one is the reason it found anything.**
+It tested only a `"type": "module"` project, the rarer shape, which is exactly why the
+module-type warning survived every gate. It now also builds a project with no `type` field and
+asserts both render byte-identically with no warning on either stream: Node's warnings go to
+stderr and mediakit's own go to stdout, so a guard that reads one stream silently checks
+nothing. That guard passed vacuously when first written, and was caught only by deliberately
+reintroducing the bug and watching the test still go green. Verify a new guard bites before
+trusting it.
+
 Five things a future editor should know rather than rediscover:
 
 - **`DEFAULT_TYPE` may only name weights `DEFAULT_FONT` ships.** Two weights are bundled, so the
@@ -501,7 +532,10 @@ Five things a future editor should know rather than rediscover:
   "timeout" about correct code. Two rendering tests had no timeout at all and were latently
   flaky for exactly this reason. Do not reintroduce a per-test timeout below the shared floor;
   it re-creates the flake it looks like it prevents.
-- **`DEFAULT_COLOR.bezel` and `DEFAULT_COLOR.canvas` are the same value.** A device framed on an
-  unstyled dark page is therefore a phone-shaped hole with only its shadow to separate it, which
-  is why `examples/source-app` overrides `bezel`. Changing the default is tempting and would
-  silently restyle every consumer who never set it; overriding in config is the supported answer.
+- **`DEFAULT_COLOR.bezel` is black, and deliberately not `canvas`.** It names a physical object
+  rather than a brand role, and most phones are black, so it reads as a device against a light
+  page and a dark one alike. It used to equal `canvas`, which made a framed device a
+  phone-shaped hole with only its shadow to separate it. That was left alone for a long time
+  because changing it restyles every consumer who never set the token; it changed before the
+  first release, when the set of such consumers was empty. `init --from` no longer borrows
+  `ink` for it either, which on a dark palette scaffolded a white phone.

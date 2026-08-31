@@ -96,12 +96,14 @@ const PATTERNS: Readonly<Record<string, readonly RegExp[]>> = {
 
 /**
  * Where a role borrows from when the source has no distinct colour left for it. `accent` is
- * absent on purpose: no other role can stand in for a brand colour.
+ * absent on purpose: no other role can stand in for a brand colour. `bezel` is absent for the
+ * same reason in reverse: it used to borrow `ink`, which on a dark palette is the lightest
+ * colour in the set, so a source with no spare neutral scaffolded a white phone. It falls to
+ * mediakit's black default instead, which is what the bezel rule below says it wants.
  */
 const BORROW: Readonly<Record<string, string>> = {
   surface: 'canvas',
   inkMuted: 'ink',
-  bezel: 'ink',
 };
 
 /** Contract keys in the order a reader wants to check them. */

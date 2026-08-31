@@ -12,10 +12,10 @@ import type { TypeStyle } from './contract.js';
  */
 
 /**
- * `bezel` is the one colour here that names a physical object rather than a brand role. It
- * cannot fall back to `canvas`: a consumer with a light page renders a light bezel, and the
- * device disappears into the background. It stays a separate key so a silver or white phone
- * is a token override rather than a fork of the frame.
+ * `bezel` names a physical object rather than a brand role, so it defaults to black: that is
+ * what most phones are, and it reads as a device against a light page and a dark one alike.
+ * It used to equal `canvas`, which made a framed device a phone-shaped hole with only its
+ * shadow to separate it from the page. A silver or white phone is a token override.
  */
 export const DEFAULT_COLOR: Record<string, string> = {
   accent: '#2563EB',
@@ -25,7 +25,7 @@ export const DEFAULT_COLOR: Record<string, string> = {
   inkMuted: '#9AA4B2',
   positive: '#34D399',
   negative: '#F87171',
-  bezel: '#0B0E14',
+  bezel: '#000000',
 };
 
 export const DEFAULT_SPACE: Record<string, number> = {
