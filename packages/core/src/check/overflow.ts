@@ -45,7 +45,6 @@ export const checkOverflow = (
   for (const run of frame.runs) {
     const box = matchBox(run, boxes);
     const what = box === undefined ? 'Text' : quote(box.text);
-    const where = `frame ${frameIndex + 1}`;
 
     const { painted } = run;
     if (painted !== undefined) {
@@ -62,7 +61,7 @@ export const checkOverflow = (
           frameIndex,
           severity: 'warning',
           message:
-            `overflow: ${where}, ${what} is drawn ${edges} of the ${width}x${height} ` +
+            `overflow: ${what} is drawn ${edges} of the ${width}x${height} ` +
             `canvas, so those pixels are not in the PNG. ${ADVICE}`,
         });
         continue;
@@ -79,7 +78,7 @@ export const checkOverflow = (
         frameIndex,
         severity: 'warning',
         message:
-          `overflow: ${where}, ${what} is ${Math.round(past)}px wider than the ` +
+          `overflow: ${what} is ${Math.round(past)}px wider than the ` +
           `${Math.round(box.width)}px box it was laid out in, so it paints over whatever sits ` +
           `beside it, or is cut off if that box hides its overflow. ${ADVICE}`,
       });

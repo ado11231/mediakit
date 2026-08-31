@@ -39,7 +39,11 @@ interface CheckDeps {
 
 const report = (violations: readonly Violation[]): void => {
   for (const v of violations) {
-    const where = [v.preset, v.file].filter(Boolean).join(' ');
+    // frameIndex is on the violation, so it is rendered here for every rule rather than
+    // hand-written into some messages and forgotten in others, which is how glyph coverage
+    // ended up naming the file but not the frame.
+    const frame = v.frameIndex === undefined ? '' : `frame ${v.frameIndex + 1}`;
+    const where = [v.preset, v.file, frame].filter(Boolean).join(' ');
     const label = isError(v) ? '' : `${bad('warning')} `;
     process.stdout.write(`${label}${where ? `${where}: ` : ''}${v.message}\n`);
   }

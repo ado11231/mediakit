@@ -109,8 +109,10 @@ describe('checkOverflow', () => {
     ]);
 
     expect(rest).toHaveLength(0);
+    // The frame reaches the reader through `frameIndex`, which the CLI renders for every
+    // rule. The message used to spell it out as well, which is why some rules said "frame N"
+    // and others silently did not.
     expect(violation?.frameIndex).toBe(1);
-    expect(violation?.message).toContain('frame 2');
     expect(violation?.message).toMatch(
       /\d+px past the left edge and \d+px past the right edge of the 1080x1350 canvas/,
     );

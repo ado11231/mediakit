@@ -121,7 +121,7 @@ export const checkContrast = (
       frameIndex,
       severity: 'warning',
       message:
-        `contrast: frame ${frameIndex + 1}, ${what} is ${run.fill} on ${behind.fill}, a ratio ` +
+        `contrast: ${what} is ${run.fill} on ${behind.fill}, a ratio ` +
         `of ${ratio.toFixed(2)}:1. WCAG AA asks ${AA_RATIO}:1, and a store gallery is read on ` +
         `a phone in daylight rather than on the monitor this was authored on. Point that block ` +
         `at a colour token further from its background.`,
