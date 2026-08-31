@@ -27,7 +27,7 @@ HTTP. Re-renders on spec, config, or font file change. It does not drive a
 browser; it serves files to yours, so the browser-free invariant is untouched.
 
 Options:
-  --port <n>       listen on this port (default: 3000)
+  --port <n>        listen on this port (default: 3000)
   --preset <name>   render only this preset, which must be one the spec names
   --config <path>   use this config instead of mediakit.config.ts in cwd
   -h, --help

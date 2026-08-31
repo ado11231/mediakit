@@ -24,7 +24,7 @@ declares more than one, or when --preset is absent and more than one is
 produced.
 
 Options:
-  --preset <name>   render only this preset, which must be one the spec names
+  --preset <name>    render only this preset, which must be one the spec names
   --out <dir>        write under this directory instead of marketing/
   --config <path>    use this config instead of mediakit.config.ts in cwd
   -h, --help

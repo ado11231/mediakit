@@ -20,7 +20,7 @@ mediakit check <file|dir> --preset <name>  validate rendered PNGs against a pres
 Options:
   --preset <name>   asset mode: check PNGs against this preset, no spec needed
   --strict          fail on warnings as well as violations
-  --out <dir>       where rendered output lives (default: marketing)
+  --out <dir>       the directory render wrote to (default: marketing)
   --config <path>   use this config instead of mediakit.config.ts in cwd
   -h, --help
 
