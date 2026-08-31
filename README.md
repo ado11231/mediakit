@@ -21,6 +21,9 @@ another spec's render if the screen is built from blocks.
 Use `chrome: "phone"` when the capture already contains a status bar. Use
 `chrome: "phone-notch"` when it does not, which draws one.
 
+The bezel is black by default. `bezel` names a colour token, so a white phone on one frame and
+a black one on the next is a per-block choice: `{ "chrome": "phone", "bezel": "ink" }`.
+
 ## Carousels
 
 <p align="center">

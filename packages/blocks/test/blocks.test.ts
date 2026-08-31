@@ -365,6 +365,54 @@ describe('device frames', () => {
     expect(largeBezel / smallBezel).toBeCloseTo(3, 0);
   });
 
+  it('defaults its bezel to the bezel token', () => {
+    const element = renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      src: PNG_1X1,
+      width: 400,
+      height: 800,
+    });
+    expect(element.props.style?.backgroundColor).toBe(context.tokens.color.bezel);
+  });
+
+  // A white phone on one frame and a black one on the next, without overriding the token for
+  // every asset in the project.
+  it('paints the bezel from the colour token the block names', () => {
+    const element = renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      bezel: 'ink',
+      src: PNG_1X1,
+      width: 400,
+      height: 800,
+    });
+    expect(element.props.style?.backgroundColor).toBe(context.tokens.color.ink);
+  });
+
+  // The override is handed to the frame as a derived context. If it were written into the one
+  // the renderer already holds, every later block would inherit it.
+  it('does not leak the override into the context other blocks read', () => {
+    renderFramed(DeviceFrame, {
+      chrome: 'phone',
+      bezel: 'ink',
+      src: PNG_1X1,
+      width: 400,
+      height: 800,
+    });
+    expect(framedContext.tokens.color.bezel).toBe(context.tokens.color.bezel);
+  });
+
+  it('reports the registered colour tokens when the bezel names one that does not exist', () => {
+    expect(() =>
+      renderFramed(DeviceFrame, {
+        chrome: 'phone',
+        bezel: 'gunmetal',
+        src: PNG_1X1,
+        width: 400,
+        height: 800,
+      }),
+    ).toThrow(/gunmetal/);
+  });
+
   const absoluteChildren = (element: Element): readonly Element[] => {
     const children = element.props.children;
     const list: readonly Element[] = Array.isArray(children) ? children : [];

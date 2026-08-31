@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
-import { defineBlock, MediakitError, h } from '@mediakit/core';
+import { colorToken, defineBlock, MediakitError, h } from '@mediakit/core';
 import { z } from 'zod';
 
 const MIME: Readonly<Record<string, string>> = {
@@ -47,10 +47,17 @@ const pngDimensions = (bytes: Buffer): { width: number; height: number } | undef
  * `width` and `height` size the screen content in canvas pixels. Omitting them reads the
  * intrinsic dimensions from a PNG header, so a spec can frame a screenshot without doing
  * arithmetic, and the device chrome scales proportionally to the resolved size.
+ *
+ * `bezel` names a colour token, so a black phone on one frame and a white one on the next is
+ * a per-block choice rather than a global token override. It is threaded by handing the frame
+ * a context whose `bezel` token resolves to the chosen colour, rather than by widening
+ * `FrameRenderer`: a custom frame reading the token then honours the prop with no change, and
+ * the public frame contract stays a function of the child and the context.
  */
 export const DeviceFrame = defineBlock({
   schema: z.object({
     chrome: z.string().default('none'),
+    bezel: z.string().default('bezel'),
     src: z.string(),
     width: z.number().optional(),
     height: z.number().optional(),
@@ -79,6 +86,22 @@ export const DeviceFrame = defineBlock({
         `The frame "${props.chrome}" has no still renderer, so it cannot frame a screenshot.`,
       );
     }
-    return render(img, context);
+    // Rebuilt rather than mutated: the render path has to be reproducible, and a context
+    // edited in place would leak the choice into every later block.
+    const framed =
+      props.bezel === 'bezel'
+        ? context
+        : {
+            ...context,
+            tokens: {
+              ...context.tokens,
+              color: {
+                ...context.tokens.color,
+                bezel: colorToken(context.tokens, props.bezel),
+              },
+            },
+          };
+
+    return render(img, framed);
   },
 });
