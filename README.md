@@ -65,12 +65,16 @@ carousel, and `screen` writes the app screen the listing frames. Registering a t
 `mediakit init` writes the two files a repo needs:
 
 - `mediakit.config.ts` at the project root. It holds tokens and any custom blocks, layouts,
-  and presets. The CLI also finds `.mts`, `.js`, and `.mjs` variants, and `--config <path>`
-  selects a different file.
+  and presets. In a project that does not already declare `"type": "module"`, `init` writes
+  `mediakit.config.mts` instead, so Node does not have to guess the file's module system and
+  warn about it on every command. The CLI finds either, plus `.js` and `.mjs`, and
+  `--config <path>` selects a different file.
 - A spec: a JSON file describing one asset set. Specs conventionally live in `marketing/`.
 
 Paths inside a spec, such as a `DeviceFrame` `src`, resolve against the directory the command
-runs from. Font paths in a config should be absolute (build them from `import.meta.dirname`).
+runs from. Font paths in a config resolve against the config file, through `import.meta.dirname`, which
+is what `init` writes. An absolute path renders on the machine that generated it and throws
+`ENOENT` on every other checkout.
 A font is bundled, so the first render needs no font setup.
 
 Output is written to `marketing/<spec-id>/frame-NN.png`, nested under the preset name when a

@@ -7,6 +7,50 @@ the person reading it is you, six months from now, when a project stops building
 
 ### Fixed
 
+- **`mediakit new listing --template listing` refused to run.** Positional arguments were
+  identified by excluding anything that matched a flag's _value_, rather than by position, so an
+  id that said the same thing as the template it named was discarded and the command reported
+  that no id was given. Naming a spec after its template is the first thing anyone types.
+
+  `init` had the sharper form of the same defect: its `--preset` default sat in the comparison
+  set even when the flag was absent, so `mediakit init ig-portrait` silently scaffolded into the
+  current directory instead of into `ig-portrait/`.
+
+  Both now resolve positionals by position (`packages/cli/src/argv.ts`). No migration: every
+  invocation that worked before still works, and ones that used to fail now do what they say.
+
+- **`init` scaffolded a config that made Node warn on every subsequent command.** In a project
+  with no `"type": "module"` in its `package.json`, the shape `npm init -y` produces, Node has to
+  guess a `.ts` file's module system, so it printed a four-line
+  `MODULE_TYPELESS_PACKAGE_JSON` warning and reparsed the config on every `render`, `check`,
+  `export`, and `doctor` run, landing in the middle of `doctor`'s table.
+
+  `init` now writes `mediakit.config.mts` in that case, and keeps `mediakit.config.ts` where the
+  project already declares ESM. `.mts` carries the module system in the extension, so nothing is
+  guessed. No migration is needed: the loader already accepted both, an existing config keeps
+  working untouched, and `--force` regenerates whichever file is already there rather than
+  writing a second one beside it.
+
+- **The scaffolded spec and two built-in templates warned under mediakit's own contrast rule.**
+  `Eyebrow` defaults to `accent`, which is 3.74:1 on the default canvas, so a stranger's first
+  render reported a warning about a palette mediakit itself wrote. The scaffolding now names
+  `inkMuted` (7.66:1), and the `screen` and `carousel` templates name `ink` on a `CTA` pill
+  (4.82:1) rather than leaving the block's `canvas` default, which is right on a light palette
+  and wrong on the dark one shipped.
+
+  `DEFAULT_COLOR` is deliberately unchanged, so no existing consumer's output moves. Anyone
+  who copied the old scaffolding still renders exactly what they rendered before, with the
+  same warning.
+
+- **`RELEASING.md` gave a publish command that cannot work.** It called `npm publish -w`, but
+  the root declares no npm `workspaces` field, so the command fails outright; and npm does not
+  understand pnpm's `workspace:*` protocol, so had it run it would have published manifests
+  whose dependencies read `workspace:*` and 404 for every consumer. Invariant 8 means there is
+  no way to withdraw that. The documented command is now `pnpm publish` per package.
+
+- **`README.md` told consumers to make font paths absolute**, the exact failure the previous
+  entry fixed in `init`. It now describes the config-relative resolution that actually ships.
+
 - **`init --from --fonts` wrote a config that only worked on the machine that ran it.** Every
   discovered font path was absolute, so the config rendered where it was generated and threw
   `ENOENT` on every other checkout: a teammate's clone, a CI runner, a second machine. The
@@ -218,6 +262,11 @@ the person reading it is you, six months from now, when a project stops building
   nothing else in the CLI showed.
 
 ### Changed
+
+- `pack-smoke` walks two consumer shapes rather than one: `"type": "module"` and a project with
+  no `type` field at all. It only ever tested the former, which is why the config module-type
+  warning above went unnoticed. It now also asserts that a first render emits no Node warning
+  and no mediakit warning, on both, and that the two render byte-identical output.
 
 - **`Violation` gained an optional `severity`.** Absent means an error, so every existing rule
   behaves as before. **Migration:** code that treats any violation as fatal should filter on

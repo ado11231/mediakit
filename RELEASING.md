@@ -71,12 +71,19 @@ pnpm conformance     # extraction is correct for a stranger's design system
 
 ```bash
 for pkg in core blocks render-still cli mediakit; do
-  npm publish --access public -w "packages/$pkg"
+  (cd "packages/$pkg" && pnpm publish --access public --no-git-checks)
 done
 ```
 
 Order matters: each package's dependencies must already resolve on the registry, and `mediakit`
 is the facade that depends on all of them.
+
+**It has to be `pnpm publish`, and the reason is not tooling preference.** The cross-dependencies
+are declared as `workspace:*`, which pnpm rewrites to the concrete version as it packs. npm does
+not understand the protocol, so `npm publish` would put the literal string `workspace:*` on the
+registry and every consumer install would 404 on a dependency that cannot exist. `npm publish -w`
+additionally fails outright here, since the root declares no npm `workspaces` field; this repo is
+a pnpm workspace. Invariant 8 means there is no way to pull that back.
 
 ## 7. Verify against the registry, not against a tarball
 
