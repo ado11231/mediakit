@@ -12,6 +12,11 @@ dist/
 # Test output
 coverage/
 
+# `export` bundles are a build artifact of an already-committed render: reproducible from the
+# spec at any time, and named for a channel rather than for the repo. Rendered PNGs under
+# marketing/ are committed on purpose (see below); an upload bundle is not.
+export/
+
 # Rendered assets are committed on purpose: byte-identical PNGs across runs are
 # what makes an approved screenshot diffable and reviewable (CLAUDE.md invariant 7).
 # Golden files under packages/*/test are the determinism guarantee itself.
