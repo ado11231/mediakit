@@ -77,12 +77,14 @@ describe('unknown registry keys', () => {
     blocks.register('Eyebrow', textBlock);
 
     try {
+      // frameIndex is a 0-based array index; the message counts frames the way the
+      // person reading their spec does, so index 2 reads as frame 3.
       blocks.get('Headlien', { file: 'launch.spec.json', frameIndex: 2 });
       expect.unreachable('expected an unknown block type to throw');
     } catch (error) {
       const { message } = error as MediakitError;
       expect(message).toContain('Unknown block "Headlien"');
-      expect(message).toContain('frame 2');
+      expect(message).toContain('frame 3');
       expect(message).toContain('Eyebrow');
       expect(message).toContain('Headline');
     }
@@ -120,8 +122,8 @@ describe('block props failing their schema', () => {
     } catch (error) {
       const { message } = error as MediakitError;
       expect(message).toContain('launch.spec.json');
-      expect(message).toContain('frame 1');
-      expect(message).toContain('block 0 (Headline)');
+      expect(message).toContain('frame 2');
+      expect(message).toContain('block 1 (Headline)');
       expect(message).toContain('text:');
       expect(message).toContain('weight:');
     }
@@ -169,7 +171,7 @@ describe('slots', () => {
     } catch (error) {
       const { message } = error as MediakitError;
       expect(message).toContain('The layout "split" does not declare a slot "middle"');
-      expect(message).toContain('frame 3');
+      expect(message).toContain('frame 4');
       expect(message).toContain('left');
       expect(message).toContain('right');
     }

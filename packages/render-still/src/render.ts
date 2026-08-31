@@ -12,6 +12,7 @@ import {
   type Registries,
   type RenderContext,
   type ResolvedTokens,
+  formatLocation,
   type SpecLocation,
   type TextBox,
   type TokensInput,
@@ -97,7 +98,7 @@ const renderBlocks = (
     if (render === undefined) {
       throw new MediakitError(
         `The block "${block.type}" has no still renderer, so it cannot be rendered to PNG` +
-          `${locationSuffix(location)}. Add a \`still\` renderer to its definition.`,
+          `${formatLocation(location)}. Add a \`still\` renderer to its definition.`,
       );
     }
 
@@ -110,9 +111,6 @@ const renderBlocks = (
 
   return { blocks, slots };
 };
-
-const locationSuffix = (location: SpecLocation): string =>
-  ` in ${location.file ?? 'spec'}, frame ${location.frameIndex ?? 0}`;
 
 /**
  * The canvas root is owned by the renderer, not by the layout. Layouts arrange content and
@@ -158,7 +156,7 @@ const renderFrame = async (
   if (arrange === undefined) {
     throw new MediakitError(
       `The layout "${frame.layout}" has no still renderer, so it cannot be rendered to PNG` +
-        `${locationSuffix(location)}. Add a \`still\` renderer to its definition.`,
+        `${formatLocation(location)}. Add a \`still\` renderer to its definition.`,
     );
   }
 

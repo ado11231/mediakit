@@ -181,7 +181,7 @@ describe('failure behaviour', () => {
   it('names the file and frame when a block type is not registered', async () => {
     await expect(
       render([{ layout: 'centered', blocks: [{ type: 'Headlien', props: {} }] }]),
-    ).rejects.toThrow(/Unknown block "Headlien".*fixture\.spec\.json, frame 0/s);
+    ).rejects.toThrow(/Unknown block "Headlien".*fixture\.spec\.json, frame 1/s);
   });
 
   it('rejects a slot the layout does not declare', async () => {
@@ -203,6 +203,6 @@ describe('failure behaviour', () => {
           blocks: [{ type: 'BulletList', props: { items: [], color: 7 } }],
         },
       ]),
-    ).rejects.toThrow(/block 0 \(BulletList\)/);
+    ).rejects.toThrow(/block 1 \(BulletList\)/);
   });
 });

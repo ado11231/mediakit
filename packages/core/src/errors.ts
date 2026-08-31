@@ -16,16 +16,20 @@ export interface SpecLocation {
  * Every message in the failure table names the offending file and, where a spec is
  * involved, the frame index. An error that says only "invalid spec" costs more than it
  * saves, so this formatter is applied to all of them rather than left to each call site.
+ *
+ * Frames and blocks are counted from one, because the person reading the message counts the
+ * frames in their spec from one. The two numbers are array indices everywhere else, and the
+ * conversion belongs here, at the single point where an index becomes something a human reads.
  */
 export const formatLocation = (location?: SpecLocation): string => {
   if (location === undefined) return '';
 
   const parts: string[] = [];
   if (location.file !== undefined) parts.push(location.file);
-  if (location.frameIndex !== undefined) parts.push(`frame ${location.frameIndex}`);
+  if (location.frameIndex !== undefined) parts.push(`frame ${location.frameIndex + 1}`);
   if (location.blockIndex !== undefined) {
     const type = location.blockType === undefined ? '' : ` (${location.blockType})`;
-    parts.push(`block ${location.blockIndex}${type}`);
+    parts.push(`block ${location.blockIndex + 1}${type}`);
   }
 
   return parts.length === 0 ? '' : ` in ${parts.join(', ')}`;
