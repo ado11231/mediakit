@@ -236,8 +236,16 @@ const pair = defineLayout({
     const gap = spaceToken(tokens, 'md');
     const labelGap = spaceToken(tokens, 'sm');
 
+    /**
+     * Returns nothing for a slot with no blocks in it, rather than an empty div. A zero width
+     * cell still sits on the far side of the row's `gap`, so a frame that fills one slot had
+     * its card pushed half a gap off centre, which reads as a mistake and is invisible in the
+     * spec that caused it.
+     */
     const cell = (name: string) => {
       const items = slots[name] ?? [];
+      if (items.length === 0) return undefined;
+
       const screenshot = items[0];
       const labels = items.slice(1);
       const imageHeight =
