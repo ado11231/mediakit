@@ -5,7 +5,57 @@ the person reading it is you, six months from now, when a project stops building
 
 ## Unreleased
 
+### Breaking
+
+- **The built-in layout `fullBleed` is now `full-bleed`.** Layouts were registered with object
+  shorthand, which made the JS identifier the public spec vocabulary, so this one shipped in
+  camelCase while every preset, the example's own `pricing-split`, and the file on disk are
+  kebab-case.
+
+  Migration: rename `fullBleed` to `full-bleed` in any spec that names it. An unknown layout
+  throws and lists the registered ones, so a missed rename fails loudly rather than rendering
+  something else.
+
+- **`DEFAULT_COLOR.bezel` changed from `#0B0E14` to `#000000`.** It named a physical object
+  rather than a brand role and happened to equal `canvas`, so a framed device on an unstyled
+  page was a phone-shaped hole with only its shadow to separate it. The comment above the token
+  already said it could not fall back to `canvas` while the value did exactly that.
+
+  Migration: a project that never set the token gets a black device frame. Set
+  `tokens.color.bezel` to `#0B0E14` to keep the old rendering.
+
+  `init --from` also stops borrowing `ink` for `bezel`. Its own rule says a bezel is near black
+  whatever the theme, but `ink` on a dark palette is the lightest colour in the set, so a source
+  with no spare neutral scaffolded a white phone, and one fixture scaffolded a blue one.
+
 ### Fixed
+
+- **`check` reported "spec OK" for a spec that could not render.** It resolved preset names
+  against the registry but not layouts, block types, or slots, so a typo in any of those passed
+  the command a build gates on and failed later at render. A false pass is worse than no check.
+  All four names now resolve, reported together rather than thrown, each naming its frame and
+  listing what is registered.
+
+- **Frame and block numbers contradicted each other.** Error messages printed the raw array
+  index while check warnings added one, so "frame 1" named the second frame in one message and
+  the first in another. Both now count from one, converted at the single point where an index
+  becomes something a person reads.
+
+- **Only some check violations named the frame.** Violations carry `frameIndex`, but whether a
+  message showed it depended on whether its rule wrote "frame N" into the text by hand. A
+  missing glyph named the file and left you to find the frame yourself.
+
+### Added
+
+- **`mediakit --version`**, and `-v`. There was no way to ask which version was installed, which
+  matters more here than in most tools: mediakit makes no network requests, so there is no
+  update check and no telemetry, and this is the only thing a bug report can quote about which
+  build produced an asset.
+
+- **`DeviceFrame` takes a `bezel` prop**, an open string resolved against the colour tokens. A
+  white phone on one frame and a black one on the next no longer means overriding the token for
+  every asset in the project. It is threaded by handing the frame a derived context, so a custom
+  frame that reads the token honours the prop with no change.
 
 - **`mediakit new listing --template listing` refused to run.** Positional arguments were
   identified by excluding anything that matched a flag's _value_, rather than by position, so an
