@@ -13,7 +13,7 @@ export default defineConfig({
       inkMuted: '#6b7280', // from muted
       positive: '#34D399', // GUESS: no colour in the source could fill this; mediakit's default
       negative: '#F87171', // GUESS: no colour in the source could fill this; mediakit's default
-      bezel:    '#1D4ED8', // GUESS: the source has no distinct colour left for this; reusing ink
+      bezel:    '#000000', // GUESS: no colour in the source could fill this; mediakit's default
     },
   },
 });

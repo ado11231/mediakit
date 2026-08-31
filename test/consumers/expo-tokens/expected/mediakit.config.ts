@@ -13,7 +13,7 @@ export default defineConfig({
       inkMuted: '#94A3B8', // from color.semantic.text.secondary
       positive: '#22C55E', // from color.semantic.success
       negative: '#F43F5E', // from color.semantic.danger
-      bezel:    '#F8FAFC', // GUESS: the source has no distinct colour left for this; reusing ink
+      bezel:    '#000000', // GUESS: no colour in the source could fill this; mediakit's default
     },
     type: {
       display: { fontSize: 28, fontWeight: 700, lineHeight: 1.21, letterSpacing: '-0.03em' }, // from typography.headline
