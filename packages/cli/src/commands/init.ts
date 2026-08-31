@@ -70,7 +70,15 @@ const exampleSpec = (preset: string): string =>
         {
           layout: 'centered',
           blocks: [
-            { type: 'Eyebrow', props: { text: 'Built with mediakit' } },
+            // \`inkMuted\` rather than the block's default \`accent\`: on the default
+            // palette accent is 3.74:1 on canvas, so scaffolding the default would
+            // make a stranger's very first render warn under mediakit's own contrast
+            // rule. The rule is right and the palette is a separate decision; what
+            // \`init\` writes does not have to wait on it.
+            {
+              type: 'Eyebrow',
+              props: { text: 'Built with mediakit', color: 'inkMuted' },
+            },
             { type: 'Headline', props: { text: 'Your first asset', align: 'center' } },
             {
               type: 'Body',

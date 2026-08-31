@@ -20,7 +20,7 @@ export const carousel = defineTemplate({
       layout: 'stack',
       blocks: [
         { type: 'Background', props: { color: 'canvas' } },
-        { type: 'Eyebrow', props: { text: 'The series title' } },
+        { type: 'Eyebrow', props: { text: 'The series title', color: 'inkMuted' } },
         {
           type: 'Headline',
           props: { text: index === 0 ? 'The hook that earns the swipe' : `Point ${index + 1}` },
@@ -30,7 +30,7 @@ export const carousel = defineTemplate({
           props: { text: 'One sentence saying the thing. Two at the very most.' },
         },
         ...(index === frames - 1
-          ? [{ type: 'CTA', props: { text: 'What they should do next' } }]
+          ? [{ type: 'CTA', props: { text: 'What they should do next', color: 'ink' } }]
           : []),
         {
           type: 'Caption',

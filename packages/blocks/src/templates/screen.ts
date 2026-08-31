@@ -26,7 +26,7 @@ export const screen = defineTemplate({
       layout: 'screen',
       blocks: [
         { type: 'Background', props: { color: 'surface' } },
-        { type: 'Eyebrow', props: { text: 'Today', color: 'accent' } },
+        { type: 'Eyebrow', props: { text: 'Today', color: 'inkMuted' } },
         { type: 'Headline', props: { text: '6 things on the list', size: 'title' } },
         { type: 'Stat', props: { value: '$1,840', label: 'Invoiced this week' } },
         {
@@ -41,7 +41,11 @@ export const screen = defineTemplate({
             ],
           },
         },
-        { type: 'CTA', props: { text: 'Add another' } },
+        // `CTA` defaults its label to `canvas`, which is right on a light palette and
+        // wrong on the dark default, where canvas on accent is 3.74:1. The block cannot
+        // know which palette it is in, so the template that picks the background picks
+        // the label colour with it.
+        { type: 'CTA', props: { text: 'Add another', color: 'ink' } },
       ],
     })),
   }),
