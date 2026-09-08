@@ -122,7 +122,7 @@ export class DesignResolver {
                   `CSS token ${tokenName} is missing or cyclic under ${selector}.`,
                 );
               if (kind === 'number') return Number(raw);
-              const property = kind === 'color' ? 'color' : 'width';
+              const property = kind === 'color' ? 'color' : 'margin-left';
               if (!CSS.supports(property, raw))
                 throw new Error(`${tokenName}: invalid ${kind}: ${raw}`);
               target.style.setProperty(property, `var(${tokenName})`);
@@ -181,6 +181,15 @@ export class DesignResolver {
     text: string,
     location: string,
   ): Promise<ResolvedTypography> {
+    const missingFields = (['font', 'size', 'weight', 'lineHeight'] as const).filter(
+      (key) => style?.[key] === undefined,
+    );
+    if (missingFields.length)
+      throw new Error(
+        missingFields
+          .map((key) => `${location}.${key}: required typography value is missing.`)
+          .join('\n'),
+      );
     if (!style?.font) throw new Error(`${location}.font: required font name is missing.`);
     const weight = await this.number(style.weight, `${location}.weight`, 1, 'number');
     const file = this.config.fonts[style.font]?.find((font) => font.weight === weight);
@@ -196,6 +205,21 @@ export class DesignResolver {
       throw new Error(
         `${path}: font collections are unsupported. Supply an individual font file.`,
       );
+    const weightTable: unknown = Reflect.get(font, 'OS/2');
+    const declaredWeight: unknown =
+      weightTable && typeof weightTable === 'object'
+        ? Reflect.get(weightTable, 'usWeightClass')
+        : undefined;
+    const weightAxis = font.variationAxes.wght;
+    if (
+      weightAxis
+        ? weight < weightAxis.min || weight > weightAxis.max
+        : typeof declaredWeight === 'number' && declaredWeight !== weight
+    ) {
+      throw new Error(
+        `${location}: ${file.path} does not contain configured weight ${weight}. Use the actual font face or a variable font covering that weight.`,
+      );
+    }
     const missing = [
       ...new Set(
         Array.from(text).filter(

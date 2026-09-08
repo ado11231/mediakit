@@ -12,10 +12,19 @@ export const presets: Readonly<Record<string, Output>> = Object.fromEntries(
   }).map(([name, preset]) => [name, outputSchema.parse(preset)]),
 );
 export function resolveOutput(name: string, config: Config): Output {
-  const output = config.outputs[name] ?? presets[name];
-  if (!output)
+  const preset = presets[name];
+  const override = config.outputs[name];
+  if (!preset && !override)
     throw new Error(
       `Unknown output "${name}". Choose ${Object.keys(presets).join(', ')} or configure outputs.${name}.`,
     );
-  return output;
+  if (preset && override) {
+    for (const key of ['width', 'height', 'format', 'minSlides', 'maxSlides'] as const) {
+      if (override[key] !== undefined && override[key] !== preset[key])
+        throw new Error(
+          `outputs.${name}.${key}: built-in dimensions and constraints are fixed. Use a custom output name.`,
+        );
+    }
+  }
+  return outputSchema.parse({ ...preset, ...override });
 }

@@ -27,11 +27,13 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./fixtures": {
       "types": "./dist/fixtures.d.ts",
-      "import": "./dist/fixtures.js"
+      "import": "./dist/fixtures.js",
+      "default": "./dist/fixtures.js"
     },
     "./package.json": "./package.json"
   },

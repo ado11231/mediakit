@@ -47,6 +47,14 @@ const slideSchema = slideStyleSchema
     body: z.string().min(1).optional(),
     screen: z.string().min(1).optional(),
     fixture: nameSchema.optional(),
+    crop: z
+      .strictObject({
+        x: z.number().int().nonnegative(),
+        y: z.number().int().nonnegative(),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .optional(),
     device: z.enum(['iphone', 'none']).default('none'),
     bezel: z.enum(['black', 'silver']).default('black'),
     outputs: z.record(z.string(), slideStyleSchema).optional(),
@@ -123,7 +131,16 @@ export const configSchema = z.strictObject({
     )
     .default({}),
   design: designSchema.default({}),
-  outputs: z.record(z.string(), outputSchema).default({}),
+  outputs: z
+    .record(
+      z.string(),
+      outputSchema.partial().extend({
+        format: z.enum(['png', 'pdf']).optional(),
+        minSlides: z.number().int().positive().optional(),
+        maxSlides: z.number().int().positive().optional(),
+      }),
+    )
+    .default({}),
   screens: z.record(z.string(), screenshotSchema).default({}),
   capture: z
     .record(
