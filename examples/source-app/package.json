@@ -1,1 +1,8 @@
-{"name":"mediakit-example","private":true,"type":"module","dependencies":{"mediakit":"workspace:*"}}
+{
+  "name": "mediakit-example",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mediakit": "workspace:*"
+  }
+}

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Replace package registries and JSON block specs with one package and typed campaigns.
+- Resolve explicit CSS/module design mappings on each run. Missing used values and fonts fail.
+- Capture real web screens with isolated fixtures and add an iOS simulator capture adapter.
+- Render compositions with Chromium and export exact RGB PNGs or multipage PDFs.
+- Validate before replacing output, with preview diagnostics and per-destination typography.
+
+Migration: follow [the 0.2 migration guide](docs/migration.md). This is a breaking release.
+
 Pre-1.0, so breaking changes arrive as minor bumps. Every one gets a migration line, because
 the person reading it is you, six months from now, when a project stops building.
 

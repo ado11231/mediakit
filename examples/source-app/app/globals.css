@@ -1,0 +1,117 @@
+@font-face {
+  font-family: Geist;
+  src: url('/fonts/Geist-Regular.ttf');
+  font-weight: 400;
+}
+@font-face {
+  font-family: Geist;
+  src: url('/fonts/Geist-Bold.ttf');
+  font-weight: 700;
+}
+:root {
+  --background: #f7f5ef;
+  --foreground: #192920;
+  --muted: #576359;
+  --accent: #d9e6ad;
+  --surface: #ffffff;
+  --marketing-headline: 72px;
+  --marketing-body: 34px;
+  --marketing-padding: 76px;
+  --marketing-gap: 32px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Geist, sans-serif;
+}
+main {
+  padding: 64px 24px 24px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 36px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  font-weight: 700;
+}
+h1 {
+  font-size: 36px;
+  letter-spacing: -1.5px;
+  margin: 0 0 8px;
+}
+p {
+  margin: 0;
+  color: var(--muted);
+}
+.summary {
+  background: var(--accent);
+  padding: 24px;
+  border-radius: 24px;
+  margin: 28px 0;
+}
+.summary strong {
+  font-size: 52px;
+  letter-spacing: -2px;
+  display: block;
+}
+.summary p {
+  color: var(--foreground);
+  font-size: 14px;
+  margin-top: 6px;
+}
+h2 {
+  font-size: 18px;
+  margin: 30px 0 18px;
+}
+.task {
+  display: flex;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid #dedfd6;
+  align-items: center;
+}
+.check {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid #acb2a4;
+  border-radius: 8px;
+}
+.done .check {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: #fff;
+  text-align: center;
+}
+.task strong {
+  font-size: 15px;
+}
+.task p {
+  font-size: 12px;
+  margin-top: 4px;
+}
+.bottom {
+  display: flex;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 22px;
+  background: var(--background);
+  border-top: 1px solid #dedfd6;
+  font-size: 13px;
+}
+.bottom strong {
+  color: var(--foreground);
+}

@@ -1,8 +1,0 @@
-{
-  "name": "expo-tokens-fixture",
-  "private": true,
-  "type": "module",
-  "devDependencies": {
-    "mediakit": "^0.1.0"
-  }
-}

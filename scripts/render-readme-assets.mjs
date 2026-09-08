@@ -1,163 +1,19 @@
-import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import gifenc from 'gifenc';
+import { copyFile, mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { loadProject } from '../packages/mediakit/dist/config.js';
+import { buildCampaign, exportCampaign } from '../packages/mediakit/dist/export.js';
 
-const { GIFEncoder, quantize, applyPalette } = gifenc;
-
-/**
- * Discovery strategy 1: the repo renders its own README. The images the README shows are not
- * hand-placed screenshots, they are committed artifacts of the source app's specs and tokens.
- * This regenerates them in place from the committed specs, writes downscaled copies into
- * `docs/assets/` (what the README actually embeds), and fails if either tree differs from
- * what git has, so a spec edit that was not re-rendered cannot ship a stale README image.
- *
- * Byte-level determinism is proven separately by the example test, which renders to a temp dir
- * and hashes against the committed files. This script's job is narrower and complementary: keep
- * the specific PNGs the README embeds current, with a single command to regenerate them.
- *
- * Order matters, because several specs consume another's output. A store spec frames a
- * rendered app screen through its DeviceFrame src, so both app-screen renders have to come
- * first. `store-card` then crops one of them into the README hero, so it runs last. Rendering uses
- * the source app's own installed bin so the custom block, layout, and preset registered in its
- * config are in scope.
- *
- * The light entries are what makes the README's hero a pair. `app-screen.spec.json` is rendered
- * twice, once per theme, and `--out` keeps the second from overwriting the first; the screen's
- * content therefore lives in exactly one file and cannot drift between themes. Only the framing
- * spec is duplicated, because a spec's DeviceFrame src is a literal path and cannot vary by
- * config. The carousel is rendered once, through the light config, since the README embeds a
- * single GIF rather than one per colour scheme.
- *
- * `docs/assets/` is a display copy, not a second source of truth. Pair is already 2x the README
- * width (1120px canvas, 560px display), so it is copied. The carousel ships as an animated GIF
- * rather than three stills: GitHub strips scripts and interactivity from a README, so a cycling
- * GIF is the closest a repo page gets to a swipeable carousel. Frames are downscaled to 560px
- * (2x of the 280px display width) before encoding. gifenc is pure integer math with no
- * timestamps, so the GIF bytes stay deterministic and the drift check below applies to them too.
- */
-
-const root = fileURLToPath(new URL('..', import.meta.url));
-const app = join(root, 'examples', 'source-app');
-const bin = join(app, 'node_modules', '.bin', 'mediakit');
-const docsAssets = join(root, 'docs', 'assets');
-
-const requireFromRenderStill = createRequire(
-  join(root, 'packages', 'render-still', 'package.json'),
+const root = resolve(import.meta.dirname, '..');
+const project = await loadProject(resolve(root, 'examples/source-app'));
+const build = await buildCampaign(project);
+const directory = await exportCampaign(project, build);
+await mkdir(resolve(root, 'docs/assets'), { recursive: true });
+await copyFile(
+  resolve(directory, 'readme-card/01.png'),
+  resolve(root, 'docs/assets/store-card.png'),
 );
-const { Resvg } = requireFromRenderStill('@resvg/resvg-js');
-
-const LIGHT = 'configs/light.config.ts';
-const CAROUSEL_WIDTH = 460;
-const CAROUSEL_HOLD_MS = 1600;
-const CAROUSEL_FADE_STEPS = 4;
-const CAROUSEL_FADE_STEP_MS = 60;
-
-const SPECS = [
-  { spec: 'marketing/app-screen.spec.json' },
-  { spec: 'marketing/app-screen.spec.json', config: LIGHT, out: 'marketing/light' },
-  { spec: 'marketing/store.spec.json' },
-  { spec: 'marketing/store-light.spec.json', config: LIGHT },
-  { spec: 'marketing/launch.spec.json', config: LIGHT },
-  { spec: 'marketing/store-card.spec.json' },
-];
-
-const run = (cmd, args, cwd) =>
-  execFileSync(cmd, args, { cwd, encoding: 'utf8', stdio: 'pipe' });
-
-const downscaleRgba = (png, targetWidth) => {
-  const width = png.readUInt32BE(16);
-  const height = png.readUInt32BE(20);
-  const targetHeight = Math.round((height * targetWidth) / width);
-  const href = `data:image/png;base64,${png.toString('base64')}`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetWidth}" height="${targetHeight}"><image href="${href}" width="${targetWidth}" height="${targetHeight}"/></svg>`;
-  return new Resvg(svg, { fitTo: { mode: 'width', value: targetWidth } }).render();
-};
-
-/**
- * A hard cut between slides reads as a glitch at README size, so each slide holds and then
- * crossfades into the next, wrapping from the last back to the first so the loop point is as
- * smooth as every other transition. The blend is integer math on the downscaled RGBA buffers,
- * so the GIF bytes stay deterministic and the drift check still applies.
- */
-const carouselGif = (framesDir) => {
-  const frames = ['01', '02', '03'].map((n) => {
-    const png = readFileSync(join(framesDir, `frame-${n}.png`));
-    const image = downscaleRgba(png, CAROUSEL_WIDTH);
-    return { width: image.width, height: image.height, rgba: new Uint8Array(image.pixels) };
-  });
-
-  const gif = GIFEncoder();
-  const writeFrame = ({ width, height }, rgba, delay) => {
-    const palette = quantize(rgba, 256);
-    const index = applyPalette(rgba, palette);
-    gif.writeFrame(index, width, height, { palette, delay });
-  };
-
-  for (let i = 0; i < frames.length; i += 1) {
-    const current = frames[i];
-    const next = frames[(i + 1) % frames.length];
-    writeFrame(current, current.rgba, CAROUSEL_HOLD_MS);
-
-    for (let step = 1; step <= CAROUSEL_FADE_STEPS; step += 1) {
-      const t = step / (CAROUSEL_FADE_STEPS + 1);
-      const blended = new Uint8Array(current.rgba.length);
-      for (let p = 0; p < blended.length; p += 1) {
-        blended[p] = Math.round(current.rgba[p] + (next.rgba[p] - current.rgba[p]) * t);
-      }
-      writeFrame(current, blended, CAROUSEL_FADE_STEP_MS);
-    }
-  }
-  gif.finish();
-  return Buffer.from(gif.bytes());
-};
-
-const publishDocsAssets = () => {
-  mkdirSync(docsAssets, { recursive: true });
-  copyFileSync(
-    join(app, 'marketing', 'store-card', 'frame-01.png'),
-    join(docsAssets, 'store-card.png'),
-  );
-
-  writeFileSync(join(docsAssets, 'launch.gif'), carouselGif(join(app, 'marketing', 'launch')));
-};
-
-try {
-  for (const { spec, config, out } of SPECS) {
-    run(
-      bin,
-      ['render', spec, ...(config ? ['--config', config] : []), ...(out ? ['--out', out] : [])],
-      app,
-    );
-  }
-
-  publishDocsAssets();
-
-  const drift = run(
-    'git',
-    ['status', '--porcelain', '--', 'examples/source-app/marketing', 'docs/assets'],
-    root,
-  ).trim();
-
-  if (drift !== '') {
-    console.error(
-      [
-        'render-readme-assets: the committed README assets drifted from their specs.',
-        'The renderer produced different bytes than what is committed, so re-run this script',
-        'and commit the regenerated PNGs under examples/source-app/marketing and docs/assets:',
-        '',
-        drift,
-      ].join('\n'),
-    );
-    process.exitCode = 1;
-  } else {
-    console.log('render-readme-assets: ok');
-    console.log(`  regenerated in place from ${SPECS.length} committed specs, no drift`);
-  }
-} catch (error) {
-  const detail = [error.message, error.stdout, error.stderr].filter(Boolean).join('\n');
-  console.error(`render-readme-assets failed:\n${detail}`);
-  process.exitCode = 1;
-}
+await copyFile(
+  resolve(directory, 'readme-card/03.png'),
+  resolve(root, 'docs/assets/carousel.png'),
+);
+console.log('README images generated from the example campaign.');
