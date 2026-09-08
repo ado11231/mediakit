@@ -1,16 +1,13 @@
 {
   "name": "mediakit",
-  "version": "0.1.0",
-  "description": "Marketing assets as code. The mediakit CLI plus the config-authoring API in a single install.",
+  "version": "0.2.0",
+  "description": "Real app screenshots and carousels from explicit design tokens and typed campaigns.",
   "keywords": [
     "mediakit",
-    "marketing",
-    "design-tokens",
-    "app-store",
     "screenshots",
-    "satori",
-    "deterministic",
-    "cli"
+    "carousel",
+    "expo",
+    "design-tokens"
   ],
   "license": "MIT",
   "homepage": "https://github.com/ado11231/mediakit#readme",
@@ -30,7 +27,11 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures.d.ts",
+      "import": "./dist/fixtures.js"
     },
     "./package.json": "./package.json"
   },
@@ -41,15 +42,21 @@
     "dist"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node ./scripts/shebang.mjs",
-    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@mediakit/cli": "workspace:*",
-    "@mediakit/core": "workspace:*"
+    "fontkit": "^2.0.4",
+    "jiti": "^2.7.0",
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.63.0",
+    "postcss": "^8.5.28",
+    "sharp": "^0.35.4",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@types/fontkit": "^2.0.9",
     "@types/node": "^22.20.1"
   },
   "publishConfig": {
