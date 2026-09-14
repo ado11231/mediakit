@@ -1,45 +1,21 @@
-# Dependencies
 node_modules/
 .pnpm-store/
-
-# Build output
 dist/
+build/
 *.tsbuildinfo
-
-# Turbo
 .turbo/
-
-# Test output
 coverage/
-
-# `export` bundles are a build artifact of an already-committed render: reproducible from the
-# spec at any time, and named for a channel rather than for the repo. Rendered PNGs under
-# marketing/ are committed on purpose (see below); an upload bundle is not.
 export/
-
-# Rendered assets are committed on purpose: byte-identical PNGs across runs are
-# what makes an approved screenshot diffable and reviewable (CLAUDE.md invariant 7).
-# Golden files under packages/*/test are the determinism guarantee itself.
-# Neither may be added here.
-
-# Local design reference, deliberately never pushed. See reference/hvac-lead-loss/README.md.
-# The spacing in these renders is known wrong; do not treat them as a target.
+.mediakit/
+.expo/
 /reference/
-
-# Local overrides
 .env
 .env.*
 !.env.example
-
-# Editor and OS
 .DS_Store
 .idea/
 *.swp
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-
-# Logs
 *.log
-npm-debug.log*
-pnpm-debug.log*

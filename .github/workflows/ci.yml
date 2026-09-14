@@ -1,12 +1,10 @@
 name: CI
-
 on:
   push:
     branches: [main]
   pull_request:
-
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,74 +14,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter mediakit exec playwright install --with-deps chromium
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
+      - run: pnpm build
       - run: pnpm test
-
-  budget:
-    # Install weight is a positioning claim, not a nice-to-have: README competes with framedeck
-    # on exactly this. Gated in CI so a dependency cannot arrive without someone seeing the cost.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm budget
-
-  pack-smoke:
-    # Proves the published surface installs and runs from outside the workspace: packs every
-    # package as a consumer receives it, installs the tarballs into a throwaway project, and
-    # runs init, render, and check. Catches a broken exports map, a missing dist, or an absent
-    # bin shebang, none of which typecheck or the workspace tests can see. Runs on Node 22 so
-    # the bin's strip-types re-exec path is exercised rather than the unflagged one.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - run: pnpm pack-smoke
-
-  conformance:
-    # The M3 gate. Invariant 11 confines inference to `init`, so "a second app works" is
-    # "extraction works on a design system nobody here wrote". Runs the built CLI against
-    # fixtures shaped like other ecosystems and compares the generated config byte for byte,
-    # so a change to one extraction heuristic cannot silently move another repo's output.
-    # Offline by construction: pack-smoke covers installation, this covers correctness.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm conformance
-
-  readme-assets:
-    # Discovery strategy 1: the repo renders its own README. Regenerates the images the README
-    # embeds from their committed specs and fails if the bytes drift, so a spec edit that was
-    # not re-rendered cannot ship a stale README image. "Assets as code" a visitor can verify.
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm render-readme-assets

@@ -1,13 +1,4 @@
-# Lockfiles are generated and owned by the package manager. Prettier reflows the flow-style
-# mappings pnpm writes, which is pure churn and fights `--frozen-lockfile` in CI.
 pnpm-lock.yaml
-
-# Golden files and rendered output are compared byte for byte.
-**/test/golden/**
-**/marketing/**
-dist
-
-# The M3 conformance fixtures are inputs shaped like other people's repos, and their expected
-# configs are compared byte for byte against what `init` generates. Reflowing either would
-# grade the run against something `init` cannot produce.
-test/consumers
+node_modules
+**/dist/**
+reference
