@@ -109,7 +109,8 @@ different arrangement. Typoed or unused output overrides fail validation.
 `crop: { x, y, width, height }` explicitly selects a rectangle in source-image pixels before
 composition. It must remain inside the source. Without a crop, the full image is preserved
 apart from the selected phone's rounded corner mask. `device: 'none'` preserves square edges.
-The phone adds a bezel only, never an extra status bar or island.
+The phone frame uses the published iPhone 16 Pro Max body, display, rim, and corner proportions.
+It never adds an extra status bar or Dynamic Island, so the source capture should include both.
 
 ## Outputs and validation
 

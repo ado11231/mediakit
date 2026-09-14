@@ -13,6 +13,16 @@ export function escapeHtml(value: string): string {
       character,
   );
 }
+
+// Apple iPhone 16 Pro Max dimensions: 77.58 x 163.03 mm body, 2868 x 1320 px at
+// 460 ppi, and a 12.45 mm outer corner radius. The titanium rim is 0.45 mm.
+// https://developer.apple.com/download/files/accessories/dimensional-drawings/iphone-16-pro-max.pdf
+const iphone16ProMax = {
+  displayWidth: (1320 / 460) * 25.4,
+  bodyWidth: 77.58,
+  cornerRadius: 12.45,
+  rim: 0.45,
+};
 function fontName(name: string): string {
   return `font-${createHash('sha256').update(name).digest('hex').slice(0, 12)}`;
 }
@@ -42,14 +52,14 @@ export function compositionHtml(
   const side = slide.layout === 'text-beside-device';
   const copy = `<div class="copy" style="${side ? 'flex:1;min-width:0;' : ''}"><h1 data-check="headline" style="${typographyCss(design.headline)}${positionCss(slide.positions?.headline)}">${escapeHtml(slide.headline)}</h1>${slide.body && design.body ? `<p data-check="body" style="${typographyCss(design.body)}color:${escapeHtml(design.secondaryText ?? design.text)};${positionCss(slide.positions?.body)}">${escapeHtml(slide.body)}</p>` : ''}</div>`;
   const image = capture
-    ? `<div id="screen-space" style="${side ? 'flex:1;width:0;height:100%;' : 'flex:1;min-height:0;width:100%;'}${positionCss(slide.positions?.screen)}"><div id="device" data-check="screen" style="background:${slide.bezel === 'silver' ? '#c9cbce' : '#121212'}"><img id="screen-image" alt="" src="data:image/png;base64,${capture.data.toString('base64')}" /></div></div>`
+    ? `<div id="screen-space" style="${side ? 'flex:1;width:0;height:100%;' : 'flex:1;min-height:0;width:100%;'}${positionCss(slide.positions?.screen)}"><div id="device" data-check="screen" data-device="${slide.device}" data-finish="${slide.bezel}"><div id="device-bezel"><div id="screen-clip"><img id="screen-image" alt="" src="data:image/png;base64,${capture.data.toString('base64')}" /></div></div></div></div>`
     : '';
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${fontCss(fonts)}
 @page{size:${output.width}px ${output.height}px;margin:0}
 *{box-sizing:border-box}html,body{margin:0;width:${output.width}px;height:${output.height}px;background:${escapeHtml(design.background)};-webkit-print-color-adjust:exact;print-color-adjust:exact}
 main{position:relative;display:flex;flex-direction:${side ? 'row' : 'column'};justify-content:${capture ? 'flex-start' : 'center'};align-items:stretch;width:100%;height:100%;padding:${design.padding}px;gap:${design.gap}px;color:${escapeHtml(design.text)};text-align:${slide.align ?? (side ? 'left' : 'center')}}
-.copy{display:flex;flex-direction:column;gap:${design.gap}px;flex-shrink:0}h1,p{margin:0;white-space:pre-wrap;overflow-wrap:normal;flex-shrink:0}#screen-space{display:flex;align-items:center;justify-content:center;min-width:0}#device{flex-shrink:0;box-sizing:content-box;overflow:hidden}#screen-image{display:block;width:100%;height:100%;object-fit:contain}
+.copy{display:flex;flex-direction:column;gap:${design.gap}px;flex-shrink:0}h1,p{margin:0;white-space:pre-wrap;overflow-wrap:normal;flex-shrink:0}#screen-space{display:flex;align-items:center;justify-content:center;min-width:0}#device,#device-bezel,#screen-clip{box-sizing:content-box}#device{position:relative;flex-shrink:0}#device[data-device="iphone"]{box-shadow:0 20px 48px rgba(15,23,42,.2)}#device[data-finish="black"]{background:linear-gradient(90deg,#34363a 0%,#0b0c0e 18%,#303237 50%,#0b0c0e 82%,#34363a 100%)}#device[data-finish="silver"]{background:linear-gradient(90deg,#8d9197 0%,#e6e7e9 18%,#aeb1b6 50%,#f2f2f3 82%,#8d9197 100%)}#device-bezel{background:#050505}#screen-clip{overflow:hidden}#screen-image{display:block;width:100%;height:100%;object-fit:contain}
 </style></head><body><main>${copy}${image}</main></body></html>`;
 }
 export interface RenderedSlide {
@@ -76,7 +86,7 @@ export async function renderSlide(
       await Promise.all(Array.from(document.images).map((image) => image.decode()));
     });
     await page.evaluate(
-      ({ width, height, device, fontStyles, background }) => {
+      ({ width, height, device, iphone, fontStyles, background }) => {
         for (const font of fontStyles)
           if (!document.fonts.check(`${font.weight} ${font.size}px ${font.family}`))
             throw new Error(`Font did not load: ${font.family} weight ${font.weight}.`);
@@ -91,13 +101,19 @@ export async function renderSlide(
           throw new Error('Background must be opaque for export.');
         const space = document.getElementById('screen-space');
         const frame = document.getElementById('device');
+        const bezel = document.getElementById('device-bezel');
+        const clip = document.getElementById('screen-clip');
         const image = document.getElementById('screen-image');
-        if (space && frame && image instanceof HTMLImageElement) {
-          const borderRatio = device === 'iphone' ? 0.025 : 0;
+        if (space && frame && bezel && clip && image instanceof HTMLImageElement) {
+          const totalFrameRatio =
+            device === 'iphone'
+              ? (iphone.bodyWidth - iphone.displayWidth) / 2 / iphone.displayWidth
+              : 0;
+          const rimRatio = device === 'iphone' ? iphone.rim / iphone.displayWidth : 0;
           const ratio = image.naturalWidth / image.naturalHeight;
           const screenWidth = Math.min(
-            space.clientWidth / (1 + 2 * borderRatio),
-            space.clientHeight / (1 / ratio + 2 * borderRatio),
+            space.clientWidth / (1 + 2 * totalFrameRatio),
+            space.clientHeight / (1 / ratio + 2 * totalFrameRatio),
           );
           const screenHeight = screenWidth / ratio;
           if (screenWidth <= 0 || screenHeight <= 0)
@@ -109,11 +125,18 @@ export async function renderSlide(
             throw new Error(
               `Screen would be upscaled from ${image.naturalWidth}x${image.naturalHeight}. Capture at higher resolution.`,
             );
-          frame.style.width = `${screenWidth}px`;
-          frame.style.height = `${screenHeight}px`;
-          frame.style.border = `${screenWidth * borderRatio}px solid ${getComputedStyle(frame).backgroundColor}`;
-          frame.style.borderRadius = `${device === 'iphone' ? screenWidth * 0.12 : 0}px`;
-          image.style.borderRadius = `${device === 'iphone' ? screenWidth * 0.095 : 0}px`;
+          const totalFrame = screenWidth * totalFrameRatio;
+          const rim = screenWidth * rimRatio;
+          const blackBezel = totalFrame - rim;
+          const outerRadius =
+            device === 'iphone' ? (screenWidth * iphone.cornerRadius) / iphone.displayWidth : 0;
+          frame.style.padding = `${rim}px`;
+          frame.style.borderRadius = `${outerRadius}px`;
+          bezel.style.padding = `${blackBezel}px`;
+          bezel.style.borderRadius = `${Math.max(0, outerRadius - rim)}px`;
+          clip.style.width = `${screenWidth}px`;
+          clip.style.height = `${screenHeight}px`;
+          clip.style.borderRadius = `${Math.max(0, outerRadius - totalFrame)}px`;
         }
         const errors: string[] = [];
         const bounds = (rectangle: DOMRect, label: string) => {
@@ -146,6 +169,7 @@ export async function renderSlide(
         width: output.width,
         height: output.height,
         device: slide.device,
+        iphone: iphone16ProMax,
         background: design.background,
         fontStyles: [design.headline, ...(design.body ? [design.body] : [])].map((style) => ({
           ...style,
