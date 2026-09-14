@@ -26,6 +26,23 @@ Missing design values are reported, never guessed.
 
 ## Start
 
+For a single editable file, use the quick start:
+
+```bash
+npm install -D mediakit
+npx mediakit init --quick
+```
+
+Add your font files to `marketing/fonts` or change their paths in the generated config.
+Edit copy, colors, font sizes, alignment, and position boxes directly in that same file.
+For app screenshots, add an image to `marketing/screens` and uncomment the example screen
+and slide. Then run `npx mediakit preview` and `npx mediakit export`.
+
+The quick start uses clearly marked, editable example design values. It does not infer your
+brand or bundle fonts. [Single-file setup and positioning](docs/quick-start.md).
+
+For design discovery and a separate campaign file:
+
 ```bash
 npm install -D mediakit
 npx mediakit init

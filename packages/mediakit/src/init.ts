@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import postcss from 'postcss';
 import { chromium } from 'playwright';
 import { fileExists } from './config.js';
+import { quickConfig } from './quick.js';
 
 const excluded = new Set([
   'node_modules',
@@ -70,7 +71,34 @@ export async function installBrowser(): Promise<void> {
     });
   });
 }
-export async function initializeProject(root: string, browser = true): Promise<string[]> {
+export async function initializeProject(
+  root: string,
+  browser = true,
+  quick = false,
+): Promise<string[]> {
+  if (quick) {
+    for (const extension of ['ts', 'mts', 'js', 'mjs']) {
+      if (await fileExists(join(root, `mediakit.config.${extension}`)))
+        return ['Existing configuration preserved. Edit it, then run mediakit preview.'];
+    }
+    let esm = false;
+    const packagePath = join(root, 'package.json');
+    if (await fileExists(packagePath)) {
+      const data: unknown = JSON.parse(await readFile(packagePath, 'utf8'));
+      esm = typeof data === 'object' && data !== null && Reflect.get(data, 'type') === 'module';
+    }
+    const name = `mediakit.config.${esm ? 'ts' : 'mts'}`;
+    await mkdir(join(root, 'marketing', 'fonts'), { recursive: true });
+    await mkdir(join(root, 'marketing', 'screens'), { recursive: true });
+    await writeFile(join(root, name), quickConfig);
+    if (browser && !(await fileExists(chromium.executablePath()))) await installBrowser();
+    return [
+      `Created ${name}. Copy, styling, positions, and destinations are all in this file.`,
+      'Add your Brand-Regular.ttf and Brand-Bold.ttf files to marketing/fonts, or update the font paths.',
+      'For screenshots, add marketing/screens/dashboard.png and uncomment the screen and screenshot slide.',
+      'Edit the starter colors and copy, then run mediakit preview and mediakit export.',
+    ];
+  }
   const candidates = await discoverDesign(root);
   const report = candidates.map(
     (candidate) =>

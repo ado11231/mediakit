@@ -47,7 +47,7 @@ export async function buildCampaign(project: Project): Promise<CampaignBuild> {
         const slides: RenderedSlide[] = [];
         const outputErrors: string[] = [];
         for (const [index, original] of project.campaign.slides.entries()) {
-          const location = `${project.campaignPath}: ${name}, slide ${index + 1}`;
+          const location = `${relative(project.root, project.campaignPath)}: ${name}, slide ${index + 1}`;
           try {
             for (const override of Object.keys(original.outputs ?? {}))
               if (!project.campaign.outputs.includes(override))

@@ -102,7 +102,7 @@ const screenshotSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('ios'), target: z.string(), scene: nameSchema }),
 ]);
 export const configSchema = z.strictObject({
-  campaign: z.string().default('marketing/campaign.ts'),
+  campaign: z.union([z.string().min(1), campaignSchema]).default('marketing/campaign.ts'),
   outDir: z.string().default('dist/marketing'),
   sources: z
     .record(

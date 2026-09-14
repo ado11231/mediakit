@@ -1,5 +1,9 @@
 # Migrating to 0.2
 
+The single-file quick start is additive: `campaign` can now be an inline campaign object.
+Existing campaign paths and the regular `init` workflow remain supported. `init --quick`
+creates an editable template and preserves existing configuration.
+
 This is a clean API break. Existing JSON specs and @mediakit/core, @mediakit/blocks,
 @mediakit/cli, and @mediakit/render-still imports are not supported by the new package.
 

@@ -75,6 +75,31 @@ try {
       /mediakit-ready-home-default/,
     );
     console.log(`Package smoke passed: ${moduleType}`);
+    const quick = join(consumer, 'quick');
+    await mkdir(quick);
+    await copyFile(join(consumer, 'package.json'), join(quick, 'package.json'));
+    run(process.execPath, [cli, 'init', '--quick', '--no-browser'], quick);
+    for (const weight of ['Regular', 'Bold'])
+      await copyFile(
+        join(repository, `examples/source-app/fonts/Geist-${weight}.ttf`),
+        join(quick, `marketing/fonts/Brand-${weight}.ttf`),
+      );
+    run(process.execPath, [cli, 'check'], quick);
+    run(process.execPath, [cli, 'export'], quick);
+    assert.ok((await readFile(join(quick, 'dist/marketing/instagram-portrait/01.png'))).length);
+    await copyFile(
+      join(quick, 'dist/marketing/instagram-portrait/01.png'),
+      join(quick, 'marketing/screens/dashboard.png'),
+    );
+    const quickConfigPath = join(quick, `mediakit.config.${extension}`);
+    const quickConfig = await readFile(quickConfigPath, 'utf8');
+    await writeFile(
+      quickConfigPath,
+      quickConfig.replace('// dashboard:', 'dashboard:').replace(/^ {6}\/\/ ?/gm, '      '),
+    );
+    run(process.execPath, [cli, 'export'], quick);
+    assert.ok((await readFile(join(quick, 'dist/marketing/instagram-portrait/02.png'))).length);
+    console.log(`Quick start smoke passed: ${moduleType}`);
   }
 } finally {
   await rm(directory, { recursive: true, force: true });

@@ -3,6 +3,10 @@
 Paths resolve relative to mediakit.config.ts (or .mts in a CommonJS project). Campaigns can
 import other local modules. Preview reloads those imports after edits.
 
+`campaign` accepts either a file path or an inline object containing `id`, `outputs`, and
+`slides`. Use `mediakit init --quick` for an editable single-file template with copy, typography,
+and positioning examples. See [quick start](quick-start.md).
+
 ```ts
 import { defineConfig } from 'mediakit';
 

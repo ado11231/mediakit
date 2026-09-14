@@ -14,12 +14,13 @@ async function main(): Promise<void> {
       help: { type: 'boolean', short: 'h' },
       'install-browser': { type: 'boolean' },
       'no-browser': { type: 'boolean' },
+      quick: { type: 'boolean' },
     },
   });
   const command = positionals[0];
   if (values.help || !command) {
     process.stdout.write(
-      'mediakit init | check | preview | export\n\ninit discovers design sources and scaffolds a campaign.\ncheck validates design, captures, and every output.\npreview watches files and displays rendered PNGs and diagnostics.\nexport writes verified PNG folders or a multipage PDF.\n\nOptions: --config <path>, --port <number>, init --install-browser, init --no-browser\n',
+      'mediakit init | check | preview | export\n\ninit discovers design sources and scaffolds a campaign. Use init --quick for a single editable file.\ncheck validates design, captures, and every output.\npreview watches files and displays rendered PNGs and diagnostics.\nexport writes verified PNG folders or a multipage PDF.\n\nOptions: --config <path>, --port <number>, init --install-browser, init --no-browser, init --quick\n',
     );
     return;
   }
@@ -28,12 +29,13 @@ async function main(): Promise<void> {
   if (command === 'init') {
     if (values['install-browser']) await installBrowser();
     process.stdout.write(
-      (await initializeProject(process.cwd(), !values['no-browser'])).join('\n') + '\n',
+      (await initializeProject(process.cwd(), !values['no-browser'], values.quick)).join('\n') +
+        '\n',
     );
     return;
   }
-  if (values['install-browser'] || values['no-browser'])
-    throw new Error('Browser setup flags are only supported by init.');
+  if (values['install-browser'] || values['no-browser'] || values.quick)
+    throw new Error('Setup flags are only supported by init.');
   if (command === 'preview') {
     const port = Number(values.port);
     if (!Number.isInteger(port) || port < 1 || port > 65535)

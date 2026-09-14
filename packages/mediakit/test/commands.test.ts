@@ -64,3 +64,53 @@ it('allows an Expo project to initialize without requiring native capture tools'
   expect(report.join('\n')).toContain('Detected an Expo/React Native app');
   expect(await readFile(join(root, 'mediakit.config.ts'), 'utf8')).toContain('design: {}');
 });
+
+it('creates a single-file quick start and preserves existing user files on repeat runs', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'mediakit-quick-'));
+  directories.push(root);
+  await initializeProject(root, false, true);
+  const path = join(root, 'mediakit.config.mts');
+  const source = await readFile(path, 'utf8');
+  // Use the plain export in this temporary project, which has no package installation.
+  await writeFile(
+    path,
+    source.replace(
+      "import { defineConfig } from 'mediakit';",
+      'const defineConfig = (value) => value;',
+    ),
+  );
+  const project = await loadProject(root);
+  expect(project.campaignPath).toBe(path);
+  expect(project.campaign.slides[0]!.positions!.headline!.x).toBe(64);
+  await expect(readFile(join(root, 'marketing/campaign.mts'))).rejects.toThrow();
+  await writeFile(path, 'user configuration');
+  await initializeProject(root, false, true);
+  expect(await readFile(path, 'utf8')).toBe('user configuration');
+});
+
+it('reloads inline copy and validates its slide positions', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'mediakit-inline-'));
+  directories.push(root);
+  const path = join(root, 'mediakit.config.ts');
+  const config = {
+    campaign: {
+      id: 'launch',
+      outputs: ['instagram-square'],
+      slides: [
+        {
+          layout: 'text-only',
+          headline: 'First',
+          positions: { headline: { x: 10, y: 20, width: 100, height: 200 } },
+        },
+      ],
+    },
+  };
+  await writeFile(path, `export default ${JSON.stringify(config)}`);
+  expect((await loadProject(root)).campaign.slides[0]!.headline).toBe('First');
+  config.campaign.slides[0]!.headline = 'Second';
+  await writeFile(path, `export default ${JSON.stringify(config)}`);
+  expect((await loadProject(root)).campaign.slides[0]!.headline).toBe('Second');
+  config.campaign.slides[0]!.positions.headline.width = -1;
+  await writeFile(path, `export default ${JSON.stringify(config)}`);
+  await expect(loadProject(root)).rejects.toThrow('campaign');
+});
