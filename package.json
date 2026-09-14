@@ -15,7 +15,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "pack-smoke": "node scripts/pack-smoke.mjs",
-    "render-readme-assets": "node scripts/render-readme-assets.mjs",
     "test:native": "node scripts/native-smoke.mjs"
   },
   "devDependencies": {

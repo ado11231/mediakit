@@ -1,9 +1,10 @@
 import { watch } from 'node:fs';
 import { createServer, type Server } from 'node:http';
-import { relative } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { loadProject } from './config.js';
 import { buildCampaign, type CampaignBuild } from './export.js';
 import { escapeHtml } from './composition.js';
+import { terminal } from './terminal.js';
 
 export async function previewProject(
   root: string,
@@ -33,11 +34,11 @@ export async function previewProject(
         errors = [error instanceof Error ? error.message : String(error)];
       }
       revision++;
-      process.stdout.write(
-        errors.length
-          ? `Preview: ${errors.length} issue(s). See the diagnostics page.\n`
-          : 'Preview updated.\n',
-      );
+      if (errors.length)
+        process.stderr.write(
+          `${terminal.error('✗')} Preview has ${errors.length} issue(s). Open it for details.\n`,
+        );
+      else process.stderr.write(`${terminal.success('✓')} Preview updated\n`);
       // Watch callbacks can schedule another build while the current one awaits capture.
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } while (pending && !closed);
@@ -78,7 +79,7 @@ export async function previewProject(
   });
   const watcher = watch(root, { recursive: true }, (_event, file) => {
     if (!file) return;
-    const path = relative(root, `${root}/${file}`);
+    const path = relative(root, resolve(root, file));
     if (
       path
         .split(/[\\/]/)
@@ -103,7 +104,6 @@ export async function previewProject(
     closed = true;
     watcher.close();
   });
-  process.stdout.write(`Preview: http://127.0.0.1:${port}\n`);
   void rebuild();
   return server;
 }

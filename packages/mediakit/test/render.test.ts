@@ -30,7 +30,14 @@ function project(slides: unknown[], outputs: string[] = ['test']): Project {
         ],
       },
       design: {
-        background: '#ffffff',
+        background: {
+          type: 'linear-gradient',
+          angle: 145,
+          stops: [
+            { color: '#ffffff', position: 0 },
+            { color: '#edf4f0', position: 100 },
+          ],
+        },
         text: '#101010',
         secondaryText: '#333333',
         padding: 40,
@@ -48,7 +55,14 @@ function project(slides: unknown[], outputs: string[] = ['test']): Project {
 }
 it('renders distinct slides reproducibly and exports exact RGB pixels', async () => {
   const input = project([
-    { layout: 'text-only', headline: 'Make room for today.', body: 'One task at a time.' },
+    {
+      layout: 'text-only',
+      headline: [
+        { text: 'Make room for ' },
+        { text: 'today.', weight: 400, size: 54, color: '#315c4b' },
+      ],
+      body: 'One task at a time.',
+    },
     { layout: 'text-only', headline: 'Build some momentum.' },
   ]);
   const first = await buildCampaign(input);
@@ -61,6 +75,8 @@ it('renders distinct slides reproducibly and exports exact RGB pixels', async ()
   expect(sha256(first.bundles[0]!.slides[0]!.png)).not.toBe(
     sha256(first.bundles[0]!.slides[1]!.png),
   );
+  expect(JSON.stringify(first.manifest)).toContain('campaign.ts: test, slide 1');
+  expect(JSON.stringify(first.manifest)).not.toContain(root);
   const directory = await exportCampaign(input, first);
   const exported = await readFile(join(directory, 'test/01.png'));
   expect(exported).toEqual(first.bundles[0]!.slides[0]!.png);

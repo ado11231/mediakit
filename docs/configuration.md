@@ -3,6 +3,10 @@
 Paths resolve relative to mediakit.config.ts (or .mts in a CommonJS project). Campaigns can
 import other local modules. Preview reloads those imports after edits.
 
+`campaign` accepts either a file path or an inline object containing `id`, `outputs`, and
+`slides`. Use `mediakit init --quick` for an editable single-file template with copy, typography,
+and positioning examples. See [quick start](quick-start.md).
+
 ```ts
 import { defineConfig } from 'mediakit';
 
@@ -18,6 +22,7 @@ export default defineConfig({
       { path: 'assets/fonts/Brand-Regular.ttf', weight: 400 },
       { path: 'assets/fonts/Brand-Bold.ttf', weight: 700 },
     ],
+    display: [{ path: 'assets/fonts/Display-Bold.ttf', weight: 700 }],
   },
   design: {
     background: { source: 'app', token: '--background' },
@@ -50,7 +55,20 @@ numbers or explicit source mappings. CSS length mappings resolve through Chromiu
 rem units. Marketing typography is separate from the small text inside the captured app.
 
 No font substitutions, automatic font size reductions, generated palettes, or default brand
-colors are used. A missing glyph or font weight is an error. The background must be opaque.
+colors are used. A missing glyph or font weight is an error. Background colors and every
+gradient stop must be opaque. Use an ordered multi-stop gradient when a flat color is not enough:
+
+```ts
+background: {
+  type: 'linear-gradient',
+  angle: 145,
+  stops: [
+    { color: '#ffffff', position: 0 },
+    { color: { source: 'app', token: '--background-accent' }, position: 55 },
+    { color: '#d8ebe2', position: 100 },
+  ],
+}
+```
 
 Configuration is merged in this order: base design, output design, slide design, slide output
 override. Typography fields merge individually. Position overrides merge by element.
@@ -79,7 +97,11 @@ do not point them at an application bootstrap with database side effects.
 ```ts
 {
   layout: 'text-beside-device',
-  headline: 'Write the message here.',
+  headline: [
+    { text: 'Write the ' },
+    { text: 'message', font: 'display', weight: 700, size: 88, color: '#315c4b' },
+    { text: ' here.' },
+  ],
   body: 'Keep the supporting copy here.',
   screen: 'dashboard',
   device: 'iphone',
@@ -97,6 +119,10 @@ do not point them at an application bootstrap with database side effects.
 }
 ```
 
+`headline` and `body` accept a plain string or an array of text runs. A run can override `font`,
+`size`, `weight`, `lineHeight`, `letterSpacing`, and `color`. Each referenced family and weight
+must be present in `fonts`; MediaKit validates the glyphs used by each run.
+
 Layouts adapt to available space without stretching the capture. Position boxes are measured
 from the output's upper-left corner. Rotation is in degrees around the box center. Text that
 exceeds a box or canvas blocks rendering. Use explicit overrides when aspect ratios need a
@@ -105,7 +131,8 @@ different arrangement. Typoed or unused output overrides fail validation.
 `crop: { x, y, width, height }` explicitly selects a rectangle in source-image pixels before
 composition. It must remain inside the source. Without a crop, the full image is preserved
 apart from the selected phone's rounded corner mask. `device: 'none'` preserves square edges.
-The phone adds a bezel only, never an extra status bar or island.
+The phone frame uses the published iPhone 16 Pro Max body, display, rim, and corner proportions.
+It never adds an extra status bar or Dynamic Island, so the source capture should include both.
 
 ## Outputs and validation
 

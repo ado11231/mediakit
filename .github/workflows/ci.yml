@@ -21,8 +21,3 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - run: pnpm pack-smoke
-      - run: pnpm render-readme-assets
-      - uses: actions/upload-artifact@v4
-        with:
-          name: example-exports
-          path: examples/source-app/dist/marketing
