@@ -25,8 +25,18 @@ export interface CampaignBuild {
   errors: string[];
   manifest: Record<string, unknown>;
 }
+export interface BuildProgress {
+  output: string;
+  outputIndex: number;
+  outputCount: number;
+  slide: number;
+  slideCount: number;
+}
 
-export async function buildCampaign(project: Project): Promise<CampaignBuild> {
+export async function buildCampaign(
+  project: Project,
+  onProgress?: (progress: BuildProgress) => void,
+): Promise<CampaignBuild> {
   const browser = await launchBrowser();
   const resolver = new DesignResolver(project.config, project.root, browser);
   const captures = new CaptureSession(project.config, project.root, browser);
@@ -34,7 +44,7 @@ export async function buildCampaign(project: Project): Promise<CampaignBuild> {
   const bundles: OutputBundle[] = [];
   const captureManifest: Record<string, unknown> = {};
   try {
-    for (const name of project.campaign.outputs) {
+    for (const [outputIndex, name] of project.campaign.outputs.entries()) {
       try {
         const output = resolveOutput(name, project.config);
         if (
@@ -47,6 +57,13 @@ export async function buildCampaign(project: Project): Promise<CampaignBuild> {
         const slides: RenderedSlide[] = [];
         const outputErrors: string[] = [];
         for (const [index, original] of project.campaign.slides.entries()) {
+          onProgress?.({
+            output: name,
+            outputIndex: outputIndex + 1,
+            outputCount: project.campaign.outputs.length,
+            slide: index + 1,
+            slideCount: project.campaign.slides.length,
+          });
           const location = `${relative(project.root, project.campaignPath)}: ${name}, slide ${index + 1}`;
           try {
             for (const override of Object.keys(original.outputs ?? {}))

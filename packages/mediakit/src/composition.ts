@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
 import type { Browser } from 'playwright';
 import sharp from 'sharp';
-import type { FontAsset, ResolvedDesign, ResolvedTypography } from './design.js';
+import type {
+  FontAsset,
+  ResolvedDesign,
+  ResolvedTextRun,
+  ResolvedTypography,
+} from './design.js';
 import type { Output, Position, Slide } from './schema.js';
 import type { ScreenCapture } from './capture.js';
 
@@ -37,6 +42,14 @@ function fontCss(fonts: Iterable<FontAsset>): string {
 function typographyCss(style: ResolvedTypography): string {
   return `font-family:${fontName(style.font)};font-size:${style.size}px;font-weight:${style.weight};line-height:${style.lineHeight}px;letter-spacing:${style.letterSpacing}px;font-synthesis:none;`;
 }
+function textHtml(runs: ResolvedTextRun[]): string {
+  return runs
+    .map(
+      (run) =>
+        `<span style="${typographyCss(run)}color:${escapeHtml(run.color)}">${escapeHtml(run.text)}</span>`,
+    )
+    .join('');
+}
 function positionCss(position?: Position): string {
   return position
     ? `position:absolute;left:${position.x}px;top:${position.y}px;width:${position.width}px;height:${position.height}px;transform:rotate(${position.rotation ?? 0}deg);`
@@ -50,7 +63,7 @@ export function compositionHtml(
   capture?: ScreenCapture,
 ): string {
   const side = slide.layout === 'text-beside-device';
-  const copy = `<div class="copy" style="${side ? 'flex:1;min-width:0;' : ''}"><h1 data-check="headline" style="${typographyCss(design.headline)}${positionCss(slide.positions?.headline)}">${escapeHtml(slide.headline)}</h1>${slide.body && design.body ? `<p data-check="body" style="${typographyCss(design.body)}color:${escapeHtml(design.secondaryText ?? design.text)};${positionCss(slide.positions?.body)}">${escapeHtml(slide.body)}</p>` : ''}</div>`;
+  const copy = `<div class="copy" style="${side ? 'flex:1;min-width:0;' : ''}"><h1 data-check="headline" style="${typographyCss(design.headline)}${positionCss(slide.positions?.headline)}">${textHtml(design.headlineRuns)}</h1>${slide.body && design.body && design.bodyRuns ? `<p data-check="body" style="${typographyCss(design.body)}${positionCss(slide.positions?.body)}">${textHtml(design.bodyRuns)}</p>` : ''}</div>`;
   const image = capture
     ? `<div id="screen-space" style="${side ? 'flex:1;width:0;height:100%;' : 'flex:1;min-height:0;width:100%;'}${positionCss(slide.positions?.screen)}"><div id="device" data-check="screen" data-device="${slide.device}" data-finish="${slide.bezel}"><div id="device-bezel"><div id="screen-clip"><img id="screen-image" alt="" src="data:image/png;base64,${capture.data.toString('base64')}" /></div></div></div></div>`
     : '';
@@ -90,15 +103,10 @@ export async function renderSlide(
         for (const font of fontStyles)
           if (!document.fonts.check(`${font.weight} ${font.size}px ${font.family}`))
             throw new Error(`Font did not load: ${font.family} weight ${font.weight}.`);
-        const canvas = document.createElement('canvas');
-        canvas.width = 1;
-        canvas.height = 1;
-        const context = canvas.getContext('2d');
-        if (!context) throw new Error('Could not validate background.');
-        context.fillStyle = background;
-        context.fillRect(0, 0, 1, 1);
-        if (context.getImageData(0, 0, 1, 1).data[3] !== 255)
-          throw new Error('Background must be opaque for export.');
+        const backgroundElement = document.createElement('div');
+        backgroundElement.style.background = background;
+        if (!backgroundElement.style.background)
+          throw new Error('Could not validate background.');
         const space = document.getElementById('screen-space');
         const frame = document.getElementById('device');
         const bezel = document.getElementById('device-bezel');
@@ -171,10 +179,12 @@ export async function renderSlide(
         device: slide.device,
         iphone: iphone16ProMax,
         background: design.background,
-        fontStyles: [design.headline, ...(design.body ? [design.body] : [])].map((style) => ({
-          ...style,
-          family: fontName(style.font),
-        })),
+        fontStyles: [
+          design.headline,
+          ...design.headlineRuns,
+          ...(design.body ? [design.body] : []),
+          ...(design.bodyRuns ?? []),
+        ].map((style) => ({ ...style, family: fontName(style.font) })),
       },
     );
     const png = await sharp(

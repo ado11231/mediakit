@@ -75,6 +75,7 @@ export async function initializeProject(
   root: string,
   browser = true,
   quick = false,
+  onProgress?: (message: string) => void,
 ): Promise<string[]> {
   if (quick) {
     for (const extension of ['ts', 'mts', 'js', 'mjs']) {
@@ -91,7 +92,10 @@ export async function initializeProject(
     await mkdir(join(root, 'marketing', 'fonts'), { recursive: true });
     await mkdir(join(root, 'marketing', 'screens'), { recursive: true });
     await writeFile(join(root, name), quickConfig);
-    if (browser && !(await fileExists(chromium.executablePath()))) await installBrowser();
+    if (browser && !(await fileExists(chromium.executablePath()))) {
+      onProgress?.('Installing Chromium');
+      await installBrowser();
+    }
     return [
       `Created ${name}. Copy, styling, positions, and destinations are all in this file.`,
       'Add your Brand-Regular.ttf and Brand-Bold.ttf files to marketing/fonts, or update the font paths.',
@@ -176,7 +180,7 @@ export async function initializeProject(
     JSON.stringify(candidates, null, 2) + '\n',
   );
   if (browser && !(await fileExists(chromium.executablePath()))) {
-    process.stdout.write('Installing Chromium for capture and composition.\n');
+    onProgress?.('Installing Chromium');
     await installBrowser();
   }
   report.push(

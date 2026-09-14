@@ -13,8 +13,37 @@ const typographySchema = z.strictObject({
   lineHeight: tokenSchema.optional(),
   letterSpacing: tokenSchema.optional(),
 });
+const textSpanSchema = z.strictObject({
+  text: z.string().min(1),
+  font: z.string().min(1).optional(),
+  size: tokenSchema.optional(),
+  weight: tokenSchema.optional(),
+  lineHeight: tokenSchema.optional(),
+  letterSpacing: tokenSchema.optional(),
+  color: tokenSchema.optional(),
+});
+const textContentSchema = z.union([z.string().min(1), z.array(textSpanSchema).min(1)]);
+const gradientStopSchema = z.strictObject({
+  color: tokenSchema,
+  position: z.number().min(0).max(100),
+});
+const linearGradientSchema = z
+  .strictObject({
+    type: z.literal('linear-gradient'),
+    angle: z.number().min(-360).max(360).default(180),
+    stops: z.array(gradientStopSchema).min(2),
+  })
+  .refine(
+    ({ stops }) =>
+      stops.every((stop, index) => {
+        const previous = stops[index - 1];
+        return !previous || stop.position >= previous.position;
+      }),
+    { path: ['stops'], message: 'Gradient stops must be ordered by position.' },
+  );
+const backgroundSchema = z.union([tokenSchema, linearGradientSchema]);
 const designSchema = z.strictObject({
-  background: tokenSchema.optional(),
+  background: backgroundSchema.optional(),
   text: tokenSchema.optional(),
   secondaryText: tokenSchema.optional(),
   padding: tokenSchema.optional(),
@@ -43,8 +72,8 @@ const slideStyleSchema = z.strictObject({
 const slideSchema = slideStyleSchema
   .extend({
     layout: z.enum(['headline-above-device', 'text-beside-device', 'text-only']),
-    headline: z.string().min(1),
-    body: z.string().min(1).optional(),
+    headline: textContentSchema,
+    body: textContentSchema.optional(),
     screen: z.string().min(1).optional(),
     fixture: nameSchema.optional(),
     crop: z
@@ -186,6 +215,9 @@ export type Campaign = z.output<typeof campaignSchema>;
 export type Slide = Campaign['slides'][number];
 export type Design = z.output<typeof designSchema>;
 export type Typography = z.output<typeof typographySchema>;
+export type TextSpan = z.output<typeof textSpanSchema>;
+export type TextContent = z.output<typeof textContentSchema>;
+export type Background = z.output<typeof backgroundSchema>;
 export type Token = z.output<typeof tokenSchema>;
 export type Output = z.output<typeof outputSchema>;
 export type Position = z.output<typeof positionSchema>;

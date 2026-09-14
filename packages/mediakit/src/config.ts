@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { createJiti } from 'jiti';
 import { campaignSchema, configSchema, parseInput } from './schema.js';
@@ -48,6 +48,3 @@ export async function loadProject(cwd: string, explicitPath?: string) {
   return { root, configPath, campaignPath, config, campaign };
 }
 export type Project = Awaited<ReturnType<typeof loadProject>>;
-export async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(path, 'utf8')) as unknown;
-}

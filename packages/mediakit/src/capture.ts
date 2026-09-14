@@ -14,7 +14,6 @@ export interface ScreenCapture {
   data: Buffer;
   width: number;
   height: number;
-  source: string;
   environment: Record<string, unknown>;
 }
 export function fixtureUrl(
@@ -282,7 +281,6 @@ export class CaptureSession {
       data,
       width: metadata.width,
       height: metadata.height,
-      source: name,
       environment,
     };
     this.captures.set(key, capture);

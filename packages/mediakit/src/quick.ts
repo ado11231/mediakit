@@ -13,12 +13,19 @@ export default defineConfig({
 
   // Editable starter values, not values discovered from your app.
   design: {
-    background: '#ffffff',
+    background: {
+      type: 'linear-gradient',
+      angle: 145,
+      stops: [
+        { color: '#ffffff', position: 0 },
+        { color: '#edf4f0', position: 100 },
+      ],
+    },
     text: '#111111',
     secondaryText: '#555555',
     padding: 64,
     gap: 24,
-    headline: { font: 'brand', size: 64, weight: 700, lineHeight: 76 },
+    headline: { font: 'brand', size: 64, weight: 400, lineHeight: 76 },
     body: { font: 'brand', size: 30, weight: 400, lineHeight: 40 },
   },
 
@@ -44,10 +51,14 @@ export default defineConfig({
     slides: [
       {
         layout: 'text-only',
-        headline: 'Your next big idea.',
+        // A string also works. Runs can change font, size, weight, spacing, line height, or color.
+        headline: [
+          { text: 'Your next ' },
+          { text: 'big idea.', weight: 700, color: '#315c4b' },
+        ],
         body: 'Write your message here.',
         align: 'left',
-        // Override any shared font, size, weight, or color for this slide.
+        // Override shared typography for the whole slide.
         design: { headline: { size: 72, lineHeight: 84 } },
         // Optional exact boxes in output pixels, measured from the top-left.
         // Remove positions to use automatic layout. Keep text inside its box.

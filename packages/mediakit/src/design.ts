@@ -4,7 +4,17 @@ import type { Browser } from 'playwright';
 import { create as createFont } from 'fontkit';
 import { importSource } from './config.js';
 import { readDesignCss } from './css.js';
-import type { Config, Design, Output, Slide, Token, Typography } from './schema.js';
+import type {
+  Background,
+  Config,
+  Design,
+  Output,
+  Slide,
+  TextContent,
+  TextSpan,
+  Token,
+  Typography,
+} from './schema.js';
 
 export interface ResolvedTypography {
   font: string;
@@ -13,6 +23,10 @@ export interface ResolvedTypography {
   lineHeight: number;
   letterSpacing: number;
 }
+export interface ResolvedTextRun extends ResolvedTypography {
+  text: string;
+  color: string;
+}
 export interface ResolvedDesign {
   background: string;
   text: string;
@@ -20,7 +34,9 @@ export interface ResolvedDesign {
   padding: number;
   gap: number;
   headline: ResolvedTypography;
+  headlineRuns: ResolvedTextRun[];
   body?: ResolvedTypography;
+  bodyRuns?: ResolvedTextRun[];
 }
 export interface FontAsset {
   name: string;
@@ -59,6 +75,9 @@ export class DesignResolver {
   readonly fonts = new Map<string, FontAsset>();
   readonly values: Record<string, string | number> = {};
   private readonly sourceValues = new Map<string, unknown>();
+  private readonly validatedColors = new Set<string>();
+  private readonly opaqueColors = new Set<string>();
+  private readonly fontData = new Map<string, Buffer>();
   constructor(
     private readonly config: Config,
     private readonly root: string,
@@ -137,17 +156,20 @@ export class DesignResolver {
     }
     if (kind === 'color') {
       if (typeof value !== 'string') throw new Error(`${location}: expected a color.`);
-      const page = await this.browser.newPage();
-      try {
-        const valid = await page.evaluate(
-          (color) =>
-            CSS.supports('color', color) &&
-            !/var\(|currentcolor|inherit|initial|unset|revert/i.test(color),
-          value,
-        );
-        if (!valid) throw new Error(`${location}: unresolved or invalid color ${value}.`);
-      } finally {
-        await page.close();
+      if (!this.validatedColors.has(value)) {
+        const page = await this.browser.newPage();
+        try {
+          const valid = await page.evaluate(
+            (color) =>
+              CSS.supports('color', color) &&
+              !/var\(|currentcolor|inherit|initial|unset|revert/i.test(color),
+            value,
+          );
+          if (!valid) throw new Error(`${location}: unresolved or invalid color ${value}.`);
+          this.validatedColors.add(value);
+        } finally {
+          await page.close();
+        }
       }
     } else {
       if (typeof value === 'string') {
@@ -199,7 +221,11 @@ export class DesignResolver {
       );
     const path = resolve(this.root, file.path);
     this.files.add(path);
-    const data = await readFile(path);
+    let data = this.fontData.get(path);
+    if (!data) {
+      data = await readFile(path);
+      this.fontData.set(path, data);
+    }
     const font = createFont(data);
     if (!('hasGlyphForCodePoint' in font))
       throw new Error(
@@ -244,6 +270,80 @@ export class DesignResolver {
           : await this.number(style.letterSpacing, `${location}.letterSpacing`, -100),
     };
   }
+  async background(background: Background | undefined, location: string): Promise<string> {
+    if (background && typeof background === 'object' && 'type' in background) {
+      const stops = [];
+      for (const [index, stop] of background.stops.entries()) {
+        const color = await this.resolveToken(
+          stop.color,
+          `${location}.stops.${index}.color`,
+          'color',
+        );
+        if (typeof color !== 'string')
+          throw new Error(`${location}: unresolved gradient color.`);
+        await this.assertOpaqueColor(color, `${location}.stops.${index}.color`);
+        stops.push(`${color} ${stop.position}%`);
+      }
+      const value = `linear-gradient(${background.angle}deg, ${stops.join(', ')})`;
+      this.values[location] = value;
+      return value;
+    }
+    const value = await this.resolveToken(background, location, 'color');
+    if (typeof value !== 'string') throw new Error(`${location}: expected a background color.`);
+    await this.assertOpaqueColor(value, location);
+    return value;
+  }
+  private async assertOpaqueColor(color: string, location: string): Promise<void> {
+    if (this.opaqueColors.has(color)) return;
+    const page = await this.browser.newPage();
+    try {
+      const opaque = await page.evaluate((value) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const context = canvas.getContext('2d');
+        if (!context) return false;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = value;
+        context.fillRect(0, 0, 1, 1);
+        return context.getImageData(0, 0, 1, 1).data[3] === 255;
+      }, color);
+      if (!opaque) throw new Error(`${location}: backgrounds must be opaque.`);
+      this.opaqueColors.add(color);
+    } finally {
+      await page.close();
+    }
+  }
+  async textRuns(
+    content: TextContent,
+    base: ResolvedTypography,
+    baseColor: string,
+    location: string,
+  ): Promise<ResolvedTextRun[]> {
+    const spans: TextSpan[] = typeof content === 'string' ? [{ text: content }] : content;
+    const runs: ResolvedTextRun[] = [];
+    for (const [index, span] of spans.entries()) {
+      const runLocation = `${location}.runs.${index}`;
+      const typography = await this.typography(
+        {
+          font: span.font ?? base.font,
+          size: span.size ?? base.size,
+          weight: span.weight ?? base.weight,
+          lineHeight: span.lineHeight ?? base.lineHeight,
+          letterSpacing: span.letterSpacing ?? base.letterSpacing,
+        },
+        span.text,
+        runLocation,
+      );
+      const color =
+        span.color !== undefined
+          ? await this.resolveToken(span.color, `${runLocation}.color`, 'color')
+          : baseColor;
+      if (typeof color !== 'string') throw new Error(`${runLocation}.color: expected a color.`);
+      runs.push({ ...typography, text: span.text, color });
+    }
+    return runs;
+  }
   async resolve(slide: Slide, output: Output, location: string): Promise<ResolvedDesign> {
     const design = mergeDesign(this.config.design, output.design, slide.design);
     const errors: string[] = [];
@@ -256,7 +356,7 @@ export class DesignResolver {
       }
     };
     const background = await collect(() =>
-      this.resolveToken(design.background, `${location}.background`, 'color'),
+      this.background(design.background, `${location}.background`),
     );
     const text = await collect(() =>
       this.resolveToken(design.text, `${location}.text`, 'color'),
@@ -267,10 +367,10 @@ export class DesignResolver {
         ? await collect(() => this.number(design.gap, `${location}.gap`, 0))
         : 0;
     const headline = await collect(() =>
-      this.typography(design.headline, slide.headline, `${location}.headline`),
+      this.typography(design.headline, '', `${location}.headline`),
     );
     const body = slide.body
-      ? await collect(() => this.typography(design.body, slide.body ?? '', `${location}.body`))
+      ? await collect(() => this.typography(design.body, '', `${location}.body`))
       : undefined;
     const secondaryText = slide.body
       ? await collect(() =>
@@ -286,13 +386,25 @@ export class DesignResolver {
       !headline
     )
       throw new Error(`${location}: incomplete design.`);
+    const headlineRuns = await this.textRuns(
+      slide.headline,
+      headline,
+      text,
+      `${location}.headline`,
+    );
+    const bodyRuns =
+      slide.body && body && typeof secondaryText === 'string'
+        ? await this.textRuns(slide.body, body, secondaryText, `${location}.body`)
+        : undefined;
     return {
       background,
       text,
       padding,
       gap,
       headline,
+      headlineRuns,
       ...(body ? { body } : {}),
+      ...(bodyRuns ? { bodyRuns } : {}),
       ...(typeof secondaryText === 'string' ? { secondaryText } : {}),
     };
   }

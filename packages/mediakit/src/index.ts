@@ -6,6 +6,9 @@ export type {
   Design,
   Output,
   Typography,
+  TextContent,
+  TextSpan,
+  Background,
   Position,
 } from './schema.js';
 export { presets } from './presets.js';

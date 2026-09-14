@@ -40,7 +40,7 @@ try {
     const cli = join(consumer, 'node_modules/mediakit/dist/bin.js');
     assert.match(
       run(process.execPath, [cli, '--help'], consumer),
-      /init.*check.*preview.*export/,
+      /init[\s\S]*check[\s\S]*preview[\s\S]*export/,
     );
     run(process.execPath, [cli, 'init', '--no-browser'], consumer);
     assert.match(run(process.execPath, [cli, 'check'], consumer, 1), /required.*missing/);

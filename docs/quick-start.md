@@ -16,7 +16,7 @@ in the config; there is no separate campaign file. The regular `init` workflow s
 
 1. Put your regular and bold font files in `marketing/fonts/Brand-Regular.ttf` and
    `marketing/fonts/Brand-Bold.ttf`, or edit the paths and weights in `fonts`.
-2. Edit the example colors and typography under `design`.
+2. Edit the example gradient colors and typography under `design`.
 3. Edit `campaign.slides`: each item is one image or document page. Duplicate a slide to add more.
 4. To include a screenshot, add `marketing/screens/dashboard.png`, then uncomment the
    `screens.dashboard` entry and screenshot slide. Register more images under other screen names.
@@ -78,6 +78,15 @@ outputs: {
     },
   },
 }
+```
+
+Use a plain string for simple copy. To mix fonts, weights, sizes, or colors, use text runs:
+
+```ts
+headline: [
+  { text: 'Plan with ' },
+  { text: 'clarity', font: 'brand', weight: 700, size: 80, color: '#315c4b' },
+],
 ```
 
 Fonts must include every weight used. Text that does not fit must be shortened, given more

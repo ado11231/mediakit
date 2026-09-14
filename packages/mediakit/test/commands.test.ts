@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initializeProject } from '../src/init.js';
 import { loadProject } from '../src/config.js';
-import { configSchema } from '../src/schema.js';
+import { campaignSchema, configSchema } from '../src/schema.js';
 import { resolveOutput } from '../src/presets.js';
 const directories: string[] = [];
 afterEach(async () => {
@@ -52,6 +52,49 @@ it('allows preset typography overrides without changing channel dimensions', () 
   });
   config.outputs['app-store-iphone'] = { width: 500 };
   expect(() => resolveOutput('app-store-iphone', config)).toThrow('fixed');
+});
+it('validates rich text and ordered gradient backgrounds', () => {
+  const campaign = campaignSchema.parse({
+    id: 'styled-copy',
+    outputs: ['instagram-square'],
+    slides: [
+      {
+        layout: 'text-only',
+        headline: [
+          { text: 'Plan with ' },
+          { text: 'clarity', font: 'display', weight: 700, size: 88, color: '#315c4b' },
+        ],
+      },
+    ],
+  });
+  expect(campaign.slides[0]!.headline).toHaveLength(2);
+  expect(
+    configSchema.parse({
+      design: {
+        background: {
+          type: 'linear-gradient',
+          angle: 135,
+          stops: [
+            { color: '#f6f1e8', position: 0 },
+            { color: '#d9eadf', position: 100 },
+          ],
+        },
+      },
+    }).design.background,
+  ).toMatchObject({ type: 'linear-gradient', angle: 135 });
+  expect(() =>
+    configSchema.parse({
+      design: {
+        background: {
+          type: 'linear-gradient',
+          stops: [
+            { color: '#fff', position: 80 },
+            { color: '#000', position: 20 },
+          ],
+        },
+      },
+    }),
+  ).toThrow('ordered');
 });
 it('allows an Expo project to initialize without requiring native capture tools', async () => {
   const root = await mkdtemp(join(tmpdir(), 'mediakit-expo-init-'));

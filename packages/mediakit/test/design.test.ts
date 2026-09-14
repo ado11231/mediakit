@@ -91,6 +91,52 @@ describe('explicit design resolution', () => {
     expect(result.body).toBeUndefined();
     expect(result.gap).toBe(0);
   });
+  it('resolves gradient stops and validates typography for each text run', async () => {
+    const config = configSchema.parse({
+      fonts: {
+        brand: [
+          { path: resolve('../../examples/source-app/fonts/Geist-Regular.ttf'), weight: 400 },
+          { path: resolve('../../examples/source-app/fonts/Geist-Bold.ttf'), weight: 700 },
+        ],
+      },
+      design: {
+        background: {
+          type: 'linear-gradient',
+          angle: 140,
+          stops: [
+            { color: '#f8f4eb', position: 0 },
+            { color: '#d6eadf', position: 100 },
+          ],
+        },
+        text: '#18201c',
+        padding: 40,
+        headline: { font: 'brand', size: 48, weight: 400, lineHeight: 56 },
+      },
+    });
+    const slide = campaignSchema.parse({
+      id: 'test',
+      outputs: ['instagram-square'],
+      slides: [
+        {
+          layout: 'text-only',
+          headline: [
+            { text: 'Clear ' },
+            { text: 'plans', weight: 700, size: 56, color: '#315c4b' },
+          ],
+        },
+      ],
+    }).slides[0]!;
+    const result = await new DesignResolver(config, directory, browser).resolve(
+      slide,
+      outputSchema.parse({ width: 1080, height: 1080 }),
+      'slide 1',
+    );
+    expect(result.background).toBe('linear-gradient(140deg, #f8f4eb 0%, #d6eadf 100%)');
+    expect(result.headlineRuns).toMatchObject([
+      { text: 'Clear ', font: 'brand', weight: 400, size: 48, color: '#18201c' },
+      { text: 'plans', font: 'brand', weight: 700, size: 56, color: '#315c4b' },
+    ]);
+  });
   it('rejects cyclic imports and unresolved tokens', async () => {
     await writeFile(join(directory, 'cycle.css'), '@import "./cycle.css";');
     await expect(readDesignCss(join(directory, 'cycle.css'))).rejects.toThrow('circular');
